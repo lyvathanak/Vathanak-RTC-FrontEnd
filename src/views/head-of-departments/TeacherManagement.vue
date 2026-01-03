@@ -4,7 +4,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 :class="['text-3xl font-bold text-gray-900', isKhmer ? 'khmer-text' : '']">
-            {{ $t('teacher_management') || 'Teacher Management' }}
+            {{ $t('teachers_management') || 'Teacher Management' }}
           </h1>
           <p class="text-gray-600 mt-2">
              Department: <span class="font-semibold text-blue-600">{{ departmentName }}</span>
@@ -55,7 +55,7 @@
           <input 
             v-model="searchQuery" 
             type="text" 
-            :placeholder="$t('search_teacher_placeholder') || 'Search Teacher...'" 
+            :placeholder="isKhmer ? 'ស្វែងរកគ្រូ...' : 'Search Teacher...'"
             class="w-full sm:w-80 border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
           <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
@@ -74,24 +74,24 @@
         :show-delete-action="false"
         :sort-field="sortField"
         :sort-direction="sortDirection"
-        :empty-state-title="$t('no_teachers_found') || 'No Teachers Found'"
-        :empty-state-message="$t('no_teachers_message') || 'There are no teachers in this department matching your criteria.'"
+        :empty-state-title="isKhmer ? 'រកមិនឃើញគ្រូបង្រៀន' : 'No Teachers Found'"
+        :empty-state-message="isKhmer ? 'មិនមានគ្រូបង្រៀននៅក្នុងដេប៉ាតឺម៉ង់នេះទេ។' : 'There are no teachers in this department matching your criteria.'"
         @sort="handleSort"
         @view="handleViewTeacher"
       >
         <template #column-id_card="{ row }">
           <span class="font-mono text-sm font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-            {{ row.id_card || row.user_detail?.id_card || 'N/A' }}
+            {{ row.id_card || 'N/A' }}
           </span>
         </template>
 
-        <template #column-name="{ row }">
+        <template #column-latin_name="{ row }">
           <div class="flex items-center gap-3">
             <div class="shrink-0">
                <img 
-                v-if="row.user_detail?.profile_picture" 
-                :src="row.user_detail.profile_picture.startsWith('http') ? row.user_detail.profile_picture : `https://api.rtc-bb.camai.kh/${row.user_detail.profile_picture}`" 
-                :alt="row.name" 
+                v-if="row.profile_picture" 
+                :src="row.profile_picture.startsWith('http') ? row.profile_picture : `https://api.rtc-bb.camai.kh/${row.profile_picture}`" 
+                :alt="row.latin_name" 
                 class="w-10 h-10 rounded-full object-cover border border-gray-200"
                 @error="(e) => e.target.style.display = 'none'"
               >
@@ -99,14 +99,15 @@
                 v-else 
                 class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-700 font-bold text-sm"
               >
-                {{ getInitials(row.name || row.latin_name) }}
+                {{ getInitials(row.latin_name) }}
               </div>
             </div>
-            <div>
-              <div class="font-medium text-gray-900">{{ row.latin_name || row.name }}</div>
-              <div class="text-xs text-gray-500 font-khmer">{{ row.khmer_name || row.user_detail?.khmer_name || '' }}</div>
-            </div>
+            <div class="font-medium text-gray-900">{{ row.latin_name || '-' }}</div>
           </div>
+        </template>
+        
+        <template #column-khmer_name="{ row }">
+          <span class="font-khmer text-gray-700">{{ row.khmer_name || '-' }}</span>
         </template>
 
         <template #column-status="{ row }">
@@ -144,14 +145,15 @@ const teachers = ref([]);
 const searchQuery = ref("");
 const departmentName = ref("");
 const departmentId = ref(null);
-const sortField = ref("name");
+const sortField = ref("latin_name");
 const sortDirection = ref("asc");
 
-// Table Columns
+// Table Columns (Splitting Name into Khmer/Latin)
 const columns = ref([
   { key: 'id_card', label: 'ID', sortable: true },
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'user_detail.position', label: 'Position', sortable: true },
+  { key: 'khmer_name', label: 'Khmer Fullname', sortable: true },
+  { key: 'latin_name', label: 'Latin Fullname', sortable: true },
+  { key: 'position', label: 'Position', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
 ]);
 
@@ -166,17 +168,17 @@ const filteredTeachers = computed(() => {
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(t => 
-      (t.latin_name || t.name || '').toLowerCase().includes(q) ||
-      (t.khmer_name || t.user_detail?.khmer_name || '').toLowerCase().includes(q) ||
-      (t.id_card || t.user_detail?.id_card || '').toLowerCase().includes(q)
+      (t.latin_name || '').toLowerCase().includes(q) ||
+      (t.khmer_name || '').toLowerCase().includes(q) ||
+      (t.id_card || '').toLowerCase().includes(q)
     );
   }
 
   // Sorting
   if (sortField.value) {
     result.sort((a, b) => {
-      let aVal = getNestedValue(a, sortField.value);
-      let bVal = getNestedValue(b, sortField.value);
+      let aVal = a[sortField.value];
+      let bVal = b[sortField.value];
       
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
@@ -190,12 +192,8 @@ const filteredTeachers = computed(() => {
   return result;
 });
 
-// Helpers
-const getNestedValue = (obj, path) => path.split('.').reduce((acc, part) => acc?.[part], obj);
-
 const isActive = (row) => {
   if (row.is_active !== undefined) return row.is_active;
-  if (row.user_detail?.is_active !== undefined) return row.user_detail.is_active;
   return false;
 };
 
@@ -212,7 +210,6 @@ const handleSort = ({ field, direction }) => {
 
 const handleViewTeacher = (teacher) => {
   console.log('View profile', teacher.id);
-  // router.push(`/head-of-departments/teacher/${teacher.id}`);
 };
 
 // Data Fetching
@@ -234,17 +231,23 @@ onMounted(async () => {
     }
 
     if (departmentId.value) {
-      // Use the endpoint that filters users by HOD department
       const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
         params: { role: 'staff' } 
       });
       const data = res.data.users || res.data.data || [];
       if (Array.isArray(data)) {
-        teachers.value = data.map(t => ({
-          ...t,
-          id_card: t.id_card || t.user_detail?.id_card,
-          position: t.position || t.user_detail?.position || 'Lecturer'
-        }));
+        teachers.value = data.map(t => {
+          const detail = t.user_detail || {};
+          return {
+            ...t,
+            id_card: t.id_card || detail.id_card,
+            khmer_name: t.khmer_name || detail.khmer_name,
+            latin_name: t.latin_name || t.name || detail.latin_name,
+            position: t.position || detail.position || 'Lecturer',
+            profile_picture: t.profile_picture || detail.profile_picture,
+            is_active: t.is_active ?? detail.is_active ?? true
+          };
+        });
       }
     }
   } catch (err) {
