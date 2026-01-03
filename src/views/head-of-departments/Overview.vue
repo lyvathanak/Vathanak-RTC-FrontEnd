@@ -138,7 +138,6 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
 import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
-import { StudentCRUD } from "@/stores/apis/StudentCRUD";
 import { listPrograms } from "@/stores/apis/TimeTableCRUD";
 import { getSHODLeaveRequestsService } from "@/stores/HeadOfDepartment/LeaveRequestFrom";
 import { useDepartment } from "@/stores/global/useDepartment";
@@ -181,22 +180,26 @@ onMounted(async () => {
     }
 
     if (departmentId.value) {
-      // 1. Fetch Teachers (Using /users directly if available, scoped by department)
-      // Note: HODs cannot use get_all_users. We attempt to use the generic /users listing filtered.
+      // 1. Fetch Teachers (using specific users_by_hod_department endpoint with role query param)
       try {
-        const teachersRes = await api.get('/users', { 
-          params: { department_id: departmentId.value, role: 'staff' } 
+        const teachersRes = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
+          params: { role: 'staff' } 
         });
-        const teachersData = teachersRes.data.data || teachersRes.data || [];
+        const teachersData = teachersRes.data.users || teachersRes.data.data || [];
         stats.teachers = Array.isArray(teachersData) ? teachersData.length : 0;
       } catch (e) {
-        console.warn("Failed to fetch teachers count:", e);
+        console.warn("Failed to fetch teachers:", e);
       }
 
-      // 2. Fetch Students using searchStudents (Allowed endpoint /students, requires ID)
-      const studentsRes = await StudentCRUD.searchStudents({ department_id: departmentId.value });
-      if (studentsRes.success && Array.isArray(studentsRes.data)) {
-         stats.students = studentsRes.data.length;
+      // 2. Fetch Students (using specific users_by_hod_department endpoint with role query param)
+      try {
+        const studentsRes = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
+          params: { role: 'student' } 
+        });
+        const studentsData = studentsRes.data.users || studentsRes.data.data || [];
+        stats.students = Array.isArray(studentsData) ? studentsData.length : 0;
+      } catch (e) {
+        console.warn("Failed to fetch students:", e);
       }
 
       // 3. Fetch Programs

@@ -104,7 +104,7 @@ import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
-import { StudentCRUD } from "@/stores/apis/StudentCRUD";
+import api from "@/stores/apis/axios";
 import { useDepartment } from "@/stores/global/useDepartment";
 
 const router = useRouter();
@@ -149,10 +149,13 @@ onMounted(async () => {
     }
 
     if (departmentId.value) {
-      // Corrected: Use searchStudents (which hits /students) instead of getAllStudents (which hits /users/get_all_users and 403s)
-      const res = await StudentCRUD.searchStudents({ department_id: departmentId.value });
-      if (res.success && Array.isArray(res.data)) {
-        students.value = res.data;
+      // Corrected API call with role query parameter
+      const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
+        params: { role: 'student' } 
+      });
+      const data = res.data.users || res.data.data || [];
+      if (Array.isArray(data)) {
+        students.value = data;
       }
     }
   } catch (err) {

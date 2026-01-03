@@ -149,17 +149,13 @@ onMounted(async () => {
     }
 
     if (departmentId.value) {
-      // Use direct API call for teachers by department (fallback for missing /teachers endpoint)
-      try {
-        const res = await api.get('/users', { 
-          params: { department_id: departmentId.value, role: 'staff' } 
-        });
-        const data = res.data.data || res.data || [];
-        if (Array.isArray(data)) {
-          teachers.value = data;
-        }
-      } catch (e) {
-        console.warn("Failed to fetch teachers:", e);
+      // Corrected API call with role query parameter
+      const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
+        params: { role: 'staff' } 
+      });
+      const data = res.data.users || res.data.data || [];
+      if (Array.isArray(data)) {
+        teachers.value = data;
       }
     }
   } catch (err) {
