@@ -131,6 +131,12 @@
           </span>
         </template>
       </ListTable>
+
+      <ViewStudentModal
+        v-if="showViewModal"
+        v-model="showViewModal"
+        :student="selectedStudent"
+      />
     </div>
   </div>
 </template>
@@ -143,6 +149,7 @@ import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
 import { useDepartment } from "@/stores/global/useDepartment";
 import ListTable from "@/components/features/ListTable.vue";
+import ViewStudentModal from "@/components/admins/StudentManagement/ViewStudentModal.vue";
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -158,6 +165,10 @@ const departmentName = ref("");
 const departmentId = ref(null);
 const sortField = ref("latin_name");
 const sortDirection = ref("asc");
+
+// Modal State
+const showViewModal = ref(false);
+const selectedStudent = ref(null);
 
 // Table Columns (UPDATED per requirements)
 const columns = ref([
@@ -227,7 +238,8 @@ const handleSort = ({ field, direction }) => {
 };
 
 const handleViewStudent = (student) => {
-  console.log("View student:", student.id);
+  selectedStudent.value = student;
+  showViewModal.value = true;
 };
 
 // Data Fetching
