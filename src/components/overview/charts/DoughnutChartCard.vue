@@ -4,7 +4,7 @@
       {{ title }}
     </h3>
 
-    <Doughnut :data="donutData" :options="optionsComputed" :height="height" />
+    <Doughnut :data="donutData" :options="optionsComputed" />
   </div>
 </template>
 
@@ -14,35 +14,23 @@ import { Doughnut } from "vue-chartjs";
 
 const props = defineProps({
   title: { type: String, default: "Doughnut Chart" },
-  labels: {
-    type: Array,
-    default: () => ["One", "Two", "Three", "Four", "Five"],
-  },
+  labels: { type: Array, default: () => ["One", "Two", "Three", "Four", "Five"] },
   values: { type: Array, default: () => [10, 20, 30, 15, 25] },
   options: { type: Object, default: () => ({}) },
-  height: { type: Number, default: 300 },
 });
 
-const donutData = computed(() => {
-  const labels = props.labels || [];
-  const values = props.values || [];
-
-  // ✅ generate as many colors as needed
-  const colors = labels.map((_, i) => `hsl(${(i * 47) % 360}, 70%, 55%)`);
-
-  return {
-    labels,
-    datasets: [
-      {
-        label: props.title,
-        data: values,
-        backgroundColor: colors,
-        borderColor: "#ffffff",
-        borderWidth: 2,
-      },
-    ],
-  };
-});
+const donutData = computed(() => ({
+  labels: props.labels.slice(0, 5),
+  datasets: [
+    {
+      label: props.title,
+      data: props.values.slice(0, 5),
+      backgroundColor: ["#2563eb", "#16a34a", "#f59e0b", "#ef4444", "#8b5cf6"],
+      borderColor: "#ffffff",
+      borderWidth: 2,
+    },
+  ],
+}));
 
 const optionsComputed = computed(() => ({
   responsive: true,
@@ -50,5 +38,4 @@ const optionsComputed = computed(() => ({
   plugins: { legend: { position: "bottom" } },
   ...props.options,
 }));
-
 </script>

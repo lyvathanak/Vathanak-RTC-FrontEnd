@@ -1,4 +1,5 @@
 import { requireRole } from './guards.js';
+
 export const adminRoutes = [
   {
     path: '/:lang(en|fr|kh)/admin',
@@ -73,15 +74,10 @@ export const adminRoutes = [
         name: 'AdminLocationManagement',
         component: () => import('@/views/admins/LocationManagement.vue'),
       },
-      // {
-      //   path: 'timetable',
-      //   name: 'AdminTimeTable',
-      //   component: () => import('@/views/admins/TimeTable.vue'),
-      // },
       {
         path: 'timetable',
         name: 'AdminTimeTable',
-        component: () => import('@/views/admins/TimeTable_khun.vue'),
+        component: () => import('@/views/admins/TimeTable.vue'),
       },
       {
         path: 'leave-requests',

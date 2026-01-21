@@ -45,27 +45,28 @@
 
             <!-- CSV File -->
             <div>
-              <label class="block text-sm font-medium mb-1">
-                Moodle CSV <span class="text-red-500">*</span>
-              </label>
-              <input
-                  type="file"
-                  accept=".csv"
-                  @change="onFileChange"
-                  class="block w-full text-sm border rounded-lg p-2
-                      file:border-0
-                      file:bg-blue-50
-                      file:text-blue-700
-                      file:px-4
-                      file:py-2
-                      file:rounded-lg
-                      hover:file:bg-blue-100
-                      cursor-pointer"
-              />
-              <p class="text-xs text-gray-500 mt-1">
-                  CSV must contain <b>ID number</b> and <b>Final total</b> columns
-              </p>
+                <label class="block text-sm font-medium mb-1">
+                    Moodle CSV <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="file"
+                    accept=".csv"
+                    @change="onFileChange"
+                    class="block w-full text-sm border rounded-lg p-2
+                        file:border-0
+                        file:bg-blue-50
+                        file:text-blue-700
+                        file:px-4
+                        file:py-2
+                        file:rounded-lg
+                        hover:file:bg-blue-100
+                        cursor-pointer"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                    CSV must contain <b>ID number</b> and <b>Final total</b> columns
+                </p>
             </div>
+
 
           </div>
 
@@ -101,9 +102,8 @@ import { showNotification } from '@/lib/notifications';
 const props = defineProps({
   modelValue: Boolean,
   defaultAcademicYear: String,
-  defaultProgramId: [String, Number],
+  defaultProgramId: [String, Number]
 });
-
 const emit = defineEmits(['update:modelValue', 'imported']);
 
 const semesterId = ref('');
@@ -114,45 +114,40 @@ const file = ref(null);
 const loading = ref(false);
 const importedCount = ref(null);
 
-// Watch programId and academicYear to reload semesters
-watch([() => props.defaultProgramId, () => props.defaultAcademicYear], async () => {
+// Load semesters automatically based on defaultProgramId
+onMounted(async () => {
+  if (props.defaultProgramId) {
+    await loadSemesters();
+  }
+});
+
+watch(() => props.defaultProgramId, async () => {
   semesterId.value = '';
   subjectId.value = '';
   subjects.value = [];
-  await loadSemesters();
-});
-
-// Initial load
-onMounted(async () => {
-  await loadSemesters();
+  if (props.defaultProgramId) {
+    await loadSemesters();
+  }
 });
 
 async function loadSemesters() {
-  if (!props.defaultProgramId) {
-    semesters.value = [];
-    return;
-  }
-
   try {
-    const res = await ScoreAPI.getSemestersByProgram(props.defaultProgramId);
-    semesters.value = res.semesters || [];
-    console.log('Semesters loaded for program:', props.defaultProgramId, semesters.value);
+    const res = await ScoreAPI.getAllSemesters();
+    // Filter semesters by program
+    semesters.value = res.semesters.data.filter(s => s.program_id == props.defaultProgramId);
   } catch (err) {
-    console.error('Failed to load semesters:', err);
+    console.error(err);
     showNotification('Failed to load semesters', 'error');
   }
 }
 
 async function onSemesterChange() {
   subjectId.value = '';
-  subjects.value = [];
-  if (!semesterId.value) return;
-
   try {
     const res = await ScoreAPI.getSubjectsBySemester(semesterId.value);
     subjects.value = res.subjects || [];
   } catch (err) {
-    console.error('Failed to load subjects:', err);
+    console.error(err);
     showNotification('Failed to load subjects', 'error');
   }
 }
@@ -172,13 +167,18 @@ async function submit() {
   }
 
   const form = new FormData();
-  form.append('program_id', props.defaultProgramId);
-  if (props.defaultAcademicYear) form.append('academic_year', props.defaultAcademicYear);
-  form.append('semester_id', semesterId.value);
   form.append('subject_id', subjectId.value);
   form.append('file', file.value);
+  
+  // **Add programId from parent**
+  form.append('program_id', props.defaultProgramId);
+  // optionally academic year
+  if (props.defaultAcademicYear) {
+    form.append('academic_year', props.defaultAcademicYear);
+  }
 
   loading.value = true;
+
   try {
     const { data } = await ScoreAPI.importMoodleScores(form);
     importedCount.value = data.imported;
@@ -186,10 +186,11 @@ async function submit() {
     showNotification('Scores imported successfully', 'success');
     setTimeout(close, 800);
   } catch (err) {
-    console.error('Import failed:', err);
+    console.error(err);
     showNotification('Import failed', 'error');
   } finally {
     loading.value = false;
   }
 }
+
 </script>

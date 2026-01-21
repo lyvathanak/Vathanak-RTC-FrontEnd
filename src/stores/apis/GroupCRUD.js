@@ -1,5 +1,4 @@
 import api from './axios.js'
-import { validateStudentsNotInGroup, formatConflictMessages } from '../global/ValidateUserInGroup.js';
 
 const GROUPS_ENDPOINT = '/groups';
 
@@ -124,40 +123,13 @@ export const GroupCRUD = {
     }
   },
 
-  /* CREATE with students (with validation to prevent duplicate group membership) */
+  /* CREATE with students */
   async createGroupWithStudents(groupData) {
     let requestData = null;
     try {
       const user_ids = (groupData.students || [])
         .map(resolveUserId)
         .filter(id => id !== null);
-
-      // Validate that students are not already in other groups (if students are provided)
-      if (user_ids.length > 0) {
-        const validationResult = await validateStudentsNotInGroup(user_ids);
-        
-        if (!validationResult.success) {
-          return {
-            success: false,
-            data: null,
-            error: validationResult.error,
-            message: validationResult.message,
-          };
-        }
-
-        // Check if any students are already in groups
-        if (validationResult.hasConflicts) {
-          const conflictMessages = formatConflictMessages(validationResult.conflicts);
-          return {
-            success: false,
-            data: null,
-            error: validationResult.conflicts,
-            message: `Cannot create group with students: ${conflictMessages.join('; ')}. A student can only be in one group.`,
-            conflicts: validationResult.conflicts,
-            validUsers: validationResult.validUsers,
-          };
-        }
-      }
 
       const payload = clean({
         group_name: groupData.name,
@@ -266,46 +238,9 @@ export const GroupCRUD = {
     }
   },
 
-  /* ADD students (with validation to prevent duplicate group membership) */
+  /* ADD students (alias) */
   async addStudentsToGroup(groupId, students) {
     try {
-      const user_ids = (students || []).map(resolveUserId).filter(id => id !== null);
-      
-      if (!user_ids.length) {
-        return {
-          success: false,
-          data: null,
-          error: 'No valid user IDs found',
-          message: 'Could not resolve user IDs from provided student data',
-        };
-      }
-
-      // Validate that students are not already in other groups
-      const validationResult = await validateStudentsNotInGroup(user_ids);
-      
-      if (!validationResult.success) {
-        return {
-          success: false,
-          data: null,
-          error: validationResult.error,
-          message: validationResult.message,
-        };
-      }
-
-      // Check if any students are already in groups
-      if (validationResult.hasConflicts) {
-        const conflictMessages = formatConflictMessages(validationResult.conflicts);
-        return {
-          success: false,
-          data: null,
-          error: validationResult.conflicts,
-          message: `Cannot add students: ${conflictMessages.join('; ')}. A student can only be in one group.`,
-          conflicts: validationResult.conflicts,
-          validUsers: validationResult.validUsers,
-        };
-      }
-
-      // All students are valid, proceed with adding them
       return await this.assignMultipleUsers(groupId, students);
     } catch (error) {
       return {

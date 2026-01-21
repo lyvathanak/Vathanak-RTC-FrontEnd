@@ -11,16 +11,6 @@ export default {
     }
   },
 
-  async getSemestersByProgram(programId) {
-    try {
-      const response = await api.get(`managements/get_semesters_by_program/${programId}`);
-      return response.data || { semesters: [] }; // return object with semesters
-    } catch (error) {
-      console.error('Error fetching semesters by program:', error);
-      return { semesters: [] };
-    }
-  },
-
   async getSubjectsBySemester(semester_id) {
     try {
       const response = await api.get(`managements/get_all_subject_in_semester/${semester_id}`);

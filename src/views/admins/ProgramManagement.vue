@@ -274,7 +274,6 @@ import ListTable from "@/components/features/ListTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import Filter from "@/components/features/Filter.vue";
 import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
-import { showNotification } from "@/lib/notifications.js";
 
 import { Plus, X, Search } from "lucide-vue-next";
 import {

@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import {
   Users,
@@ -53,11 +53,6 @@ import {
   PiggyBank,
   BadgeCheck,
   User,
-  LayoutDashboard,
-  FileCheck2,
-  Gauge,
-  FileText,
-  UserCheck,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -93,20 +88,12 @@ const actions = computed(() => {
   if (r.includes("admin")) {
     return [
       {
-        title: "Overview",
-        desc: "Admin dashboard overview",
-        icon: LayoutDashboard,
-        bg: "bg-slate-50 hover:bg-slate-100",
-        iconBg: "bg-slate-600",
-        to: `${base.value}/admin/dashboard`,
-      },
-      {
         title: "Students Management",
         desc: "Manage student accounts",
         icon: Users,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
-        to: `${base.value}/admin/students`,
+        to: `${base.value}/students`,
       },
       {
         title: "Promote Student",
@@ -114,7 +101,7 @@ const actions = computed(() => {
         icon: UserPlus,
         bg: "bg-indigo-50 hover:bg-indigo-100",
         iconBg: "bg-indigo-500",
-        to: `${base.value}/admin/promote_student`,
+        to: `${base.value}/promote-student`,
       },
       {
         title: "Teachers Management",
@@ -122,7 +109,7 @@ const actions = computed(() => {
         icon: UserCog,
         bg: "bg-green-50 hover:bg-green-100",
         iconBg: "bg-green-500",
-        to: `${base.value}/admin/teachers`,
+        to: `${base.value}/teachers`,
       },
       {
         title: "Head-of-Department Management",
@@ -130,7 +117,7 @@ const actions = computed(() => {
         icon: UsersRound,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
-        to: `${base.value}/admin/hod`,
+        to: `${base.value}/hod`,
       },
       {
         title: "Programs Management",
@@ -138,7 +125,7 @@ const actions = computed(() => {
         icon: BookOpen,
         bg: "bg-cyan-50 hover:bg-cyan-100",
         iconBg: "bg-cyan-500",
-        to: `${base.value}/admin/programs`,
+        to: `${base.value}/programs`,
       },
       {
         title: "Departments Management",
@@ -146,7 +133,7 @@ const actions = computed(() => {
         icon: Building2,
         bg: "bg-amber-50 hover:bg-amber-100",
         iconBg: "bg-amber-500",
-        to: `${base.value}/admin/departments`,
+        to: `${base.value}/departments`,
       },
       {
         title: "Subjects Management",
@@ -154,7 +141,7 @@ const actions = computed(() => {
         icon: ClipboardList,
         bg: "bg-lime-50 hover:bg-lime-100",
         iconBg: "bg-lime-500",
-        to: `${base.value}/admin/subjects`,
+        to: `${base.value}/subjects`,
       },
       {
         title: "Import Score",
@@ -162,7 +149,7 @@ const actions = computed(() => {
         icon: Upload,
         bg: "bg-teal-50 hover:bg-teal-100",
         iconBg: "bg-teal-500",
-        to: `${base.value}/admin/ImportScore`,
+        to: `${base.value}/import-score`,
       },
       {
         title: "Groups Management",
@@ -170,7 +157,7 @@ const actions = computed(() => {
         icon: UsersRound,
         bg: "bg-sky-50 hover:bg-sky-100",
         iconBg: "bg-sky-500",
-        to: `${base.value}/admin/groups`,
+        to: `${base.value}/groups`,
       },
       {
         title: "Location Management",
@@ -178,7 +165,7 @@ const actions = computed(() => {
         icon: MapPin,
         bg: "bg-rose-50 hover:bg-rose-100",
         iconBg: "bg-rose-500",
-        to: `${base.value}/admin/location`,
+        to: `${base.value}/locations`,
       },
       {
         title: "Timetable Management",
@@ -186,7 +173,7 @@ const actions = computed(() => {
         icon: CalendarDays,
         bg: "bg-fuchsia-50 hover:bg-fuchsia-100",
         iconBg: "bg-fuchsia-500",
-        to: `${base.value}/admin/timetable`,
+        to: `${base.value}/timetable`,
       },
       {
         title: "Leave Request Management",
@@ -194,7 +181,7 @@ const actions = computed(() => {
         icon: Clock,
         bg: "bg-red-50 hover:bg-red-100",
         iconBg: "bg-red-500",
-        to: `${base.value}/admin/leave-requests`,
+        to: `${base.value}/leave-requests`,
       },
       {
         title: "Feedback",
@@ -202,7 +189,7 @@ const actions = computed(() => {
         icon: MessageSquareText,
         bg: "bg-orange-50 hover:bg-orange-100",
         iconBg: "bg-orange-500",
-        to: `${base.value}/admin/feedback`,
+        to: `${base.value}/feedback`,
       },
       {
         title: "Survey",
@@ -210,15 +197,7 @@ const actions = computed(() => {
         icon: ListChecks,
         bg: "bg-yellow-50 hover:bg-yellow-100",
         iconBg: "bg-yellow-500",
-        to: `${base.value}/admin/survey`,
-      },
-      {
-        title: "External Exam Enrollment",
-        desc: "Manage external exam enrollments",
-        icon: FileCheck2,
-        bg: "bg-emerald-50 hover:bg-emerald-100",
-        iconBg: "bg-emerald-600",
-        to: `${base.value}/admin/external-exam-enrollment`,
+        to: `${base.value}/survey`,
       },
       {
         title: "Setting",
@@ -226,7 +205,7 @@ const actions = computed(() => {
         icon: Settings,
         bg: "bg-gray-50 hover:bg-gray-100",
         iconBg: "bg-gray-700",
-        to: `${base.value}/admin/settings`,
+        to: `${base.value}/settings`,
       },
     ];
   }
@@ -235,130 +214,82 @@ const actions = computed(() => {
   if (r.includes("teacher")) {
     return [
       {
-        title: "Overview",
-        desc: "Teacher dashboard overview",
-        icon: Gauge,
-        bg: "bg-slate-50 hover:bg-slate-100",
-        iconBg: "bg-slate-600",
-        to: `${base.value}/teacher/overview`,
+        title: "Create Assignment",
+        desc: "Add new assignment for students",
+        icon: Plus,
+        bg: "bg-blue-50 hover:bg-blue-100",
+        iconBg: "bg-blue-500",
+        to: `${base.value}/teacher/assignments/create`,
       },
       {
-        title: "Students Management",
-        desc: "View and manage students",
+        title: "Grade Assignments",
+        desc: "Review and grade student work",
+        icon: ClipboardCheck,
+        bg: "bg-green-50 hover:bg-green-100",
+        iconBg: "bg-green-500",
+        to: `${base.value}/teacher/assignments/grade`,
+      },
+      {
+        title: "View Students",
+        desc: "Manage student information",
         icon: Users,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
-        to: `${base.value}/teacher/student-info`,
-      },
-      {
-        title: "Timetable Management",
-        desc: "View teaching schedule",
-        icon: CalendarDays,
-        bg: "bg-indigo-50 hover:bg-indigo-100",
-        iconBg: "bg-indigo-500",
-        to: `${base.value}/teacher/timetable`,
-      },
-      // {
-      //   title: "Create Assignment",
-      //   desc: "Add new assignment for students",
-      //   icon: Plus,
-      //   bg: "bg-blue-50 hover:bg-blue-100",
-      //   iconBg: "bg-blue-500",
-      //   to: `${base.value}/teacher/assignments/create`,
-      // },
-      // {
-      //   title: "Grade Assignments",
-      //   desc: "Review and grade student work",
-      //   icon: ClipboardCheck,
-      //   bg: "bg-green-50 hover:bg-green-100",
-      //   iconBg: "bg-green-500",
-      //   to: `${base.value}/teacher/assignments/grade`,
-      // },
-      {
-        title: "Exam Scoring",
-        desc: "Score exams and tests",
-        icon: FileText,
-        bg: "bg-cyan-50 hover:bg-cyan-100",
-        iconBg: "bg-cyan-500",
-        to: `${base.value}/teacher/exam-scoring`,
-      },
-      // {
-      //   title: "Attendance",
-      //   desc: "Track student attendance",
-      //   icon: UserCheck,
-      //   bg: "bg-amber-50 hover:bg-amber-100",
-      //   iconBg: "bg-amber-500",
-      //   to: `${base.value}/teacher/attendance`,
-      // },
-      {
-        title: "Leave Request",
-        desc: "Request and track leave",
-        icon: Clock,
-        bg: "bg-red-50 hover:bg-red-100",
-        iconBg: "bg-red-500",
-        to: `${base.value}/teacher/leave-request`,
-      },
-      {
-        title: "Profile Account",
-        desc: "Manage your profile",
-        icon: User,
-        bg: "bg-gray-50 hover:bg-gray-100",
-        iconBg: "bg-gray-700",
-        to: `${base.value}/teacher/teacher-profile`,
+        to: `${base.value}/teacher/students`,
       },
     ];
   }
 
-  // ✅ HEAD OF DEPARTMENT (HOD)
+  // ✅ HEAD OF DEPARTMENT
   if (r.includes("head")) {
     return [
       {
-        title: "Overview",
-        desc: "Department dashboard overview",
-        icon: Gauge,
-        bg: "bg-slate-50 hover:bg-slate-100",
-        iconBg: "bg-slate-600",
-        to: `${base.value}/hod/overview`,
-      },
-      {
-        title: "Students Management",
-        desc: "Manage students in department",
+        title: "Manage Teachers",
+        desc: "Assign and oversee department faculty",
         icon: Users,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
-        to: `${base.value}/hod/student-management`,
+        to: `${base.value}/hod/teachers`,
       },
       {
-        title: "Teachers Management",
-        desc: "Manage teachers in department",
-        icon: UserCheck,
+        title: "Course Approval",
+        desc: "Review and approve course proposals",
+        icon: ClipboardList,
         bg: "bg-green-50 hover:bg-green-100",
         iconBg: "bg-green-500",
-        to: `${base.value}/hod/teacher-management`,
+        to: `${base.value}/hod/course-approval`,
       },
       {
-        title: "Timetable Management",
+        title: "Department Reports",
+        desc: "View performance and analytics",
+        icon: BarChart3,
+        bg: "bg-purple-50 hover:bg-purple-100",
+        iconBg: "bg-purple-500",
+        to: `${base.value}/hod/reports`,
+      },
+      {
+        title: "Schedule Classes",
         desc: "Manage department timetables",
         icon: CalendarDays,
         bg: "bg-indigo-50 hover:bg-indigo-100",
         iconBg: "bg-indigo-500",
-        to: `${base.value}/hod/timetable`,
+        to: `${base.value}/hod/schedule`,
       },
       {
-        title: "Leave Request",
-        desc: "Review teacher leave requests",
-        icon: Clock,
+        title: "Budget Requests",
+        desc: "Submit and track department budgets",
+        icon: PiggyBank,
+        bg: "bg-yellow-50 hover:bg-yellow-100",
+        iconBg: "bg-yellow-500",
+        to: `${base.value}/hod/budget`,
+      },
+      {
+        title: "Approve Requests",
+        desc: "Review pending department requests",
+        icon: BadgeCheck,
         bg: "bg-red-50 hover:bg-red-100",
         iconBg: "bg-red-500",
-        to: `${base.value}/hod/leave-requests`,
-      },
-      {
-        title: "Profile Account",
-        desc: "Manage your account",
-        icon: User,
-        bg: "bg-gray-50 hover:bg-gray-100",
-        iconBg: "bg-gray-700",
-        to: `${base.value}/hod/hod-profile`,
+        to: `${base.value}/hod/requests`,
       },
     ];
   }
@@ -367,20 +298,12 @@ const actions = computed(() => {
   if (r.includes("student")) {
     return [
       {
-        title: "Overview",
-        desc: "Department dashboard overview",
-        icon: Gauge,
-        bg: "bg-slate-50 hover:bg-slate-100",
-        iconBg: "bg-slate-600",
-        to: `${base.value}/student/overview`,
-      },
-      {
         title: "Academic Information",
         desc: "View your courses and results",
         icon: BookOpen,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
-        to: `${base.value}/student/academic-info`,
+        to: `${base.value}/student/academic-information`,
       },
       {
         title: "Leave Request",
@@ -396,7 +319,7 @@ const actions = computed(() => {
         icon: User,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
-        to: `${base.value}/student/student-profile`,
+        to: `${base.value}/student/profile`,
       },
     ];
   }
@@ -404,20 +327,7 @@ const actions = computed(() => {
   return [];
 });
 
-function getScrollContainer() {
-  return [...document.querySelectorAll("*")].find(
-    (el) => el.scrollTop > 0 && el.scrollHeight > el.clientHeight
-  );
-}
-
-async function goTo(to) {
-  const scroller = getScrollContainer();
-
-  await router.push(to);
-  await nextTick();
-
-  requestAnimationFrame(() => {
-    scroller?.scrollTo({ top: 0, behavior: "smooth" });
-  });
+function goTo(to) {
+  router.push(to);
 }
 </script>

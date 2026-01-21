@@ -218,19 +218,19 @@ const handleSelectAll = (ids) => {
 /* -------------------- MODAL -------------------- */
 const openPromoteModal = () => {
   if (!selectedRowIds.value.length) {
-    showNotification('Please select at least one student', 'warning');
+    showNotification(t("select_at_least_one_student"), "warning");
     return;
   }
 
   const selected = rows.value.filter(r => selectedRowIds.value.includes(r.id));
 
   if (new Set(selected.map(s => s.program?.id)).size > 1) {
-    showNotification('All students must be in the same program', 'error');
+    showNotification(t("all_students_must_be_same_program"), "error");
     return;
   }
 
   if (new Set(selected.map(s => s.program?.academic_year)).size > 1) {
-    showNotification('All students must be in the same academic year', 'error');
+    showNotification(t("all_students_must_be_same_academic_year"), "error");
     return;
   }
 
@@ -239,10 +239,10 @@ const openPromoteModal = () => {
 };
 
 /* -------------------- PROMOTION -------------------- */
-const handlePromoteStudents = async ({ newProgramId }) => {
+const handlePromoteStudents = async ({ newProgramId, generationId }) => {
   try {
     if (!newProgramId) {
-      showNotification('Please select a program', 'warning');
+      showNotification(t("select_program"), "warning");
       return;
     }
 
@@ -251,53 +251,39 @@ const handlePromoteStudents = async ({ newProgramId }) => {
       .filter(Boolean);
 
     if (!userIds.length) {
-      showNotification('No students selected', 'error');
+      showNotification(t("no_students_selected"), "error");
       return;
     }
 
     const payload = {
       user_ids: userIds,
-      program_id: newProgramId
+      program_id: newProgramId,
+      generation_id: generationId ?? null
     };
 
     const res = await UserProgramCRUD.promoteMultipleStudents(payload);
 
-    // Check if response contains data
-    const responseData = res?.data || res;
-    
-    // Ensure created_count is a number
-    const createdCount = typeof responseData?.created_count === "number"
-      ? responseData.created_count
-      : responseData?.created_count?.count || 0;
-
-    if (createdCount > 0) {
+    if (res?.created_count) {
       showNotification(
-        `${createdCount} student(s) promoted successfully`,
+        `${res.created_count} student(s) promoted successfully 🎉`,
         "success"
       );
     }
 
-    // Ensure skipped_count is a number
-    const skippedCount = typeof responseData?.skipped_count === "number"
-      ? responseData.skipped_count
-      : responseData?.skipped_count?.count || 0;
-
-    if (skippedCount > 0) {
+    if (res?.skipped_count) {
       showNotification(
-        `${skippedCount} student(s) already promoted or skipped`,
+        t("some_students_already_promoted"),
         "warning"
       );
     }
 
-    // Clear selections
     selectedRowIds.value = [];
     selectedStudentsForPromotion.value = [];
 
-    // Reload data
     await loadUserPrograms();
   } catch (err) {
     console.error(err);
-    showNotification('Error promoting students', 'error');
+    showNotification(t("error_promoting_students"), "error");
   } finally {
     showPromoteModal.value = false;
   }

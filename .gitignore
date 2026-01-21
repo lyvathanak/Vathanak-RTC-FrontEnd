@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Ignore custom axios configuration
+/src/stores/apis/axios.js
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +26,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+src/stores/apis/axios.js
+src/stores/apis/axios.js

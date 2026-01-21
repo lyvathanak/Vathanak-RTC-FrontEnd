@@ -69,7 +69,6 @@
         <OverviewWidgets
           :role="authStore.userRole"
           :stats="stats"
-          v-model:range="lineRange"
           @send="onChatSend" />
       </div>
 
@@ -94,11 +93,10 @@
 
 <script setup>
 import { useRouter, useRoute } from "vue-router";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
 import { getTeacherProfile } from "@/stores/Teacher/TeacherProfile";
-import { getAllLeaveRequestsByTeacher } from "@/stores/Teacher/LeaveRequestFrom.js";
 import ChangeLanguage from "@/components/language/ChangLanguage.vue";
 import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
 import RolePermissions from "@/components/overview/RolePermissions.vue";
@@ -123,123 +121,20 @@ onMounted(async () => {
   detailUser.value = data?.user ?? data;
 });
 
-/**
- * Line chart
- */
-
-const lineRange = ref("7");
-const leaveRequests = ref([]);
-
-function toYMD(d) {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function buildLeaveLineChart(requests, range) {
-  const normalizeStatus = (s) => {
-    const v = String(s || "")
-      .trim()
-      .toLowerCase();
-    if (v.includes("approve")) return "approved";
-    if (v.includes("reject") || v.includes("deny") || v.includes("decline"))
-      return "rejected";
-    return "pending";
-  };
-
-  const toISOFromDDMMYYYY = (raw) => {
-    if (!raw) return null;
-    const s = String(raw).trim();
-
-    // "10-01-2026" -> "2026-01-10"
-    if (/^\d{2}-\d{2}-\d{4}/.test(s)) {
-      const [dd, mm, yyyy] = s.slice(0, 10).split("-");
-      return `${yyyy}-${mm}-${dd}`;
-    }
-
-    // "2026-01-10..." -> "2026-01-10"
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-
-    return null;
-  };
-
-  const getKey = (r) =>
-    toISOFromDDMMYYYY(r?.start_date) ||
-    toISOFromDDMMYYYY(r?.end_date) ||
-    toISOFromDDMMYYYY(r?.submit_at) ||
-    toISOFromDDMMYYYY(r?.created_at);
-
-  // ✅ 1) collect all dates from requests
-  let allDates = (requests || []).map(getKey).filter(Boolean);
-
-  // unique + sort
-  allDates = Array.from(new Set(allDates)).sort(); // "YYYY-MM-DD" sorts correctly
-
-  // ✅ 2) Optional: if range = 7/14/30, keep only last N dates (not last N days)
-  const n = Number(range || 0);
-  const labels = n > 0 ? allDates.slice(-n) : allDates;
-
-  // ✅ 3) init counts
-  const counts = {};
-  labels.forEach((d) => (counts[d] = { approved: 0, rejected: 0, pending: 0 }));
-
-  // ✅ 4) count requests
-  for (const r of requests || []) {
-    const key = getKey(r);
-    if (!key || !counts[key]) continue;
-    counts[key][normalizeStatus(r.status)] += 1;
-  }
-
-  return {
-    line_labels: labels,
-    line_datasets: [
-      { label: "Approved", data: labels.map((d) => counts[d].approved) },
-      { label: "Rejected", data: labels.map((d) => counts[d].rejected) },
-      { label: "Pending", data: labels.map((d) => counts[d].pending) },
-    ],
-  };
-}
-
-async function fetchLeaveRequests(days) {
-  const n = Number(days || 7);
-  const end = new Date();
-  const start = new Date();
-  start.setDate(end.getDate() - (n - 1));
-
-  const res = await getAllLeaveRequestsByTeacher({
-    start_date: toYMD(start),
-    end_date: toYMD(end),
-  });
-
-  leaveRequests.value = res?.requests || [];
-}
-
-onMounted(() => fetchLeaveRequests(lineRange.value));
-watch(lineRange, (v) => fetchLeaveRequests(v));
-
-const stats = computed(() => {
-  const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
-
-  return {
-    // KPI (keep yours or replace later with real data)
-    leaverequests: 15,
-    students: 124,
-    subjects: 8,
-
-    // ✅ Line chart from API
-    line_labels: leaveLine.line_labels,
-    line_datasets: leaveLine.line_datasets,
-
-    // ✅ bar chart (use API totals)
-    bar_labels: ["Graded", "Pending", "Late"],
-    bar_values: [10, 4, 1],
-
-    // ✅ donut chart
-    donut_labels: ["Active", "Neutral", "Inactive"],
-    donut_values: [60, 25, 15],
-  };
-});
+const stats = computed(() => ({
+  // KPI
+  courses: 8,
+  students: 124,
+  assignments: 15,
+  // Line chart (7 days)
+  line_series: [55, 60, 58, 62, 65, 63, 67],
+  // Bar chart
+  bar_labels: ["Graded", "Pending", "Late"],
+  bar_values: [10, 4, 1],
+  // Donut chart
+  donut_labels: ["Active", "Neutral", "Inactive"],
+  donut_values: [60, 25, 15],
+}));
 
 function onChatSend(payload) {
   console.log("Teacher send:", payload);
