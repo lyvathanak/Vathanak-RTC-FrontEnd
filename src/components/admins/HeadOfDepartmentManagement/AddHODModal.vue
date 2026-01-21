@@ -13,10 +13,17 @@
           @click.stop>
           <!-- header -->
           <div
-            class="flex items-center justify-between px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b bg-gray-50">
-            <h3 class="text-base sm:text-lg md:text-xl font-semibold">
-              Add Head of Department
-            </h3>
+            class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+            <div class="flex items-end gap-2">
+              <div class="text-lg tracking-wider font-bold">
+                ADD HEAD OF DEPARTMENT
+              </div>
+              <div
+                class="hidden sm:inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[#235AA6] border border-[#235AA6] ring-1 ring-gray-200"
+                :class="[locale === 'kh' ? 'khmer-text' : '']">
+                {{ t("add_hod") }}
+              </div>
+            </div>
             <button
               class="p-2 rounded-md hover:bg-gray-100 transition-colors"
               @click="closeAdd"
@@ -264,6 +271,9 @@ import { ChevronDown, Info, Plus, X } from "lucide-vue-next";
 import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
 import { useFormValidate } from "@/stores/global/useFormValidate";
 import HODCRUD from "@/stores/apis/HeadOfDepartmentCRUD.js";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 /** Props & Emits */
 const props = defineProps({ showAdd: { type: Boolean, required: true } });

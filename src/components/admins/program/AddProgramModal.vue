@@ -11,6 +11,16 @@
           class="transition-all border-black w-full placeholder:text-xs bg-white focus:border-black focus:ring-2 focus:ring-black"
           :class="program.name ? 'border-black ring-1 ring-black' : ''" />
       </div>
+
+      <!-- Academic Year -->
+      <div class="flex flex-col gap-y-2 w-full min-w-0">
+        <label class="text-[12px] pr-2">Academic Year</label>
+        <Input
+          v-model="academicYear"
+          placeholder="Input Academic Year"
+          class="transition-all border-black w-full placeholder:text-xs bg-white focus:border-black focus:ring-2 focus:ring-black"
+          :class="academicYear ? 'border-black ring-1 ring-black' : ''" />
+      </div>
     </div>
 
     <!-- Degree + Duration (Degree required) -->
@@ -351,6 +361,7 @@ const program = reactive({ code: "", name: "" });
 const degreeLevel = ref(""); // REQUIRED
 const degreeError = ref("");
 const durationYears = ref(1);
+const academicYear = ref(""); // for Academic Year input
 
 const departments = ref([]);
 const departmentId = ref("");
@@ -509,6 +520,7 @@ async function createProgram() {
   degreeError.value = "";
   if (!departmentId.value) deptError.value = "Department is required.";
   if (!degreeLevel.value) degreeError.value = "Degree level is required.";
+  if (!academicYear.value) degreeError.value = "Academic Year is required.";
   if (deptError.value || degreeError.value) return;
 
   saving.value = true;
@@ -520,6 +532,7 @@ async function createProgram() {
       duration_years: Number(durationYears.value || 1),
       department_id: Number(departmentId.value),
       sub_department_id: null,
+      academic_year: academicYear.value,
     };
     const createRes = await api.post(
       "/managements/create_new_program",

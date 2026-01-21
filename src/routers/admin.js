@@ -1,6 +1,4 @@
-import AdminDashboard from '@/views/admins/Overview.vue';
 import { requireRole } from './guards.js';
-
 export const adminRoutes = [
   {
     path: '/:lang(en|fr|kh)/admin',
@@ -23,6 +21,11 @@ export const adminRoutes = [
         path: 'students',
         name: 'AdminStudentManagement',
         component: () => import('@/views/admins/StudentManagement.vue'),
+      },
+      {
+        path: 'promote_student',
+        name: 'AdminPromoteStudent',
+        component: () => import('@/views/admins/PromoteStudent.vue'),
       },
       {
         path: 'teachers',
@@ -56,6 +59,11 @@ export const adminRoutes = [
         component: () => import('@/views/admins/SubjectManagement.vue'),
       },
       {
+        path: 'ImportScore',
+        name: 'AdminSubjectScore',
+        component: () => import('@/views/admins/ImportScore.vue'),
+      },
+      {
         path: 'groups',
         name: 'AdminGroupManagement',
         component: () => import('@/views/admins/GroupManagement.vue'),
@@ -65,10 +73,15 @@ export const adminRoutes = [
         name: 'AdminLocationManagement',
         component: () => import('@/views/admins/LocationManagement.vue'),
       },
+      // {
+      //   path: 'timetable',
+      //   name: 'AdminTimeTable',
+      //   component: () => import('@/views/admins/TimeTable.vue'),
+      // },
       {
         path: 'timetable',
         name: 'AdminTimeTable',
-        component: () => import('@/views/admins/TimeTable.vue'),
+        component: () => import('@/views/admins/TimeTable_khun.vue'),
       },
       {
         path: 'leave-requests',
@@ -89,6 +102,11 @@ export const adminRoutes = [
         path: 'change-password',
         name: 'AdminChangePassword',
         component: () => import('@/views/Authentication/ChangePassword.vue'),
+      },
+      {
+        path: 'external-exam-enrollment',
+        name: 'AdminExternalExamEnrollment',
+        component: () => import('@/views/admins/ExternalExamEnrollment.vue'),
       },
       {
         path: 'setting',

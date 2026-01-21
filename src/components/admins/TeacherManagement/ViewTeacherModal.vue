@@ -1,308 +1,505 @@
 <template>
   <transition name="fade">
-    <div v-if="modelValue" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-2 sm:p-4 md:p-6">
-      <div class="relative">
+    <div
+      v-if="modelValue"
+      class="fixed inset-0 z-50 bg-black/40 p-4 flex items-center justify-center"
+      @click.self="closeModal">
+      <div
+        class="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+        role="dialog"
+        aria-modal="true">
+        <!-- Header (sticky) -->
+        <div
+          class="sticky top-0 z-10 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <h3
+                :class="[
+                  'text-xl font-bold text-gray-800 truncate',
+                  locale === 'kh' ? 'khmer-text' : '',
+                ]">
+                {{ t("teacher_profile") }}
+              </h3>
 
-        <div class="bg-white rounded-xl sm:rounded-2xl w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl shadow-2xl max-h-[80vh] sm:max-h-[85vh] overflow-hidden flex flex-col">
-          <!-- Header -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b border-gray-200 shrink-0">
-            
-             <!-- Close button -->
-            <button
-              @click="closeModal"
-              aria-label="Close"
-              class="absolute top-3 right-3 p-2 rounded-full hover:bg-white/70 text-gray-600 hover:text-gray-800 transition"
-            >
-              <X class="w-5 h-5" />
-            </button>
-
-            <div class="flex items-end gap-1">
-              <div class="flex items-center gap-3">
-                <h3 :class="['text-base sm:text-lg md:text-xl font-bold text-gray-800', locale === 'kh' ? 'khmer-text' : '']">{{ t('teacher_profile') }}</h3>
-              </div>
-              <div :class="['text-xs sm:text-sm text-gray-500', locale === 'kh' ? 'khmer-text' : '']">
-                {{ t('view_details') }}
+              <div
+                class="hidden sm:inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[#235AA6] ring-1 ring-gray-200 border border-[#235AA6]"
+                :class="[locale === 'kh' ? 'khmer-text' : '']">
+                {{ t("view_details") }}
               </div>
             </div>
-          </div>
 
-          <div class="flex flex-col lg:flex-row overflow-y-auto flex-1 min-h-0" v-if="teacher">
-            <!-- Left Panel - Personal Information -->
-            <div class="w-full lg:w-1/2 p-3 sm:p-4 md:p-5 lg:border-r border-gray-200">
-              <!-- Profile Section -->
-              <div class="text-center mb-4 sm:mb-5">
-                <div class="w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40 mx-auto mb-3 rounded-lg flex items-center justify-center border-4 border-white shadow-lg">
-                  <img 
-                    v-if="teacher.photo_url || teacher.profile_picture || teacher.user_detail?.profile_picture"
-                    :src="`https://api.rtc-bb.camai.kh/storage/${teacher.profile_picture || teacher.photo_url || teacher.user_detail?.profile_picture}`"
-                    :alt="teacher.full_name || teacher.latin_name"
-                    class="w-full h-full rounded-lg object-cover"
-                  />
-                  <User v-else class="text-white" :size="32" />
+            <button
+              @click="closeModal"
+              class="text-gray-400 hover:text-gray-700 transition"
+              aria-label="Close"
+              type="button">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div v-if="subject" class="max-h-[80vh] overflow-y-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2">
+            <!-- Left -->
+            <div
+              class="p-5 md:p-6 border-b md:border-b-0 md:border-r border-gray-200">
+              <!-- Profile -->
+              <div class="text-center mb-6">
+                <div
+                  class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
+                  <img
+                    v-if="teacherPhotoSrc"
+                    :src="teacherPhotoSrc"
+                    :alt="teacherFullName"
+                    class="w-full h-full object-cover cursor-zoom-in"
+                    @click="openImagePreview"
+                    @error="onImgError"
+                    loading="lazy" />
+                  <div v-else class="p-3 text-gray-500 text-sm text-center">
+                    <div
+                      class="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-100 grid place-items-center">
+                      <User class="w-5 h-5 text-gray-400" />
+                    </div>
+                    No photo
+                  </div>
                 </div>
-                <h1 class="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1">
-                  {{ teacher.full_name }}
+
+                <h1 class="text-lg font-bold text-gray-900 mb-1">
+                  {{ displayLatinName }}
                 </h1>
-                <p class="text-gray-600 text-xs sm:text-sm">{{ teacher.department }} • {{ teacher.position }}</p>
+                <p class="text-gray-600 text-sm">
+                  {{ displayDepartment }} • {{ displayPosition }}
+                </p>
               </div>
 
               <!-- Personal Information -->
+              <SectionTitle
+                :locale="locale"
+                :t="t"
+                title-key="personal_information" />
+
+              <div class="space-y-3">
+                <InfoRow :label="t('khmer_name')" :locale="locale">
+                  <span class="khmer-text">{{ displayKhmerName }}</span>
+                </InfoRow>
+
+                <InfoRow :label="t('latin_name')" :locale="locale">
+                  {{ displayLatinName }}
+                </InfoRow>
+
+                <InfoRow :label="t('teacher_id')" :locale="locale">
+                  {{
+                    subject.id_card ??
+                    subject.teacher_id ??
+                    subject.employee_id ??
+                    "N/A"
+                  }}
+                </InfoRow>
+
+                <InfoRow :label="t('date_of_birth')" :locale="locale">
+                  {{ formatDate(subject.date_of_birth) }}
+                </InfoRow>
+
+                <InfoRow :label="t('gender')" :locale="locale">
+                  {{ subject.gender || "N/A" }}
+                </InfoRow>
+
+                <InfoRow :label="t('email_address')" :locale="locale">
+                  {{ subject.email || "N/A" }}
+                </InfoRow>
+
+                <InfoRow :label="t('phone_number')" :locale="locale">
+                  {{ subject.phone || subject.phone_number || "N/A" }}
+                </InfoRow>
+
+                <InfoRow :label="t('origin')" :locale="locale">
+                  {{ subject.origin || "N/A" }}
+                </InfoRow>
+              </div>
+            </div>
+
+            <!-- Right -->
+            <div class="p-5 md:p-6">
+              <SectionTitle
+                :locale="locale"
+                :t="t"
+                title-key="professional_information" />
+
+              <!-- Professional details -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                <InfoRow :label="t('department')" :locale="locale">
+                  {{ displayDepartment }}
+                </InfoRow>
+
+                <InfoRow :label="t('program')" :locale="locale">
+                  {{ programLabel(subject) }}
+                </InfoRow>
+
+                <InfoRow :label="t('position')" :locale="locale">
+                  {{ displayPosition }}
+                </InfoRow>
+
+                <InfoRow :label="t('experience')" :locale="locale">
+                  {{ subject.experience_years ?? 0 }} {{ t("years") }}
+                </InfoRow>
+
+                <InfoRow :label="t('status')" :locale="locale">
+                  <span
+                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
+                    :class="getStatusBadgeClass(subject.status)">
+                    {{ subject.status || "Active" }}
+                  </span>
+                </InfoRow>
+              </div>
+
+              <!-- Courses / Teaching Areas -->
               <div>
-                <h2 :class="['text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-3', locale === 'kh' ? 'khmer-text' : '']">
-                  {{ t('personal_information') }}
-                </h2>
-                
-                <div class="space-y-2 sm:space-y-3">
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('khmer_name') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800 khmer-text">
-                      {{ teacher.khmer_name }}
-                    </div>
-                  </div>
+                <h3
+                  :class="[
+                    'text-md font-semibold text-gray-900 mb-3',
+                    locale === 'kh' ? 'khmer-text' : '',
+                  ]">
+                  {{ hasCourses ? t("courses_taught") : t("teaching_areas") }}
+                </h3>
 
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('latin_name') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.latin_name }}
-                    </div>
+                <div
+                  class="flex mb-3 pb-2 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <div
+                    class="w-2/3"
+                    :class="locale === 'kh' ? 'khmer-text' : ''">
+                    {{ hasCourses ? t("subject") : t("department") }}
                   </div>
-
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('teacher_id') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.id_card }}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('date_of_birth') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ formatDate(teacher.date_of_birth) }}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('gender') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.gender === 'M' ? t('male') : t('female') }}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('email_address') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.email || 'N/A' }}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('phone_number') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.phone || 'N/A' }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Panel - Professional Information -->
-            <div class="w-full lg:w-1/2 p-3 sm:p-4 md:p-5">
-              <h2 :class="['text-sm sm:text-base md:text-lg font-semibold text-gray-900 mb-3', locale === 'kh' ? 'khmer-text' : '']">
-                {{ t('professional_information') }}
-              </h2>
-
-              <!-- Professional Details -->
-              <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-5">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('department') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.department }}
-                    </div>
-                  </div>
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('program') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ programLabel(teacher) }}
-                    </div>
+                  <div
+                    class="w-1/3 text-right"
+                    :class="locale === 'kh' ? 'khmer-text' : ''">
+                    {{ t("experience") }}
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-3">
-                  <div>
-                    <label :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('experience') }}
-                    </label>
-                    <div class="bg-gray-100 p-2 sm:p-3 rounded text-xs sm:text-sm text-gray-800">
-                      {{ teacher.experience_years || 0 }} {{ t('years') }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Subjects/Courses Section -->
-              <div v-if="teacher.courses_taught && teacher.courses_taught.length">
-                <h3 :class="['text-sm sm:text-base font-semibold text-gray-900 mb-3', locale === 'kh' ? 'khmer-text' : '']">{{ t('courses_taught') }}</h3>
-                
-                <!-- Table Header -->
-                <div class="flex mb-3 pb-2 border-b border-gray-200">
-                  <div class="w-2/3">
-                    <span :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('subject') }}
-                    </span>
-                  </div>
-                  <div class="w-1/3 text-right">
-                    <span :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('experience') }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Courses List -->
                 <div class="space-y-2">
-                  <div v-for="(course, index) in teacher.courses_taught" :key="index" 
-                       class="flex items-center py-2 px-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                  <div
+                    v-for="(row, i) in teachingRows"
+                    :key="i"
+                    class="flex items-center py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                     <div class="w-2/3">
-                      <span class="text-xs sm:text-sm font-medium text-gray-800">
-                        {{ course }}
+                      <span class="text-sm font-medium text-gray-800">
+                        {{ row.left }}
                       </span>
                     </div>
                     <div class="w-1/3 text-right">
-                      <span class="text-xs sm:text-sm text-gray-600">
-                        {{ teacher.experience_years || 0 }} {{ t('years') }}
+                      <span class="text-sm text-gray-600">
+                        {{ row.right }}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <!-- Default subjects if no courses_taught -->
-              <div v-else>
-                <h3 :class="['text-sm sm:text-base font-semibold text-gray-900 mb-3', locale === 'kh' ? 'khmer-text' : '']">{{ t('teaching_areas') }}</h3>
-                
-                <!-- Table Header -->
-                <div class="flex mb-3 pb-2 border-b border-gray-200">
-                  <div class="w-2/3">
-                    <span :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('department') }}
-                    </span>
-                  </div>
-                  <div class="w-1/3 text-right">
-                    <span :class="['text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide', locale === 'kh' ? 'khmer-text' : '']">
-                      {{ t('experience') }}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Default teaching area -->
-                <div class="space-y-2">
-                  <div class="flex items-center py-2 px-3 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                    <div class="w-2/3">
-                      <span class="text-xs sm:text-sm font-medium text-gray-800">
-                        {{ teacher.department }}
-                      </span>
-                    </div>
-                    <div class="w-1/3 text-right">
-                      <span class="text-xs sm:text-sm text-gray-600">
-                        {{ teacher.experience_years || 0 }} {{ t('years') }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="bg-gray-50 px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t border-gray-200 shrink-0" v-if="teacher">
-            <div class="flex items-center justify-between">
-              <div :class="['text-[10px] sm:text-xs text-gray-500', locale === 'kh' ? 'khmer-text' : '']">
-                {{ t('last_updated') }}: {{ new Date().toLocaleDateString() }}
-              </div>
-              <div class="flex gap-3">
-                <button
-                  @click="closeModal"
-                  :class="['px-4 sm:px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-xs sm:text-sm', locale === 'kh' ? 'khmer-text' : '']"
-                >
-                  {{ t('close') }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- No data state -->
-          <div v-if="!teacher" class="flex items-center justify-center py-8 sm:py-12">
-            <div class="text-center text-gray-500">
-              <User class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
-              <p :class="['text-base sm:text-lg font-medium', locale === 'kh' ? 'khmer-text' : '']">{{ t('no_teacher_data') }}</p>
-              <p :class="['text-xs sm:text-sm text-gray-400 mt-1', locale === 'kh' ? 'khmer-text' : '']">{{ t('try_again_contact_support') }}</p>
             </div>
           </div>
         </div>
+
+        <!-- No data -->
+        <div v-else class="py-14 px-6 text-center text-gray-500">
+          <User class="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <p
+            :class="[
+              'text-lg font-medium',
+              locale === 'kh' ? 'khmer-text' : '',
+            ]">
+            {{ t("no_teacher_data") }}
+          </p>
+          <p
+            :class="[
+              'text-sm text-gray-400 mt-1',
+              locale === 'kh' ? 'khmer-text' : '',
+            ]">
+            {{ t("try_again_contact_support") }}
+          </p>
+        </div>
+
+        <!-- Footer (sticky) -->
+        <div
+          v-if="subject"
+          class="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div class="flex items-center justify-between gap-3">
+            <div
+              :class="[
+                'text-xs text-gray-500',
+                locale === 'kh' ? 'khmer-text' : '',
+              ]">
+              {{ t("last_updated") }}: {{ new Date().toLocaleDateString() }}
+            </div>
+            <button
+              @click="closeModal"
+              :class="[
+                'px-5 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium',
+                locale === 'kh' ? 'khmer-text' : '',
+              ]"
+              type="button">
+              {{ t("close") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
+
+  <!-- Image Preview Modal -->
+  <transition name="fade">
+    <div
+      v-if="showImagePreview"
+      class="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+      @click="closeImagePreview">
+      <div class="relative max-w-[90vw] max-h-[90vh]" @click.stop>
+        <img
+          :src="teacherPhotoSrc"
+          :alt="teacherFullName || 'Teacher Photo'"
+          class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain" />
+
+        <button
+          class="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow hover:bg-gray-100"
+          @click="closeImagePreview"
+          aria-label="Close image preview">
+          <X class="w-5 h-5 text-gray-700" />
+        </button>
       </div>
     </div>
   </transition>
 </template>
 
 <script setup>
+import {
+  computed,
+  defineComponent,
+  h,
+  ref,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import { X, User } from "lucide-vue-next";
-import { useI18n } from 'vue-i18n';
+import { useI18n } from "vue-i18n";
 
 const { t, locale } = useI18n();
 
-// Props
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
-  teacher: { type: Object, default: () => null }
+  teacher: { type: Object, default: () => null },
 });
 
-// Emits
 const emit = defineEmits(["update:modelValue"]);
+const closeModal = () => emit("update:modelValue", false);
 
-const closeModal = () => {
-  emit("update:modelValue", false);
+/** Image preview */
+const showImagePreview = ref(false);
+const openImagePreview = () => {
+  if (!teacherPhotoSrc.value) return;
+  showImagePreview.value = true;
+};
+const closeImagePreview = () => (showImagePreview.value = false);
+
+/** ESC behavior */
+const onEsc = (ev) => {
+  if (ev.key !== "Escape") return;
+  if (showImagePreview.value) closeImagePreview();
+  else closeModal();
+};
+onMounted(() => window.addEventListener("keydown", onEsc));
+onBeforeUnmount(() => window.removeEventListener("keydown", onEsc));
+
+/** --- Safe image fallback --- */
+const FALLBACK_DATA_URI =
+  "data:image/svg+xml;charset=utf-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="300" height="380">
+      <rect width="100%" height="100%" fill="#F3F4F6"/>
+      <circle cx="150" cy="150" r="48" fill="#E5E7EB"/>
+      <rect x="80" y="230" width="140" height="18" rx="9" fill="#E5E7EB"/>
+      <text x="150" y="320" text-anchor="middle" fill="#9CA3AF" font-family="Arial" font-size="16">
+        No Photo
+      </text>
+    </svg>
+  `);
+
+const onImgError = (e) => {
+  e.target.onerror = null;
+  e.target.src = FALLBACK_DATA_URI;
+};
+
+/** --- URL helpers --- */
+const STORAGE_BASE = "https://api.rtc-bb.camai.kh/storage/";
+const pickFirst = (...vals) =>
+  vals.find((v) => v !== undefined && v !== null && v !== "");
+const isAbsoluteUrl = (u) => /^https?:\/\//i.test(u);
+const toStorageUrl = (path) =>
+  isAbsoluteUrl(path) ? path : STORAGE_BASE + String(path).replace(/^\/+/, "");
+
+/** Subject */
+const subject = computed(() => props.teacher ?? null);
+
+/** Photo src */
+const teacherPhotoSrc = computed(() => {
+  const u = subject.value;
+  if (!u) return null;
+
+  const raw = pickFirst(
+    u.photo_url,
+    u.photo,
+    u.profile_picture,
+    u.user_detail?.profile_picture,
+    u.user_detail?.photo,
+    u.teacher_detail?.profile_picture,
+    u.teacher_detail?.photo
+  );
+
+  return raw ? toStorageUrl(raw) : null;
+});
+
+/** Names */
+const teacherFullName = computed(() => {
+  const u = subject.value || {};
+  return (
+    u.full_name ||
+    u.latin_name ||
+    [u.first_name, u.last_name].filter(Boolean).join(" ") ||
+    "Teacher"
+  );
+});
+
+const displayKhmerName = computed(() => {
+  const u = subject.value || {};
+  return u.khmer_name || u.full_name || "N/A";
+});
+const displayLatinName = computed(
+  () => subject.value?.latin_name || teacherFullName.value
+);
+
+/** Department / Position */
+const displayDepartment = computed(() => {
+  const u = subject.value || {};
+  return (
+    u.department || u.department_name || u.user_detail?.department_name || "N/A"
+  );
+});
+const displayPosition = computed(() => {
+  const u = subject.value || {};
+  return u.position || u.role_name || u.role || "N/A";
+});
+
+/** Program */
+const programLabel = (u) =>
+  u?.program_name || u?.program?.name || u?.program || "N/A";
+
+/** Date parsing */
+const parseDate = (s) => {
+  if (!s) return null;
+  if (s instanceof Date) return isNaN(s) ? null : s;
+
+  const str = String(s).trim();
+
+  // dd-mm-yyyy or dd/mm/yyyy
+  const m = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (m) {
+    const dd = Number(m[1]);
+    const mm = Number(m[2]);
+    const yyyy = Number(m[3]);
+    const d = new Date(yyyy, mm - 1, dd);
+    return isNaN(d) ? null : d;
+  }
+
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
 };
 
 const formatDate = (dateString) => {
-  if (!dateString) return 'N/A'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+  const d = parseDate(dateString);
+  if (!d) return "N/A";
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 
-const programLabel = (t) =>
-  t?.program_name || t?.program?.name || t?.program || 'N/A';
+/** Status badge */
+const getStatusBadgeClass = (status) => {
+  const classes = {
+    Active: "bg-green-100 text-green-800",
+    Inactive: "bg-red-100 text-red-800",
+    On_Leave: "bg-orange-100 text-orange-800",
+    Suspended: "bg-red-100 text-red-800",
+  };
+  return classes[status] || "bg-gray-100 text-gray-800";
+};
 
+/** Teaching rows */
+const hasCourses = computed(() => !!subject.value?.courses_taught?.length);
+const teachingRows = computed(() => {
+  const u = subject.value || {};
+  const years = `${u.experience_years ?? 0} ${t("years")}`;
 
+  if (u.courses_taught?.length) {
+    return u.courses_taught.map((c) => ({ left: c, right: years }));
+  }
+
+  return [
+    {
+      left: `${displayDepartment.value}`,
+      right: years,
+    },
+  ];
+});
+
+/** Inline components */
+const SectionTitle = defineComponent({
+  props: { titleKey: String, locale: String, t: Function },
+  setup(p) {
+    return () =>
+      h(
+        "h2",
+        {
+          class: [
+            "text-md font-semibold text-gray-900 mb-3",
+            p.locale === "kh" ? "khmer-text" : "",
+          ],
+        },
+        p.t(p.titleKey)
+      );
+  },
+});
+
+const InfoRow = defineComponent({
+  props: { label: String, locale: String },
+  setup(p, { slots }) {
+    return () =>
+      h("div", [
+        h(
+          "label",
+          {
+            class: [
+              "text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1",
+              p.locale === "kh" ? "khmer-text" : "",
+            ],
+          },
+          p.label
+        ),
+        h(
+          "div",
+          {
+            class: "bg-gray-100 p-2 rounded text-sm text-gray-800 break-words",
+          },
+          slots.default ? slots.default() : ""
+        ),
+      ]);
+  },
+});
 </script>
 
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

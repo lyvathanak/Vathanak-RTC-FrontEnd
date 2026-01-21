@@ -8,6 +8,7 @@ import PrimeVue from 'primevue/config';
 import './assets/main.css';
 import App from './App.vue';
 import router from './routers';
+import "@/plugins/chartjs";
 
 // 2. Import all translation files from db/locales
 import en from './db/locales/en.json';

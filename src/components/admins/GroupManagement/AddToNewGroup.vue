@@ -225,11 +225,14 @@
         </button>
         <button
           @click="createGroupWithStudents"
-          :disabled="!isFormValid || departmentsLoading || programsLoading || sectionsLoading"
+          :disabled="!isFormValid || departmentsLoading || programsLoading || sectionsLoading || isSubmitting"
           class="px-4 py-2 bg-[#235AA6] text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
         >
-          <div v-if="departmentsLoading || programsLoading || sectionsLoading" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span v-if="departmentsLoading || programsLoading || sectionsLoading">
+          <div v-if="departmentsLoading || programsLoading || sectionsLoading || isSubmitting" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          <span v-if="isSubmitting">
+            Creating Group...
+          </span>
+          <span v-else-if="departmentsLoading || programsLoading || sectionsLoading">
             Loading...
           </span>
           <span v-else>
@@ -246,6 +249,8 @@ import { ref, computed, watch, onMounted } from "vue";
 import { X, ChevronDown } from "lucide-vue-next";
 import { useFilteredByDepartment, useProgramsFilteredByDepartment, useSectionsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
 import { getSemestersByProgram } from "@/stores/global/SemesterByProgram.js";
+import { GroupCRUD } from "@/stores/apis/GroupCRUD.js";
+import { showNotification } from "@/lib/notifications.js";
 
 // Props
 const props = defineProps({
@@ -301,6 +306,7 @@ const groupForm = ref({
 const semesters = ref([])
 const loadingSemesters = ref(false)
 const semestersError = ref("")
+const isSubmitting = ref(false);
 
 const errors = ref({});
 
@@ -415,46 +421,89 @@ const validateForm = () => {
   return Object.keys(errors.value).length === 0;
 };
 
-const createGroupWithStudents = () => {
+const createGroupWithStudents = async () => {
   if (!validateForm()) {
     return;
   }
 
-  // Get the selected department and section IDs
-  const selectedDepartment = departments.value.find(d => d.department_name === groupForm.value.department);
-  const selectedSection = allSections.value.find(s => s.name === groupForm.value.section);
-  const selectedProgram = allPrograms.value.find(p => p.program_name === groupForm.value.program);
-  const selectedSemesterObj = semesters.value.find(
-    s => String(s.id) === String(groupForm.value.semester)
-  );
+  isSubmitting.value = true;
 
-  const newGroup = {
-    ...groupForm.value,
-    // Add IDs for backend compatibility
-    department_id: selectedDepartment?.id,
-    section_id: selectedSection?.id,
-    program_id: selectedProgram?.id,
-    semester_id: selectedSemesterObj?.id ?? Number(groupForm.value.semester),
-    students: props.students, // Include the selected students with full objects
-    // Use user_id for student IDs array, with fallback to id
-    student_ids: props.students.map(s => s.user_id || s.id), 
-    academic_year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // Auto-generate academic year
-    created_at: new Date().toISOString(),
-    status: "Active",
-  };
-  if (selectedSemesterObj) {
-  newGroup.semester_key = selectedSemesterObj.semester_key;
-  newGroup.semester_number = selectedSemesterObj.semester_number;
-}
+  try {
+    // Get the selected department and section IDs
+    const selectedDepartment = departments.value.find(d => d.department_name === groupForm.value.department);
+    const selectedSection = allSections.value.find(s => s.name === groupForm.value.section);
+    const selectedProgram = allPrograms.value.find(p => p.program_name === groupForm.value.program);
+    const selectedSemesterObj = semesters.value.find(
+      s => String(s.id) === String(groupForm.value.semester)
+    );
 
-  console.log('Creating group with data:', newGroup);
-  console.log('Selected department:', selectedDepartment);
-  console.log('Selected program:', selectedProgram);
-  console.log('Selected section:', selectedSection);
-  console.log('Student user IDs:', newGroup.student_ids);
+    const newGroup = {
+      ...groupForm.value,
+      // Add IDs for backend compatibility
+      department_id: selectedDepartment?.id,
+      section_id: selectedSection?.id,
+      program_id: selectedProgram?.id,
+      semester_id: selectedSemesterObj?.id ?? Number(groupForm.value.semester),
+      students: props.students, // Include the selected students with full objects
+      // Use user_id for student IDs array, with fallback to id
+      student_ids: props.students.map(s => s.user_id || s.id), 
+      academic_year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // Auto-generate academic year
+      created_at: new Date().toISOString(),
+      status: "Active",
+    };
+    if (selectedSemesterObj) {
+      newGroup.semester_key = selectedSemesterObj.semester_key;
+      newGroup.semester_number = selectedSemesterObj.semester_number;
+    }
 
-  emit("create-group", newGroup);
-  closeModal();
+    console.log('Creating group with data:', newGroup);
+    console.log('Selected department:', selectedDepartment);
+    console.log('Selected program:', selectedProgram);
+    console.log('Selected section:', selectedSection);
+    console.log('Student user IDs:', newGroup.student_ids);
+
+    // Call the API directly to create group with students
+    const result = await GroupCRUD.createGroupWithStudents(newGroup);
+
+    if (result.success) {
+      showNotification(result.message || 'Group created successfully', 'success');
+      emit("create-group", {
+        success: true,
+        data: result.data,
+        group: newGroup,
+        message: result.message,
+      });
+      closeModal();
+    } else {
+      // Handle validation errors
+      console.error('Failed to create group:', result.error);
+      
+      if (result.conflicts) {
+        // Show specific conflict errors for students already in groups
+        showNotification(result.message, 'error');
+      } else {
+        // Show generic error
+        showNotification(result.message || 'Failed to create group', 'error');
+      }
+      
+      emit("create-group", {
+        success: false,
+        error: result.error,
+        message: result.message,
+        conflicts: result.conflicts,
+      });
+    }
+  } catch (error) {
+    console.error('Error creating group:', error);
+    showNotification('An error occurred while creating the group', 'error');
+    emit("create-group", {
+      success: false,
+      error: error.message,
+      message: 'An error occurred while creating the group',
+    });
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
 // Watch for modal open/close

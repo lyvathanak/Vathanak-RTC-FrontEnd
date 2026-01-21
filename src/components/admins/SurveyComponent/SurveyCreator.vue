@@ -1,9 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import "survey-core/survey-core.css";
 import "survey-creator-core/survey-creator-core.css";
 
 import { SurveyCreatorModel } from "survey-creator-core";
 import { SurveyCreatorComponent } from "survey-creator-vue";
+
+// 👉 Import a predefined theme
+import { LayeredDarkPanelless } from "survey-core/themes";
 
 const creatorOptions = {
   autoSaveEnabled: true,
@@ -11,6 +14,9 @@ const creatorOptions = {
 };
 
 const creator = new SurveyCreatorModel(creatorOptions);
+
+// 👉 Apply theme to Survey Creator
+creator.applyTheme(LayeredDarkPanelless);
 
 const defaultJson = {
   pages: [
@@ -33,16 +39,16 @@ const defaultJson = {
 };
 
 creator.text =
-  window.localStorage.getItem("survey-json") || JSON.stringify(defaultJson);
+  localStorage.getItem("survey-json") || JSON.stringify(defaultJson);
 
 creator.saveSurveyFunc = (saveNo, callback) => {
-  window.localStorage.setItem("survey-json", creator.text);
+  localStorage.setItem("survey-json", creator.text);
   callback(saveNo, true);
 };
 </script>
 
 <template>
-  <div style="height: 100vh; box-sizing: border-box;">
+  <div style="height: 100vh">
     <SurveyCreatorComponent :model="creator" />
   </div>
 </template>

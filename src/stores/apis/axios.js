@@ -1,5 +1,13 @@
 import axios from 'axios';
 
+// Debug: Print all VITE env variables
+console.log('🔍 DEBUG - All VITE env variables:');
+console.log('  VITE_API_BASE_URL:', import.meta.env?.VITE_API_BASE_URL || '(not set)');
+console.log('  VITE_API_TARGET_URL:', import.meta.env?.VITE_API_TARGET_URL || '(not set)');
+console.log('  VITE_FILE_ORIGIN:', import.meta.env?.VITE_FILE_ORIGIN || '(not set)');
+console.log('  DEV mode:', import.meta.env.DEV);
+console.log('  MODE:', import.meta.env.MODE);
+
 // Prefer explicit env; fall back to dev proxy only in DEV
 const API_BASE_URL =
   import.meta.env?.VITE_API_BASE_URL ||

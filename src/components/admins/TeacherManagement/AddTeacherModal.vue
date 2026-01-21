@@ -6,54 +6,65 @@
       <div class="absolute inset-0 bg-black/40" @click="closeAdd"></div>
 
       <!-- dialog -->
-      <div class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
+      <div
+        class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
         <div
           role="dialog"
           aria-modal="true"
-          class="w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-3xl rounded-xl sm:rounded-2xl bg-white shadow-xl max-h-[80vh] sm:max-h-[85vh] flex flex-col"
-        >
+          class="w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-3xl rounded-xl sm:rounded-2xl bg-white shadow-xl max-h-[80vh] sm:max-h-[85vh] flex flex-col">
           <!-- header -->
-          <div class="flex items-center justify-between px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b shrink-0">
-            <h3 class="text-base sm:text-lg md:text-xl font-semibold">Add Teacher</h3>
+          <div
+            class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+            <div class="flex items-end gap-2">
+              <div class="text-lg tracking-wider font-bold">ADD TEACHER</div>
+              <div
+                class="hidden sm:inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[#235AA6] border border-[#235AA6] ring-1 ring-gray-200"
+                :class="[locale === 'kh' ? 'khmer-text' : '']">
+                {{ t("add_teacher") }}
+              </div>
+            </div>
             <button class="p-2 rounded-md hover:bg-gray-100" @click="closeAdd">
               <X class="w-5 h-5" />
             </button>
           </div>
 
           <!-- body -->
-          <div class="px-4 sm:px-5 md:px-6 py-4 sm:py-5 overflow-y-auto flex-1 min-h-0">
+          <div
+            class="px-4 sm:px-5 md:px-6 py-4 sm:py-5 overflow-y-auto flex-1 min-h-0">
             <div class="flex flex-col items-center gap-4 sm:gap-5">
               <!-- Global error display -->
-              <div v-if="errors.global" class="w-full p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div
+                v-if="errors.global"
+                class="w-full p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p class="text-sm text-red-600">{{ errors.global }}</p>
               </div>
 
               <!-- photo -->
               <div class="flex flex-col items-center">
                 <label
-                  class="relative w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40 border-2 border-gray-300 rounded-sm overflow-hidden bg-gray-50 cursor-pointer hover:border-blue-400 hover:bg-gray-100 transition-colors"
-                >
+                  class="relative w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40 border-2 border-gray-300 rounded-sm overflow-hidden bg-gray-50 cursor-pointer hover:border-blue-400 hover:bg-gray-100 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
                     class="hidden"
-                    @change="onPhotoChange"
-                  />
+                    @change="onPhotoChange" />
                   <div
                     v-if="!newTeacher.photo_url"
-                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-500"
-                  >
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <Plus class="w-6 sm:w-7 md:w-8 mb-1 sm:mb-2" />
-                    <span class="text-[10px] sm:text-xs text-center px-1">Upload photo</span>
+                    <span class="text-[10px] sm:text-xs text-center px-1"
+                      >Upload photo</span
+                    >
                   </div>
                   <img
                     v-if="newTeacher.photo_url"
                     :src="newTeacher.photo_url"
                     alt="Preview"
-                    class="w-full h-full object-cover"
-                  />
+                    class="w-full h-full object-cover" />
                 </label>
-                <p v-if="errors.photo" class="text-xs text-red-500 mt-2 text-center">
+                <p
+                  v-if="errors.photo"
+                  class="text-xs text-red-500 mt-2 text-center">
                   {{ errors.photo }}
                 </p>
               </div>
@@ -76,12 +87,15 @@
                         type="text"
                         :class="[
                           'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500',
-                          errors.khmer_name ? 'border-red-500 focus:ring-red-500' : ''
+                          errors.khmer_name
+                            ? 'border-red-500 focus:ring-red-500'
+                            : '',
                         ]"
                         placeholder="Enter name in Khmer"
-                        required
-                      />
-                      <p v-if="errors.khmer_name" class="text-xs text-red-500 mt-1">
+                        required />
+                      <p
+                        v-if="errors.khmer_name"
+                        class="text-xs text-red-500 mt-1">
                         {{ errors.khmer_name }}
                       </p>
                     </div>
@@ -94,12 +108,15 @@
                         type="text"
                         :class="[
                           'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500',
-                          errors.latin_name ? 'border-red-500 focus:ring-red-500' : ''
+                          errors.latin_name
+                            ? 'border-red-500 focus:ring-red-500'
+                            : '',
                         ]"
                         placeholder="Enter name in Latin"
-                        required
-                      />
-                      <p v-if="errors.latin_name" class="text-xs text-red-500 mt-1">
+                        required />
+                      <p
+                        v-if="errors.latin_name"
+                        class="text-xs text-red-500 mt-1">
                         {{ errors.latin_name }}
                       </p>
                     </div>
@@ -112,22 +129,21 @@
                           v-model="newTeacher.gender"
                           :class="[
                             'w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none',
-                            errors.gender ? 'border-red-500 focus:ring-red-500' : ''
+                            errors.gender
+                              ? 'border-red-500 focus:ring-red-500'
+                              : '',
                           ]"
-                          required
-                        >
+                          required>
                           <option value="" disabled>Select Gender</option>
                           <option
                             v-for="g in genderOptions"
                             :key="g"
-                            :value="g"
-                          >
+                            :value="g">
                             {{ g }}
                           </option>
                         </select>
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
                       <p v-if="errors.gender" class="text-xs text-red-500 mt-1">
                         {{ errors.gender }}
@@ -143,11 +159,14 @@
                         type="date"
                         :class="[
                           'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500',
-                          errors.date_of_birth ? 'border-red-500 focus:ring-red-500' : ''
+                          errors.date_of_birth
+                            ? 'border-red-500 focus:ring-red-500'
+                            : '',
                         ]"
-                        required
-                      />
-                      <p v-if="errors.date_of_birth" class="text-xs text-red-500 mt-1">
+                        required />
+                      <p
+                        v-if="errors.date_of_birth"
+                        class="text-xs text-red-500 mt-1">
                         {{ errors.date_of_birth }}
                       </p>
                     </div>
@@ -159,10 +178,10 @@
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                         :value="newTeacher.email || 'Auto-generated on save'"
-                        disabled
-                      />
+                        disabled />
                       <p class="text-xs text-gray-500">
-                        This email will be generated by the system when you save the teacher.
+                        This email will be generated by the system when you save
+                        the teacher.
                       </p>
                     </div>
                     <div>
@@ -174,11 +193,14 @@
                         type="tel"
                         :class="[
                           'w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500',
-                          errors.phone_number ? 'border-red-500 focus:ring-red-500' : ''
+                          errors.phone_number
+                            ? 'border-red-500 focus:ring-red-500'
+                            : '',
                         ]"
-                        placeholder="Enter phone number"
-                      />
-                      <p v-if="errors.phone_number" class="text-xs text-red-500 mt-1">
+                        placeholder="Enter phone number" />
+                      <p
+                        v-if="errors.phone_number"
+                        class="text-xs text-red-500 mt-1">
                         {{ errors.phone_number }}
                       </p>
                     </div>
@@ -189,7 +211,9 @@
                 <div>
                   <div class="flex items-center font-semibold mb-3">
                     <Info class="w-4 text-gray-500 mr-1" />
-                    <h2 class="text-sm sm:text-base">Professional Information</h2>
+                    <h2 class="text-sm sm:text-base">
+                      Professional Information
+                    </h2>
                   </div>
                   <div class="grid grid-cols-1 gap-3 sm:gap-4">
                     <!-- Department -->
@@ -202,36 +226,44 @@
                           v-model.number="newTeacher.department_id"
                           :class="[
                             'w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none',
-                            errors.department_id ? 'border-red-500 focus:ring-red-500' : ''
+                            errors.department_id
+                              ? 'border-red-500 focus:ring-red-500'
+                              : '',
                           ]"
                           :disabled="departmentsLoading"
-                          required
-                        >
+                          required>
                           <option :value="null">
-                            {{ 
-                              departmentsLoading 
-                                ? "Loading departments..." 
-                                : departmentOptions.length === 0 
-                                ? "No departments available" 
-                                : "Select Department" 
+                            {{
+                              departmentsLoading
+                                ? "Loading departments..."
+                                : departmentOptions.length === 0
+                                ? "No departments available"
+                                : "Select Department"
                             }}
                           </option>
-                          <option v-for="d in departmentOptions" :key="d.id" :value="d.id">
+                          <option
+                            v-for="d in departmentOptions"
+                            :key="d.id"
+                            :value="d.id">
                             {{ d.department_name || d.name || d.label }}
                           </option>
                         </select>
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
-                      <p v-if="errors.department_id" class="text-xs text-red-500 mt-1">
+                      <p
+                        v-if="errors.department_id"
+                        class="text-xs text-red-500 mt-1">
                         {{ errors.department_id }}
                       </p>
-                      <p v-if="departmentOptions.length === 0 && !departmentsLoading" class="text-xs text-red-500 mt-1">
+                      <p
+                        v-if="
+                          departmentOptions.length === 0 && !departmentsLoading
+                        "
+                        class="text-xs text-red-500 mt-1">
                         No departments found. Please check your connection.
                       </p>
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -239,17 +271,16 @@
           </div>
 
           <!-- footer -->
-          <div class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex justify-end gap-2 sm:gap-3 shrink-0">
+          <div
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex justify-end gap-2 sm:gap-3 shrink-0">
             <button
               class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 transition-colors text-sm sm:text-base"
-              @click="closeAdd"
-            >
+              @click="closeAdd">
               Cancel
             </button>
             <button
               class="px-4 py-2 rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a94] transition-colors text-sm sm:text-base"
-              @click="saveTeacher"
-            >
+              @click="saveTeacher">
               Save
             </button>
           </div>
@@ -264,9 +295,15 @@ import { ChevronDown, Info, Plus, X } from "lucide-vue-next";
 import { onMounted, onBeforeUnmount, reactive, computed, watch } from "vue";
 import { TeacherCRUD } from "@/stores/apis/TeacherCRUD.js";
 import { useAddTeacher } from "@/stores/Teacher/useAddTeacher.js";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
 import { useTeacherFormValidate } from "@/stores/global/useFormValidate.js";
 import { showNotification } from "@/lib/notifications.js";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 // Props
 const props = defineProps({
@@ -277,13 +314,8 @@ const props = defineProps({
 const emit = defineEmits(["close", "save"]);
 
 // ✅ Use reusable form validation composable
-const { 
-  errors, 
-  validateTeacher, 
-  clearErrors, 
-  mapServerErrors,
-  setError
-} = useTeacherFormValidate();
+const { errors, validateTeacher, clearErrors, mapServerErrors, setError } =
+  useTeacherFormValidate();
 
 // Teacher form data
 const newTeacher = reactive({
@@ -309,20 +341,20 @@ function getCurrentAcademicYear() {
 
 // 🎯 Use FilterByDepartment composables
 // Get departments for the dropdown
-const { 
-  departments, 
+const {
+  departments,
   departmentOptions,
   loading: departmentsLoading,
-  load: loadDepartments
+  load: loadDepartments,
 } = useFilteredByDepartment({ immediate: true });
 
 // Get programs filtered by department
-const { 
+const {
   selectedDepartmentId: selectedDepartmentIdForPrograms,
-  filtered: programsFiltered, 
+  filtered: programsFiltered,
   rawList: allPrograms,
   loading: programsLoading,
-  setDepartment: setProgramsDepartment
+  setDepartment: setProgramsDepartment,
 } = useProgramsFilteredByDepartment({ immediate: true });
 
 // Options for selects
@@ -335,26 +367,19 @@ const filteredPrograms = computed(() => {
 });
 
 // Watch for department changes to reset dependent fields and update filters
-watch(() => newTeacher.department_id, (newDeptId, oldDeptId) => {
-  if (newDeptId !== oldDeptId) {
-    newTeacher.program_id = null;
-    if (newDeptId) { 
-      setProgramsDepartment(newDeptId); 
-    }
-    else { 
-      setProgramsDepartment(''); 
+watch(
+  () => newTeacher.department_id,
+  (newDeptId, oldDeptId) => {
+    if (newDeptId !== oldDeptId) {
+      newTeacher.program_id = null;
+      if (newDeptId) {
+        setProgramsDepartment(newDeptId);
+      } else {
+        setProgramsDepartment("");
+      }
     }
   }
-});
-
-// Debug watchers
-watch(departments, (newDepts) => {
-  console.log("🏢 Departments updated:", newDepts);
-}, { deep: true });
-
-watch(departmentOptions, (newOptions) => {
-  console.log("📋 Department options updated:", newOptions);
-}, { deep: true });
+);
 
 const closeAdd = () => {
   emit("close");
@@ -378,33 +403,13 @@ const resetForm = () => {
     status: "Active",
     active: true,
   });
-  
-  console.log("🔄 Form reset to:", {
-    latin_name: `"${newTeacher.latin_name}"`,
-    khmer_name: `"${newTeacher.khmer_name}"`,
-    phone: `"${newTeacher.phone}"`,
-    gender: `"${newTeacher.gender}"`,
-    department_id: newTeacher.department_id,
-    academic_year: `"${newTeacher.academic_year}"`
-  });
 };
 
 // Save teacher function
 const saveTeacher = async () => {
   // Clear previous errors
   clearErrors();
-  
-  console.log("🔍 Current form state before validation:", {
-    latin_name: `"${newTeacher.latin_name}"`,
-    khmer_name: `"${newTeacher.khmer_name}"`,
-    phone: `"${newTeacher.phone}"`,
-    gender: `"${newTeacher.gender}"`,
-    department_id: newTeacher.department_id,
-    department_id_type: typeof newTeacher.department_id,
-    date_of_birth: `"${newTeacher.date_of_birth}"`,
-    academic_year: `"${newTeacher.academic_year}"`
-  });
-  
+
   // Ensure academic year is set
   if (!newTeacher.academic_year) {
     newTeacher.academic_year = getCurrentAcademicYear();
@@ -418,30 +423,28 @@ const saveTeacher = async () => {
     date_of_birth: newTeacher.date_of_birth,
     phone_number: newTeacher.phone?.trim(), // Map phone to phone_number for validation
     department_id: newTeacher.department_id,
-    position: "Teacher" // Default position for teachers
+    position: "Teacher", // Default position for teachers
     // ❌ NO EMAIL - it's auto-generated by backend
   };
 
-  console.log("🔍 Validation data:", formData);
-
   // Additional manual checks for empty strings
-  if (!formData.latin_name || formData.latin_name === '') {
-    setError('latin_name', 'Latin Name is required');
+  if (!formData.latin_name || formData.latin_name === "") {
+    setError("latin_name", "Latin Name is required");
   }
-  if (!formData.khmer_name || formData.khmer_name === '') {
-    setError('khmer_name', 'Khmer Name is required'); 
+  if (!formData.khmer_name || formData.khmer_name === "") {
+    setError("khmer_name", "Khmer Name is required");
   }
-  if (!formData.phone_number || formData.phone_number === '') {
-    setError('phone_number', 'Phone Number is required');
+  if (!formData.phone_number || formData.phone_number === "") {
+    setError("phone_number", "Phone Number is required");
   }
-  if (!formData.gender || formData.gender === '') {
-    setError('gender', 'Gender is required');
+  if (!formData.gender || formData.gender === "") {
+    setError("gender", "Gender is required");
   }
   if (!formData.department_id || formData.department_id === null) {
-    setError('department_id', 'Department is required');
+    setError("department_id", "Department is required");
   }
-  if (!formData.date_of_birth || formData.date_of_birth === '') {
-    setError('date_of_birth', 'Date of Birth is required');
+  if (!formData.date_of_birth || formData.date_of_birth === "") {
+    setError("date_of_birth", "Date of Birth is required");
   }
 
   // Check if we have any manual errors
@@ -461,7 +464,12 @@ const saveTeacher = async () => {
     // Primary identifiers - make sure name is set properly
     latin_name: newTeacher.latin_name?.trim(),
     khmer_name: newTeacher.khmer_name?.trim(),
-    name: (newTeacher.latin_name || newTeacher.khmer_name || newTeacher.full_name || '').trim(),
+    name: (
+      newTeacher.latin_name ||
+      newTeacher.khmer_name ||
+      newTeacher.full_name ||
+      ""
+    ).trim(),
     full_name: newTeacher.khmer_name?.trim(),
 
     // Contact information
@@ -471,54 +479,42 @@ const saveTeacher = async () => {
     // Personal information
     gender: newTeacher.gender,
     date_of_birth: newTeacher.date_of_birth,
-    
+
     // Academic/Professional information
     department_id: Number(newTeacher.department_id), // Ensure it's a number
     program_id: newTeacher.program_id ? Number(newTeacher.program_id) : null,
     academic_year: newTeacher.academic_year,
     position: "Teacher", // Default position for teachers
-    
+
     // Status and activity
     status: newTeacher.status,
     active: newTeacher.active,
     is_active: newTeacher.active,
-    
+
     // Media/Profile
     photo_url: newTeacher.photo_url,
     profile_picture: newTeacher.photo_url,
     file: newTeacher.file,
-    
+
     // Additional fields backend might expect
     hire_date: new Date().toISOString().split("T")[0],
     join_rtc: new Date().toISOString().split("T")[0],
     experience_years: 0,
   };
 
-    // 🔒 Final hard guards before API
+  // 🔒 Final hard guards before API
   if (!teacherData.name) {
-    setError('latin_name', 'Latin Name is required');
+    setError("latin_name", "Latin Name is required");
     return;
   }
   if (!Number.isFinite(teacherData.department_id)) {
-    setError('department_id', 'Department is required');
+    setError("department_id", "Department is required");
     return;
   }
 
-
-  console.log("📤 SUBMITTING TEACHER DATA:", teacherData);
-  console.log("🔍 Form validation data:", {
-    latin_name: newTeacher.latin_name,
-    khmer_name: newTeacher.khmer_name,
-    phone: newTeacher.phone,
-    gender: newTeacher.gender,
-    department_id: newTeacher.department_id,
-    department_id_type: typeof newTeacher.department_id
-  });
-
   try {
     const result = await TeacherCRUD.createTeacher(teacherData);
-    console.log("📥 SUBMISSION RESULT:", result);
-    
+
     if (result.success) {
       // Show success notification
       showNotification("Teacher created successfully!", "success");
@@ -532,27 +528,34 @@ const saveTeacher = async () => {
         message: result.message,
         error: result.error,
         errors: result.errors,
-        validation: result.validation
+        validation: result.validation,
       });
-      
+
       // Only map server errors if we have specific field errors
-      if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+      if (
+        result.errors &&
+        Array.isArray(result.errors) &&
+        result.errors.length > 0
+      ) {
         mapServerErrors(result);
-      } else if (result.errors && typeof result.errors === 'object') {
+      } else if (result.errors && typeof result.errors === "object") {
         // Handle object-style errors
         Object.entries(result.errors).forEach(([field, message]) => {
-          if (typeof message === 'string' && field && message) {
+          if (typeof message === "string" && field && message) {
             setError(field, message);
           }
         });
       } else {
         // Show general error message in global error field
-        setError('global', result.message || result.error || "Failed to create teacher");
+        setError(
+          "global",
+          result.message || result.error || "Failed to create teacher"
+        );
       }
     }
   } catch (error) {
     console.error("💥 Unexpected error creating teacher:", error);
-    setError('global', "Failed to create teacher. Please try again.");
+    setError("global", "Failed to create teacher. Please try again.");
   }
 };
 
@@ -565,14 +568,14 @@ const onPhotoChange = (e) => {
   if (errors.photo) {
     delete errors.photo;
   }
-  
+
   // Validate file type
   const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   if (!allowedTypes.includes(file.type)) {
     errors.photo = "Please select a valid image file (JPEG, PNG, GIF, or WebP)";
     return;
   }
-  
+
   // Validate file size (2MB limit)
   if (file.size > 2 * 1024 * 1024) {
     errors.photo = "Image size should be less than 2MB";
@@ -581,13 +584,11 @@ const onPhotoChange = (e) => {
 
   // Set the file
   newTeacher.file = file;
-  
+
   // Create preview URL
   const reader = new FileReader();
   reader.onload = () => (newTeacher.photo_url = reader.result);
   reader.readAsDataURL(file);
-  
-  console.log("📸 Photo selected:", { name: file.name, size: file.size, type: file.type });
 };
 
 // ESC key handling
@@ -597,34 +598,22 @@ const onEsc = (e) => {
 
 onMounted(async () => {
   window.addEventListener("keydown", onEsc);
-  
+
   // Clear any existing errors
   clearErrors();
-  
+
   // Explicitly load departments to ensure they're available
   try {
-    console.log("🚀 Starting to load departments...");
     await loadDepartments();
-    console.log("📊 Departments loaded:", departments.value);
-    console.log("📋 Department options:", departmentOptions.value);
-    console.log("🔄 Loading state:", departmentsLoading.value);
   } catch (error) {
     console.error("❌ Error loading departments:", error);
   }
-  
+
   // Initialize form with current academic year
   newTeacher.academic_year = getCurrentAcademicYear();
   newTeacher.department_id = null;
   newTeacher.program_id = null;
   if (!newTeacher.gender) newTeacher.gender = "";
-  
-  // Debug current state
-  setTimeout(() => {
-    console.log("🔍 Current state after mount:");
-    console.log("  - Departments:", departments.value?.length || 0);
-    console.log("  - Department options:", departmentOptions.value?.length || 0);
-    console.log("  - Programs:", allPrograms.value?.length || 0);
-  }, 1000);
 });
 onBeforeUnmount(() => window.removeEventListener("keydown", onEsc));
 </script>

@@ -1,11 +1,3 @@
-/**
- * API Service for fetching academic year based on program selection
- * This service chains three API calls:
- * 1. Get all programs
- * 2. Get generation by program ID
- * 3. Get academic year (filtered by generation start year)
- */
-
 import api from '@/stores/apis/axios.js';
 
 /**
@@ -27,15 +19,15 @@ async function getAllPrograms() {
  * @param {number} programId - The ID of the program
  * @returns {Promise<Object>} Object containing program and generation data
  */
-async function getGenerationByProgram(programId) {
-  try {
-    const response = await api.get(`/managements/get_generation_by_program/${programId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching generation data:', error);
-    throw error;
-  }
-}
+// async function getGenerationByProgram(programId) {
+//   try {
+//     const response = await api.get(`/managements/get_generation_by_program/${programId}`);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error fetching generation data:', error);
+//     throw error;
+//   }
+// }
 
 /**
  * Fetch all academic years
@@ -96,46 +88,30 @@ function findMatchingAcademicYear(academicYears, startYear) {
 /**
  * Main function: Get academic year for a selected program
  * @param {number} programId - The ID of the selected program
- * @returns {Promise<Object>} Object containing program, generation, and academic year data
+ * @returns {Promise<Object>} Object containing program and academic year data
  */
 async function getAcademicYearForProgram(programId) {
   try {
-    // Step 1: Get generation data for the program
-    const generationData = await getGenerationByProgram(programId);
+    // Get all programs
+    const programs = await getAllPrograms();
     
-    if (!generationData.generation || generationData.generation.length === 0) {
-      throw new Error('No generation found for this program');
+    // Find the selected program
+    const program = programs.find(p => p.id === programId);
+    
+    if (!program) {
+      throw new Error('Program not found');
     }
     
-    // Get the first (or most recent) generation
-    const generation = generationData.generation[0];
-    
-    if (!generation.start_year) {
-      throw new Error('Generation has no start year');
-    }
-    
-    // Step 2: Get all academic years
-    const academicYears = await getAllAcademicYears();
-    
-    // Step 3: Find matching academic year based on generation start year
-    const matchingAcademicYear = findMatchingAcademicYear(
-      academicYears,
-      generation.start_year
-    );
-    
-    if (!matchingAcademicYear) {
-      throw new Error(
-        `No academic year found for start year ${generation.start_year}`
-      );
+    if (!program.academic_year) {
+      throw new Error('No academic year found for this program');
     }
     
     // Return complete data
     return {
       success: true,
-      program: generationData.program,
-      generation: generation,
-      academicYear: matchingAcademicYear,
-      message: 'Academic year automatically determined based on program generation'
+      program: program,
+      academicYear: program.academic_year,
+      message: 'Academic year retrieved from program data'
     };
     
   } catch (error) {
@@ -178,7 +154,7 @@ async function getInitialData() {
 // Export functions
 export {
   getAllPrograms,
-  getGenerationByProgram,
+  // getGenerationByProgram,
   getAllAcademicYears,
   getAcademicYearForProgram,
   getInitialData,
@@ -190,7 +166,7 @@ export {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     getAllPrograms,
-    getGenerationByProgram,
+    // getGenerationByProgram,
     getAllAcademicYears,
     getAcademicYearForProgram,
     getInitialData,

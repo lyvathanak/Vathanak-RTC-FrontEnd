@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import api from '@/stores/apis/axios.js'
+import { getUserDetail } from './GetUserDetail.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // Cookie utilities for cross-subdomain authentication (defined first)
@@ -162,16 +163,33 @@ export const useAuthStore = defineStore('auth', () => {
           }
         }
         
-        // Set user data based on actual API response structure
+        // Set token first so getUserDetail can use it
+        token.value = response.token
+        
+        // Store token in cookie for cross-subdomain access + localStorage/sessionStorage as backup
+        if (rememberMe) {
+          setCookie('auth_token', response.token, 30);
+          localStorage.setItem('auth_token', response.token)
+        } else {
+          setCookie('auth_token', response.token, 0.04);
+          sessionStorage.setItem('auth_token', response.token)
+        }
+        
+        // Fetch complete user details from API
+        const userDetailResponse = await getUserDetail()
+        
+        // Set user data with real data from API
         user.value = {
-          id: response.user?.id || Math.random().toString(36).substr(2, 9),
-          email: credentials.email,
-          name: response.user?.name || response.user?.full_name || 'User',
+          id: userDetailResponse.user?.id || userDetailResponse.id,
+          email: userDetailResponse.user?.email || userDetailResponse.email || credentials.email,
+          name: userDetailResponse.user?.name || userDetailResponse.name || 'User',
           role: userRole,
           permissions: ROLE_PERMISSIONS[userRole] || [],
-          profile: response.user?.profile || {},
           rawRoles: response.roles // Keep original roles for debugging
         }
+        
+        // identify user
+        console.log('👤 User Data with ID:', user.value)
         
         // Additional teacher verification
         if (credentials.email.includes('teacher')) {
@@ -182,23 +200,14 @@ export const useAuthStore = defineStore('auth', () => {
           }
         }
         
-        // Set token from API response
-        token.value = response.token
-        
-        // Store token in cookie for cross-subdomain access + localStorage/sessionStorage as backup
+        // Store additional auth data and preferences
         if (rememberMe) {
-          // Store for 30 days (remember me)
-          setCookie('auth_token', response.token, 30);
-          localStorage.setItem('auth_token', response.token)
           localStorage.setItem('remember_me', 'true')
           localStorage.setItem('remember_me_preference', 'true')
           localStorage.setItem('user_data', JSON.stringify(user.value))
           localStorage.setItem('saved_email', credentials.email)
           localStorage.setItem('saved_password', credentials.password)
         } else {
-          // Store as session cookie (expires when browser closes)
-          setCookie('auth_token', response.token, 0.04); // ~1 hour
-          sessionStorage.setItem('auth_token', response.token)
           sessionStorage.setItem('user_data', JSON.stringify(user.value))
           localStorage.removeItem('remember_me')
         }

@@ -1,4 +1,404 @@
 <!-- @/pages/TimeTable.vue -->
+
+<template>
+  <div
+    class="p-4 space-y-4 px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <PageHeader
+      :title="t('timetable_management')"
+      subtitle="Track and manage your timetable applications">
+      <div class="flex gap-2">
+        <button
+          class="px-3 py-2 rounded border"
+          @click="openCreateDialog(new Date())"
+          :disabled="loading || !calendarEnabled">
+          New time slot
+        </button>
+        <button
+          class="px-3 py-2 rounded border"
+          @click="showCreateTable = true"
+          :disabled="loading">
+          New time table
+        </button>
+        <button
+          class="px-3 py-2 rounded border text-red-600"
+          @click="doDeleteTable"
+          :disabled="loading || !selectedTimeTableId">
+          Delete current
+        </button>
+      </div>
+    </PageHeader>
+
+    <!-- Filters with lucide ChevronDown -->
+    <div class="flex flex-wrap gap-3 items-center">
+      <div class="relative">
+        <select
+          v-model="yearLabel"
+          class="pill-select appearance-none pr-10"
+          :disabled="loading">
+          <option :value="null" disabled>Year</option>
+          <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+        </select>
+        <span
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          <ChevronDown class="w-4 h-4 text-gray-500" />
+        </span>
+      </div>
+
+      <div class="relative">
+        <select
+          v-model="selectedProgramId"
+          class="pill-select appearance-none pr-10"
+          :disabled="loading || !programOptions.length">
+          <option :value="null" disabled>Program</option>
+          <option v-for="p in programOptions" :key="p.id" :value="p.id">
+            {{ p.name }}
+          </option>
+        </select>
+        <span
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          <ChevronDown class="w-4 h-4 text-gray-500" />
+        </span>
+      </div>
+
+      <div class="relative" v-if="selectedProgramId != null">
+        <select
+          v-model="filterSemesterId"
+          class="pill-select appearance-none pr-10"
+          :disabled="loading || !semesterOptions.length">
+          <option :value="null" disabled>Semester</option>
+          <option v-for="s in semesterOptions" :key="s.id" :value="s.id">
+            {{ s.name }}
+          </option>
+        </select>
+        <span
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          <ChevronDown class="w-4 h-4 text-gray-500" />
+        </span>
+      </div>
+
+      <div class="relative" v-if="filterSemesterId != null">
+        <select
+          v-model="filterGroupId"
+          class="pill-select appearance-none pr-10"
+          :disabled="loading || !groupOptions.length">
+          <option :value="null" disabled>Group</option>
+          <option v-for="g in groupOptions" :key="g.id" :value="g.id">
+            {{ g.name }}
+          </option>
+        </select>
+        <span
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+          <ChevronDown class="w-4 h-4 text-gray-500" />
+        </span>
+      </div>
+    </div>
+
+    <div class="text-[13px] text-gray-600">
+      Tip: <b>Double-click</b> an empty cell to create a time slot.
+      <b>Double-click a card to delete it.</b> Right-click a card to edit
+      details. Hover a card to see full info.
+    </div>
+
+    <div v-if="error" class="text-red-600 text-sm">{{ error }}</div>
+
+    <!-- No-table / disabled calendar banner -->
+    <div
+      v-if="!calendarEnabled"
+      class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
+      <template v-if="tableState.reason === 'filters-incomplete'">
+        <b>Select Program → Semester → Group</b> to view or create a timetable.
+      </template>
+      <template v-else-if="tableState.reason === 'no-group-available'">
+        <b>No groups available</b> for the selected Program/Semester. Please
+        create a group first, then create a timetable.
+      </template>
+      <template
+        v-else-if="
+          tableState.reason === 'create-failed' || tableState.noTableForCriteria
+        ">
+        No time table found for this selection.
+        <button
+          v-if="tableState.canCreate"
+          class="ml-2 inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white"
+          @click="showCreateTable = true">
+          Create one
+        </button>
+      </template>
+      <template v-else> No timetable available. </template>
+    </div>
+
+    <!-- Empty-week clone banner -->
+    <div
+      v-if="calendarEnabled && weekIsEmpty"
+      class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3">
+      <span>No events this week.</span>
+      <button
+        class="px-3 py-1.5 rounded bg-amber-600 text-white"
+        @click="cloneFromLastWeek">
+        Clone from last week
+      </button>
+      <div class="flex items-center gap-2">
+        <span>or from week</span>
+        <input
+          v-model.number="customCloneWeek"
+          type="number"
+          min="1"
+          max="53"
+          class="w-20 border rounded px-2 py-1" />
+        <span>year</span>
+        <input
+          v-model.number="customCloneYear"
+          type="number"
+          min="2000"
+          max="2100"
+          class="w-24 border rounded px-2 py-1" />
+        <button class="px-3 py-1.5 rounded border" @click="cloneFromCustom">
+          Clone
+        </button>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <vue-cal
+      v-if="calendarEnabled"
+      ref="cal"
+      class="timetable-cal"
+      default-view="week"
+      :selected-date="initialDate"
+      :disable-views="['years', 'year', 'month', 'day']"
+      hide-view-selector
+      :views-bar="false"
+      :time-from="timeFromM"
+      :time-to="timeToM"
+      :snap-to-time="snapTo"
+      :events="filteredEvents"
+      :editable-events="true"
+      @event-change="onEventChange"
+      @event-delete="onEventDelete"
+      @cell-dblclick="onCellDbl"
+      @view-change="onViewChange"
+      :hide-weekends="false">
+      <template #event="{ event }">
+        <div
+          class="event-card"
+          :title="eventTooltip(event)"
+          @dblclick.stop="onEventDelete(event)"
+          @contextmenu.prevent.stop="openEditFromEvent(event)">
+          <div class="event-title">{{ event.title }}</div>
+          <div class="event-time">
+            {{
+              new Date(event.start).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            }}
+            –
+            {{
+              new Date(event.end).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            }}
+          </div>
+          <div class="event-body">
+            <div class="event-meta">
+              <span class="label">TEACHER</span> {{ event.teacherName || "—" }}
+            </div>
+            <div class="event-meta">
+              <span class="label">ROOM</span> {{ event.roomName || "—" }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </vue-cal>
+
+    <div
+      v-if="calendarEnabled && !loading && !filteredEvents.length"
+      class="text-sm text-gray-500">
+      No time slots for this selection yet — double-click a cell to create one,
+      or use the clone banner above.
+    </div>
+
+    <!-- Slot Editor Dialog -->
+    <div
+      v-if="showEditor"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @keydown.esc="cancelEditor">
+      <div class="bg-white rounded-2xl shadow-xl p-5 w-full max-w-xl space-y-4">
+        <div class="text-xl font-semibold">
+          {{ isEditing ? "Edit time slot" : "New time slot" }}
+        </div>
+
+        <div class="text-sm text-gray-600">
+          On <b>{{ draftDayLabel }}</b>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-3">
+          <!-- 🔹 Day-of-week (create only) -->
+          <div v-if="!isEditing" class="md:col-span-2">
+            <label class="block text-sm mb-1">Day of week</label>
+            <div class="relative">
+              <select
+                v-model.number="editorWeekday"
+                class="border rounded px-3 py-2 w-full appearance-none pr-10"
+                @change="moveDraftToWeekday(editorWeekday)">
+                <option
+                  v-for="(lbl, idx) in weekdayLabels"
+                  :key="idx"
+                  :value="idx">
+                  {{ lbl }}
+                </option>
+              </select>
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">Start</label>
+            <input
+              v-model="draftStart"
+              type="time"
+              class="border rounded px-3 py-2 w-full"
+              step="300" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">End</label>
+            <input
+              v-model="draftEnd"
+              type="time"
+              class="border rounded px-3 py-2 w-full"
+              step="300" />
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1">Teacher</label>
+            <div class="relative">
+              <select
+                v-model.number="draftTeacherId"
+                class="border rounded px-3 py-2 w-full appearance-none pr-10">
+                <option value="">—</option>
+                <option v-for="t in staffOptions" :key="t.id" :value="t.id">
+                  {{ t.name }}
+                </option>
+              </select>
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm mb-1"
+              >Room <span class="text-red-600">*</span></label
+            >
+            <div class="relative">
+              <select
+                v-model.number="draftRoomId"
+                class="border rounded px-3 py-2 w-full appearance-none pr-10">
+                <option value="">(pick a room)</option>
+                <option v-for="r in roomOptions" :key="r.id" :value="r.id">
+                  {{ r.name }}
+                </option>
+              </select>
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-sm mb-1">Title</label>
+            <input
+              v-model="draftRemark"
+              class="border rounded px-3 py-2 w-full"
+              placeholder="Remark / Subject" />
+          </div>
+        </div>
+
+        <div v-if="formError" class="text-sm text-red-600">{{ formError }}</div>
+
+        <div class="flex justify-between items-center gap-2">
+          <button
+            v-if="isEditing"
+            class="px-3 py-2 rounded border text-red-600"
+            @click="onEventDelete({ id: editingSlotId })">
+            Delete
+          </button>
+          <div class="grow"></div>
+          <button class="px-3 py-2 rounded border" @click="cancelEditor">
+            Cancel
+          </button>
+          <button
+            class="px-3 py-2 rounded bg-blue-600 text-white"
+            @click="saveEditor">
+            {{ isEditing ? "Save changes" : "Create" }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create time table dialog -->
+    <div
+      v-if="showCreateTable"
+      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg p-5 w-full max-w-xl space-y-4">
+        <div class="text-xl font-semibold">Create Time Table</div>
+        <div class="grid gap-3">
+          <div>
+            <label class="block text-sm mb-1">Name</label>
+            <input
+              v-model="newTableName"
+              class="border rounded px-3 py-2 w-full"
+              placeholder="Time Table for Group" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Description</label>
+            <input
+              v-model="newTableDesc"
+              class="border rounded px-3 py-2 w-full"
+              placeholder="Description" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Group</label>
+            <div class="relative">
+              <select
+                v-model.number="filterGroupId"
+                class="border rounded px-3 py-2 w-full appearance-none pr-10">
+                <option :value="null">(pick a group)</option>
+                <option v-for="g in groupOptions" :key="g.id" :value="g.id">
+                  {{ g.name }}
+                </option>
+              </select>
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button
+            class="px-3 py-2 rounded border"
+            @click="showCreateTable = false">
+            Cancel
+          </button>
+          <button
+            class="px-3 py-2 rounded bg-blue-600 text-white"
+            @click="doCreateTable">
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick, watch } from "vue";
 import VueCal from "vue-cal";
@@ -21,6 +421,8 @@ import {
   eventToSlot,
 } from "@/stores/apis/TimeTableCRUD";
 import { useI18n } from "vue-i18n";
+import PageHeader from "@/components/features/PageHeader.vue";
+
 const { t, locale } = useI18n();
 
 /* --------------------------------- state --------------------------------- */
@@ -949,411 +1351,6 @@ async function load() {
 
 onMounted(load);
 </script>
-
-<template>
-  <div class="p-4 space-y-4 px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2 mb-6 sm:mb-8">
-        <CalendarDaysIcon  class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-        <h1
-          :class="[
-            'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          {{ t("timetable_management") }}
-        </h1>
-      </div>
-      <div class="flex gap-2">
-        <button
-          class="px-3 py-2 rounded border"
-          @click="openCreateDialog(new Date())"
-          :disabled="loading || !calendarEnabled">
-          New time slot
-        </button>
-        <button
-          class="px-3 py-2 rounded border"
-          @click="showCreateTable = true"
-          :disabled="loading">
-          New time table
-        </button>
-        <button
-          class="px-3 py-2 rounded border text-red-600"
-          @click="doDeleteTable"
-          :disabled="loading || !selectedTimeTableId">
-          Delete current
-        </button>
-      </div>
-    </div>
-
-    <!-- Filters with lucide ChevronDown -->
-    <div class="flex flex-wrap gap-3 items-center">
-      <div class="relative">
-        <select
-          v-model="yearLabel"
-          class="pill-select appearance-none pr-10"
-          :disabled="loading">
-          <option :value="null" disabled>Year</option>
-          <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
-        </select>
-        <span
-          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-          <ChevronDown class="w-4 h-4 text-gray-500" />
-        </span>
-      </div>
-
-      <div class="relative">
-        <select
-          v-model="selectedProgramId"
-          class="pill-select appearance-none pr-10"
-          :disabled="loading || !programOptions.length">
-          <option :value="null" disabled>Program</option>
-          <option v-for="p in programOptions" :key="p.id" :value="p.id">
-            {{ p.name }}
-          </option>
-        </select>
-        <span
-          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-          <ChevronDown class="w-4 h-4 text-gray-500" />
-        </span>
-      </div>
-
-      <div class="relative" v-if="selectedProgramId != null">
-        <select
-          v-model="filterSemesterId"
-          class="pill-select appearance-none pr-10"
-          :disabled="loading || !semesterOptions.length">
-          <option :value="null" disabled>Semester</option>
-          <option v-for="s in semesterOptions" :key="s.id" :value="s.id">
-            {{ s.name }}
-          </option>
-        </select>
-        <span
-          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-          <ChevronDown class="w-4 h-4 text-gray-500" />
-        </span>
-      </div>
-
-      <div class="relative" v-if="filterSemesterId != null">
-        <select
-          v-model="filterGroupId"
-          class="pill-select appearance-none pr-10"
-          :disabled="loading || !groupOptions.length">
-          <option :value="null" disabled>Group</option>
-          <option v-for="g in groupOptions" :key="g.id" :value="g.id">
-            {{ g.name }}
-          </option>
-        </select>
-        <span
-          class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-          <ChevronDown class="w-4 h-4 text-gray-500" />
-        </span>
-      </div>
-    </div>
-
-    <div class="text-[13px] text-gray-600">
-      Tip: <b>Double-click</b> an empty cell to create a time slot.
-      <b>Double-click a card to delete it.</b> Right-click a card to edit
-      details. Hover a card to see full info.
-    </div>
-
-    <div v-if="error" class="text-red-600 text-sm">{{ error }}</div>
-
-    <!-- No-table / disabled calendar banner -->
-    <div
-      v-if="!calendarEnabled"
-      class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
-      <template v-if="tableState.reason === 'filters-incomplete'">
-        <b>Select Program → Semester → Group</b> to view or create a timetable.
-      </template>
-      <template v-else-if="tableState.reason === 'no-group-available'">
-        <b>No groups available</b> for the selected Program/Semester. Please
-        create a group first, then create a timetable.
-      </template>
-      <template
-        v-else-if="
-          tableState.reason === 'create-failed' || tableState.noTableForCriteria
-        ">
-        No time table found for this selection.
-        <button
-          v-if="tableState.canCreate"
-          class="ml-2 inline-flex items-center px-3 py-1.5 rounded bg-blue-600 text-white"
-          @click="showCreateTable = true">
-          Create one
-        </button>
-      </template>
-      <template v-else> No timetable available. </template>
-    </div>
-
-    <!-- Empty-week clone banner -->
-    <div
-      v-if="calendarEnabled && weekIsEmpty"
-      class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-3">
-      <span>No events this week.</span>
-      <button
-        class="px-3 py-1.5 rounded bg-amber-600 text-white"
-        @click="cloneFromLastWeek">
-        Clone from last week
-      </button>
-      <div class="flex items-center gap-2">
-        <span>or from week</span>
-        <input
-          v-model.number="customCloneWeek"
-          type="number"
-          min="1"
-          max="53"
-          class="w-20 border rounded px-2 py-1" />
-        <span>year</span>
-        <input
-          v-model.number="customCloneYear"
-          type="number"
-          min="2000"
-          max="2100"
-          class="w-24 border rounded px-2 py-1" />
-        <button class="px-3 py-1.5 rounded border" @click="cloneFromCustom">
-          Clone
-        </button>
-      </div>
-    </div>
-
-    <!-- Calendar -->
-    <vue-cal
-      v-if="calendarEnabled"
-      ref="cal"
-      class="timetable-cal"
-      default-view="week"
-      :selected-date="initialDate"
-      :disable-views="['years', 'year', 'month', 'day']"
-      hide-view-selector
-      :views-bar="false"
-      :time-from="timeFromM"
-      :time-to="timeToM"
-      :snap-to-time="snapTo"
-      :events="filteredEvents"
-      :editable-events="true"
-      @event-change="onEventChange"
-      @event-delete="onEventDelete"
-      @cell-dblclick="onCellDbl"
-      @view-change="onViewChange"
-      :hide-weekends="false">
-      <template #event="{ event }">
-        <div
-          class="event-card"
-          :title="eventTooltip(event)"
-          @dblclick.stop="onEventDelete(event)"
-          @contextmenu.prevent.stop="openEditFromEvent(event)">
-          <div class="event-title">{{ event.title }}</div>
-          <div class="event-time">
-            {{
-              new Date(event.start).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            }}
-            –
-            {{
-              new Date(event.end).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            }}
-          </div>
-          <div class="event-body">
-            <div class="event-meta">
-              <span class="label">TEACHER</span> {{ event.teacherName || "—" }}
-            </div>
-            <div class="event-meta">
-              <span class="label">ROOM</span> {{ event.roomName || "—" }}
-            </div>
-          </div>
-        </div>
-      </template>
-    </vue-cal>
-
-    <div
-      v-if="calendarEnabled && !loading && !filteredEvents.length"
-      class="text-sm text-gray-500">
-      No time slots for this selection yet — double-click a cell to create one,
-      or use the clone banner above.
-    </div>
-
-    <!-- Slot Editor Dialog -->
-    <div
-      v-if="showEditor"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
-      @keydown.esc="cancelEditor">
-      <div class="bg-white rounded-2xl shadow-xl p-5 w-full max-w-xl space-y-4">
-        <div class="text-xl font-semibold">
-          {{ isEditing ? "Edit time slot" : "New time slot" }}
-        </div>
-
-        <div class="text-sm text-gray-600">
-          On <b>{{ draftDayLabel }}</b>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-3">
-          <!-- 🔹 Day-of-week (create only) -->
-          <div v-if="!isEditing" class="md:col-span-2">
-            <label class="block text-sm mb-1">Day of week</label>
-            <div class="relative">
-              <select
-                v-model.number="editorWeekday"
-                class="border rounded px-3 py-2 w-full appearance-none pr-10"
-                @change="moveDraftToWeekday(editorWeekday)">
-                <option
-                  v-for="(lbl, idx) in weekdayLabels"
-                  :key="idx"
-                  :value="idx">
-                  {{ lbl }}
-                </option>
-              </select>
-              <span
-                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <ChevronDown class="w-4 h-4 text-gray-500" />
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">Start</label>
-            <input
-              v-model="draftStart"
-              type="time"
-              class="border rounded px-3 py-2 w-full"
-              step="300" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">End</label>
-            <input
-              v-model="draftEnd"
-              type="time"
-              class="border rounded px-3 py-2 w-full"
-              step="300" />
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1">Teacher</label>
-            <div class="relative">
-              <select
-                v-model.number="draftTeacherId"
-                class="border rounded px-3 py-2 w-full appearance-none pr-10">
-                <option value="">—</option>
-                <option v-for="t in staffOptions" :key="t.id" :value="t.id">
-                  {{ t.name }}
-                </option>
-              </select>
-              <span
-                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <ChevronDown class="w-4 h-4 text-gray-500" />
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm mb-1"
-              >Room <span class="text-red-600">*</span></label
-            >
-            <div class="relative">
-              <select
-                v-model.number="draftRoomId"
-                class="border rounded px-3 py-2 w-full appearance-none pr-10">
-                <option value="">(pick a room)</option>
-                <option v-for="r in roomOptions" :key="r.id" :value="r.id">
-                  {{ r.name }}
-                </option>
-              </select>
-              <span
-                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <ChevronDown class="w-4 h-4 text-gray-500" />
-              </span>
-            </div>
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm mb-1">Title</label>
-            <input
-              v-model="draftRemark"
-              class="border rounded px-3 py-2 w-full"
-              placeholder="Remark / Subject" />
-          </div>
-        </div>
-
-        <div v-if="formError" class="text-sm text-red-600">{{ formError }}</div>
-
-        <div class="flex justify-between items-center gap-2">
-          <button
-            v-if="isEditing"
-            class="px-3 py-2 rounded border text-red-600"
-            @click="onEventDelete({ id: editingSlotId })">
-            Delete
-          </button>
-          <div class="grow"></div>
-          <button class="px-3 py-2 rounded border" @click="cancelEditor">
-            Cancel
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-600 text-white"
-            @click="saveEditor">
-            {{ isEditing ? "Save changes" : "Create" }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Create time table dialog -->
-    <div
-      v-if="showCreateTable"
-      class="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-lg p-5 w-full max-w-xl space-y-4">
-        <div class="text-xl font-semibold">Create Time Table</div>
-        <div class="grid gap-3">
-          <div>
-            <label class="block text-sm mb-1">Name</label>
-            <input
-              v-model="newTableName"
-              class="border rounded px-3 py-2 w-full"
-              placeholder="Time Table for Group" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Description</label>
-            <input
-              v-model="newTableDesc"
-              class="border rounded px-3 py-2 w-full"
-              placeholder="Description" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Group</label>
-            <div class="relative">
-              <select
-                v-model.number="filterGroupId"
-                class="border rounded px-3 py-2 w-full appearance-none pr-10">
-                <option :value="null">(pick a group)</option>
-                <option v-for="g in groupOptions" :key="g.id" :value="g.id">
-                  {{ g.name }}
-                </option>
-              </select>
-              <span
-                class="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                <ChevronDown class="w-4 h-4 text-gray-500" />
-              </span>
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2">
-          <button
-            class="px-3 py-2 rounded border"
-            @click="showCreateTable = false">
-            Cancel
-          </button>
-          <button
-            class="px-3 py-2 rounded bg-blue-600 text-white"
-            @click="doCreateTable">
-            Create
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 :deep(.timetable-cal.vuecal) {

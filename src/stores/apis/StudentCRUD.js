@@ -69,6 +69,8 @@ function buildRegisterPayload(s) {
       ? Number(s.sub_department_id)
       : null,
     program_id: s?.program_id ? Number(s.program_id) : null,
+    academic_year_id: s?.academic_year_id ? Number(s.academic_year_id) : null,
+    generation_id: s?.generation_id ? Number(s.generation_id) : null,
 
     // media (handle file separately in createStudent)
     file: s?.file || null,
@@ -78,6 +80,7 @@ function buildRegisterPayload(s) {
     degree: String(s?.program || s?.degree || "").trim() || null,
     branch: String(s?.branch || "Battambang").trim(),
     academic_year: String(s?.academic_year || "").trim() || null,
+    year: s?.year ? Number(s.year) : 1, // year in program (1, 2, 3, etc.) - default to 1
 
     // required by backend but not in UI → safe defaults with proper types
     password: randomTempPassword(),
@@ -188,6 +191,11 @@ export const StudentCRUD = {
         const derivedDegreeLevel =
           currentProgram?.program?.degree_level ??
           null;
+
+        // Extract academic_year from the active user_program
+        const derivedAcademicYear =
+          currentProgram?.academic_year ??
+          (currentProgram?.academic_year_id ? String(currentProgram.academic_year_id) : null);
           
         return {
           // Core user fields from backend
@@ -239,8 +247,11 @@ export const StudentCRUD = {
             student.degree ??
             derivedDegreeLevel ?? "",
 
+          // Get academic_year from user_programs or fall back to top-level
           academic_year:
-            userDetail.academic_year ?? student.academic_year ?? "",
+            derivedAcademicYear ??
+            userDetail.academic_year ??
+            student.academic_year ?? "",
 
           grade: userDetail.grade ?? student.grade ?? "",
           branch: userDetail.branch ?? student.branch ?? "",
@@ -365,6 +376,11 @@ export const StudentCRUD = {
       const derivedProgramId = activeProg?.program_id ?? null;
       const derivedGenerationId = activeProg?.generation_id ?? null;
       const derivedAcademicYearId = activeProg?.academic_year_id ?? null;
+      
+      // Extract academic_year from the active user_program
+      const derivedAcademicYear =
+        activeProg?.academic_year ??
+        (activeProg?.academic_year_id ? String(activeProg.academic_year_id) : null);
 
       const transformedStudent = {
         // Main user fields
@@ -412,7 +428,13 @@ export const StudentCRUD = {
         program_name: userDetail.program_name || student.program_name || "",
 
         degree: userDetail.degree ?? student.degree ?? "",
-        academic_year: userDetail.academic_year ?? student.academic_year ?? "",
+        
+        // Get academic_year from user_programs or fall back to top-level
+        academic_year:
+          derivedAcademicYear ??
+          userDetail.academic_year ??
+          student.academic_year ?? "",
+          
         grade: userDetail.grade ?? student.grade ?? "",
         branch: userDetail.branch ?? student.branch ?? "",
 
@@ -505,7 +527,29 @@ export const StudentCRUD = {
    */
   async createStudent(formModel) {
     try {
+      // 🔍 Debug: Log what createStudent receives
+      console.log('🎯 StudentCRUD.createStudent() - Received formModel:', {
+        academic_year: formModel?.academic_year,
+        academic_year_id: formModel?.academic_year_id,
+        generation_id: formModel?.generation_id,
+        year: formModel?.year,
+        program_id: formModel?.program_id,
+        department_id: formModel?.department_id,
+        sub_department_id: formModel?.sub_department_id
+      });
+      
       const payload = buildRegisterPayload(formModel);
+      
+      // 🔍 Debug: Log what buildRegisterPayload returns
+      console.log('📋 StudentCRUD.createStudent() - Payload after buildRegisterPayload:', {
+        academic_year: payload.academic_year,
+        academic_year_id: payload.academic_year_id,
+        generation_id: payload.generation_id,
+        year: payload.year,
+        program_id: payload.program_id,
+        department_id: payload.department_id,
+        sub_department_id: payload.sub_department_id
+      });
 
       // If there's a file, use FormData for multipart upload
       if (payload.file && payload.file instanceof File) {
@@ -531,6 +575,12 @@ export const StudentCRUD = {
           }
         });
 
+        // 🔍 Debug: Log FormData contents
+        console.log('📤 StudentCRUD.createStudent() - FormData being sent to backend:');
+        for (let pair of formData.entries()) {
+          console.log(`  ${pair[0]}: ${pair[1]}`);
+        }
+
         const response = await api.post(`${AUTH_ENDPOINT}/register`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
@@ -546,6 +596,18 @@ export const StudentCRUD = {
         // No file, send JSON (remove file, profile_picture, and omit email if backend generates it)
         const { file, profile_picture, email, ...jsonPayload } = payload;
         if (email) { jsonPayload.email = email; }
+
+        // 🔍 Debug: Log JSON payload being sent
+        console.log('📤 StudentCRUD.createStudent() - JSON payload being sent to backend:', {
+          academic_year: jsonPayload.academic_year,
+          academic_year_id: jsonPayload.academic_year_id,
+          generation_id: jsonPayload.generation_id,
+          year: jsonPayload.year,
+          program_id: jsonPayload.program_id,
+          department_id: jsonPayload.department_id,
+          sub_department_id: jsonPayload.sub_department_id,
+          full_payload: jsonPayload
+        });
 
         const response = await api.post(
           `${AUTH_ENDPOINT}/register`,

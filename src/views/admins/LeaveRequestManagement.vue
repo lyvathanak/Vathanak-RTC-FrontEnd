@@ -2,16 +2,10 @@
   <div
     class="px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen flex flex-col gap-4 sm:gap-5">
     <!-- Header - Responsive Only -->
-    <div class="flex items-center gap-2 mb-6 sm:mb-8">
-      <ClipboardList class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-      <h1
-        :class="[
-          'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-          locale === 'kh' ? 'khmer-text' : '',
-        ]">
-        {{ t("leave_request_management") }}
-      </h1>
-    </div>
+    <PageHeader
+      :title="t('teacher_leave_requests')"
+      subtitle="Track and manage your leave applications">
+    </PageHeader>
 
     <!-- Status Bar - Responsive Only -->
     <AdminLeaveRequestStatus
@@ -101,6 +95,7 @@ import LeaveRequestTable from "@/components/admins/LeaveRequestManagement/LeaveR
 import ViewLeaveRequestForm from "@/components/admins/LeaveRequestManagement/ViewLeaveRequestForm.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import apiLeave from "@/stores/apis/LeaveRequestManagement.js";
+import PageHeader from "@/components/features/PageHeader.vue";
 
 // Reactive data
 const allLeaveRequests = ref([]);

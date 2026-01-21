@@ -5,26 +5,31 @@
       <div class="absolute inset-0 bg-black/40" @click="closeModal"></div>
 
       <!-- Dialog -->
-      <div class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
+      <div
+        class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
         <div
           role="dialog"
           aria-modal="true"
           class="w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-5xl rounded-xl sm:rounded-2xl bg-white shadow-xl overflow-hidden max-h-[80vh] sm:max-h-[85vh] flex flex-col"
-          @click.stop
-        >
+          @click.stop>
           <!-- Header -->
           <div
-            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b bg-gray-50 flex items-center justify-between shrink-0"
-          >
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b bg-gray-50 flex items-center justify-between shrink-0">
             <div class="flex items-end gap-2">
-              <div class="text-base sm:text-lg md:text-xl tracking-wider font-bold">TEACHER</div>
-              <span class="text-sm text-[#235AA6]">Edit Teacher</span>
+              <div
+                class="text-base sm:text-lg md:text-xl tracking-wider font-bold">
+                TEACHER
+              </div>
+              <div
+                class="hidden sm:inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[#235AA6] border border-[#235AA6] ring-1 ring-gray-200"
+                :class="[locale === 'kh' ? 'khmer-text' : '']">
+                {{ t("edit_teacher") }}
+              </div>
             </div>
             <button
               class="p-2 rounded-md hover:bg-gray-100"
               @click="closeModal"
-              aria-label="Close"
-            >
+              aria-label="Close">
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -32,8 +37,7 @@
           <!-- Top Tabs -->
           <div class="px-4 sm:px-5 md:px-6 pt-3 sm:pt-4 shrink-0">
             <div
-              class="inline-flex rounded-lg border border-gray-200 overflow-hidden w-full sm:w-auto"
-            >
+              class="inline-flex rounded-lg border border-gray-200 overflow-hidden w-full sm:w-auto">
               <button
                 class="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm"
                 :class="
@@ -41,8 +45,7 @@
                     ? 'bg-[#235AA6] text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 "
-                @click="topTab = 'general'"
-              >
+                @click="topTab = 'general'">
                 General Information
               </button>
               <button
@@ -52,8 +55,7 @@
                     ? 'bg-[#235AA6] text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 "
-                @click="topTab = 'academic'"
-              >
+                @click="topTab = 'academic'">
                 <span class="hidden sm:inline">Professional Information</span>
                 <span class="sm:hidden">Professional</span>
                 <span class="text-red-500">*</span>
@@ -62,36 +64,47 @@
           </div>
 
           <!-- Body -->
-          <div class="px-4 sm:px-5 md:px-6 pb-2 pt-3 sm:pt-4 overflow-y-auto flex-1 min-h-0">
+          <div
+            class="px-4 sm:px-5 md:px-6 pb-2 pt-3 sm:pt-4 overflow-y-auto flex-1 min-h-0">
             <!-- ===== General Information ===== -->
             <section v-if="topTab === 'general'" class="space-y-4 sm:space-y-6">
               <!-- Basic Information (collapsible) -->
               <div>
                 <button
                   class="w-full text-left flex items-center gap-2 font-semibold text-sm sm:text-base"
-                  @click="basicOpen = !basicOpen"
-                >
+                  @click="basicOpen = !basicOpen">
                   <Info class="w-4 text-gray-500 mr-1" />
                   Basic Information
                   <ChevronDown
                     class="ml-1 w-4 h-4 transition-transform"
-                    :class="{ 'rotate-180': basicOpen }"
-                  />
+                    :class="{ 'rotate-180': basicOpen }" />
                 </button>
 
-                <div v-show="basicOpen" class="mt-3 border rounded-lg p-3 sm:p-4">
-                  <div class="grid grid-cols-1 lg:grid-cols-[160px_1fr] gap-4 sm:gap-5">
+                <div
+                  v-show="basicOpen"
+                  class="mt-3 border rounded-lg p-3 sm:p-4">
+                  <div
+                    class="grid grid-cols-1 lg:grid-cols-[160px_1fr] gap-4 sm:gap-5">
                     <!-- Photo -->
-                    <div class="flex flex-col items-center justify-center lg:items-center">
-                      <div class="w-24 h-32 sm:w-28 sm:h-36 md:w-32 md:h-40 bg-gray-100 border rounded-lg overflow-hidden mb-2">
+                    <div
+                      class="flex flex-col items-center justify-center lg:items-center">
+                      <div
+                        class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
                         <img
                           v-if="currentImageSrc"
                           :src="currentImageSrc"
-                          :alt="teacher.full_name || teacher.latin_name || 'Preview'"
-                          class="w-full h-full object-cover"
-                        />
-                        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                          <User class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12" />
+                          :alt="
+                            teacher.full_name || teacher.latin_name || 'Preview'
+                          "
+                          class="w-full h-full object-cover" />
+                        <div
+                          v-else
+                          class="p-3 text-gray-500 text-sm text-center">
+                          <div
+                            class="w-10 h-10 mx-auto mb-2 rounded-full bg-gray-100 grid place-items-center">
+                            <User class="w-5 h-5 text-gray-400" />
+                          </div>
+                          No photo
                         </div>
                       </div>
 
@@ -101,14 +114,12 @@
                         accept="image/*"
                         class="hidden"
                         ref="fileEl"
-                        @change="onPhotoChange"
-                      />
+                        @change="onPhotoChange" />
 
                       <button
                         type="button"
                         @click="fileEl?.click()"
-                        class="px-3 py-1.5 text-xs bg-gray-200 rounded-md transition-colors"
-                      >
+                        class="px-3 py-1.5 text-xs bg-gray-200 rounded-md transition-colors">
                         Choose a file
                       </button>
                     </div>
@@ -116,83 +127,100 @@
                     <!-- Fields -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">ID Card</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >ID Card</label
+                        >
                         <input
                           :value="form.id_card || '—'"
                           class="w-full rounded-lg border px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                           disabled
                           readonly
-                          aria-readonly="true"
-                        />
+                          aria-readonly="true" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Name KH</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Name KH</label
+                        >
                         <input
                           v-model="form.khmer_name"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Name Latin</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Name Latin</label
+                        >
                         <input
                           v-model="form.latin_name"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Gender</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Gender</label
+                        >
                         <div class="relative">
                           <select
                             v-model="form.gender"
-                            class="w-full rounded-md border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          >
+                            class="w-full rounded-md border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
                             <option value="">Select Gender</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                           </select>
-                          <ChevronDown class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          <ChevronDown
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Date of Birth</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Date of Birth</label
+                        >
                         <input
                           v-model="form.date_of_birth"
                           type="date"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Place of Birth</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Place of Birth</label
+                        >
                         <input
                           v-model="form.place_of_birth"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div class="flex items-center gap-4 sm:col-span-2">
                         <label class="flex items-center gap-2">
                           <input
                             v-model="form.radie"
                             type="checkbox"
-                            class="rounded"
-                          />
-                          <span class="text-xs sm:text-sm text-gray-600">Radie</span>
+                            class="rounded" />
+                          <span class="text-xs sm:text-sm text-gray-600"
+                            >Radie</span
+                          >
                         </label>
                         <label class="flex items-center gap-2">
                           <input
                             v-model="form.active"
                             type="checkbox"
-                            class="rounded"
-                          />
-                          <span class="text-xs sm:text-sm text-gray-600">Active</span>
+                            class="rounded" />
+                          <span class="text-xs sm:text-sm text-gray-600"
+                            >Active</span
+                          >
                         </label>
                       </div>
                       <div class="sm:col-span-2">
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Bio</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Bio</label
+                        >
                         <textarea
                           v-model="form.bio"
                           rows="3"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        ></textarea>
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                       </div>
                     </div>
                   </div>
@@ -203,14 +231,12 @@
               <div>
                 <button
                   class="w-full text-left flex items-center gap-2 font-semibold text-sm sm:text-base"
-                  @click="moreOpen = !moreOpen"
-                >
+                  @click="moreOpen = !moreOpen">
                   <Info class="w-4 text-gray-500 mr-1" />
                   More Information
                   <ChevronDown
                     class="ml-1 w-4 h-4 transition-transform"
-                    :class="{ 'rotate-180': moreOpen }"
-                  />
+                    :class="{ 'rotate-180': moreOpen }" />
                 </button>
 
                 <div v-show="moreOpen" class="mt-3 border rounded-lg">
@@ -218,51 +244,65 @@
                     <!-- Contact Information -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Origin</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Origin</label
+                        >
                         <div class="relative">
                           <select
                             v-model="form.origin"
-                            class="w-full rounded-md border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          >
+                            class="w-full rounded-md border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
                             <option value="">Select Province</option>
-                            <option v-for="province in provinces" :key="province" :value="province">
+                            <option
+                              v-for="province in provinces"
+                              :key="province"
+                              :value="province">
                               {{ province }}
                             </option>
                           </select>
-                          <ChevronDown class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                          <ChevronDown
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         </div>
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Phone Number</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Phone Number</label
+                        >
                         <input
                           v-model="form.phone"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Email</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Email</label
+                        >
                         <input
                           v-model="form.email"
                           type="email"
                           class="w-full rounded-md border px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                           disabled
                           readonly
-                          aria-readonly="true"
-                        />
+                          aria-readonly="true" />
                       </div>
                       <div>
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Current Address</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Current Address</label
+                        >
                         <input
                           v-model="form.current_address"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                       <div class="sm:col-span-2">
-                        <label class="block text-xs sm:text-sm text-gray-600 mb-1">Permanent Address</label>
+                        <label
+                          class="block text-xs sm:text-sm text-gray-600 mb-1"
+                          >Permanent Address</label
+                        >
                         <input
                           v-model="form.address"
-                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                       </div>
                     </div>
                   </div>
@@ -283,14 +323,17 @@
                         v-model="form.department_id"
                         @change="setDepartment(form.department_id)"
                         class="w-full rounded-md border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                        :disabled="deptLoading"
-                      >
+                        :disabled="deptLoading">
                         <option value="">Select Department</option>
-                        <option v-for="dept in departmentOptions" :key="dept.id" :value="dept.id">
+                        <option
+                          v-for="dept in departmentOptions"
+                          :key="dept.id"
+                          :value="dept.id">
                           {{ dept.label }}
                         </option>
                       </select>
-                      <ChevronDown class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                      <ChevronDown
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
                   <div>
@@ -300,8 +343,7 @@
                     <input
                       v-model="form.join_at"
                       type="date"
-                      class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                      class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
                   <div>
                     <label class="block text-xs sm:text-sm text-gray-600 mb-1"
@@ -309,10 +351,9 @@
                     >
                     <input
                       v-model="form.graduated_from"
-                      class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                      class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
-                  
+
                   <div>
                     <label class="block text-xs sm:text-sm text-gray-600 mb-1"
                       >Graduate Year <span class="text-red-500">*</span></label
@@ -323,39 +364,33 @@
                       min="1950"
                       max="2030"
                       class="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="e.g. 2020"
-                    />
+                      placeholder="e.g. 2020" />
                   </div>
                 </div>
               </div>
-
             </section>
           </div>
 
           <!-- Footer -->
           <div
-            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-gray-50 flex items-center justify-between shrink-0"
-          >
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-gray-50 flex items-center justify-between shrink-0">
             <button
               class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg border bg-red-500 text-white hover:bg-red-600 transition-colors"
-              @click="closeModal"
-            >
+              @click="closeModal">
               Cancel
             </button>
 
             <div class="flex gap-2">
               <button
                 class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg bg-[#FF7700] text-white hover:bg-[#e66a00] transition-colors"
-                @click="promoteTeacher"
-              >
+                @click="promoteTeacher">
                 <span class="hidden sm:inline">Promote Teacher</span>
                 <span class="sm:hidden">Promote</span>
               </button>
               <button
                 class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a94] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 @click="saveChanges"
-                :disabled="saving"
-              >
+                :disabled="saving">
                 <span v-if="saving">
                   <span class="hidden sm:inline">Updating...</span>
                   <span class="sm:hidden">Saving...</span>
@@ -379,9 +414,15 @@ import { X, ChevronDown, Info, User } from "lucide-vue-next";
 // Import provinces data
 import provincesData from "@/db/CambodiaAdministrationArea/provinces.json";
 import { normalizeDateToYMD } from "@/stores/apis/TeacherCRUD";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
 import { TeacherCRUD } from "@/stores/apis/TeacherCRUD.js";
 import { showNotification } from "@/lib/notifications.js";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 // turn any date-ish value into input-friendly "YYYY-MM-DD" (or '')
 const toDateInputValue = (v) => normalizeDateToYMD(v) || "";
@@ -397,25 +438,25 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   teacher: { type: Object, default: () => ({}) },
   departments: { type: Array, default: () => [] },
-  positions: { type: Array, default: () => [] }
+  positions: { type: Array, default: () => [] },
 });
 
 // Emits
 const emit = defineEmits(["update:modelValue", "save", "promote"]);
 
 // Use dynamic department and program composables
-const { 
-  departmentOptions, 
-  selectedDepartmentId, 
+const {
+  departmentOptions,
+  selectedDepartmentId,
   setDepartment,
-  loading: deptLoading 
+  loading: deptLoading,
 } = useFilteredByDepartment({ immediate: true });
 
-const { 
-  filtered: filteredPrograms, 
+const {
+  filtered: filteredPrograms,
   selectedDepartmentId: programDeptId,
   setDepartment: setProgramDepartment,
-  loading: programLoading 
+  loading: programLoading,
 } = useProgramsFilteredByDepartment({ immediate: true });
 
 // Watch for department changes to filter programs
@@ -433,9 +474,7 @@ const innerTab = ref("contact");
 const saving = ref(false);
 
 // Tab configuration
-const moreTabs = [
-  { key: "contact", label: "Contact Information" }
-];
+const moreTabs = [{ key: "contact", label: "Contact Information" }];
 
 // Sort provinces alphabetically for better UX
 const provinces = computed(() => {
@@ -480,9 +519,9 @@ const form = ref(blank());
 
 const STORAGE_BASE = "https://api.rtc-bb.camai.kh/storage/";
 
-const fileEl = ref(null);       // <input type="file"> reference
-const fileInputKey = ref(0);    // to clear file input between opens
-const previewUrl = ref(null);   // blob URL for new selection
+const fileEl = ref(null); // <input type="file"> reference
+const fileInputKey = ref(0); // to clear file input between opens
+const previewUrl = ref(null); // blob URL for new selection
 
 // What the <img> should display: prefer new preview; else server image
 const currentImageSrc = computed(() => {
@@ -517,26 +556,21 @@ watch(
       date_of_birth: toDateInputValue(
         data.user_detail?.date_of_birth ?? data.date_of_birth ?? ""
       ),
-      join_at: toDateInputValue(
-        data.join_at ?? data.hire_date ?? ""
-      ),
+      join_at: toDateInputValue(data.join_at ?? data.hire_date ?? ""),
 
       // common field name mismatches
       phone: data.phone ?? data.phone_number ?? "",
-      full_name:
-        data.full_name || data.khmer_name || data.latin_name || "",
+      full_name: data.full_name || data.khmer_name || data.latin_name || "",
 
       // file preview url
       photo_url: data.photo_url || data.profile_picture_url || "",
     };
 
     // ensure selects hold numbers (not strings/objects)
-    form.value.department_id = Number(
-      data.department_id ?? data.department?.id ?? ""
-    ) || "";
-    form.value.program_id = Number(
-      data.program_id ?? data.program?.id ?? ""
-    ) || "";
+    form.value.department_id =
+      Number(data.department_id ?? data.department?.id ?? "") || "";
+    form.value.program_id =
+      Number(data.program_id ?? data.program?.id ?? "") || "";
 
     // Set department selection for filtering programs
     if (data.department_id) {
@@ -546,14 +580,17 @@ watch(
   { immediate: true, deep: true }
 );
 
-watch(() => props.modelValue, (open) => {
-  if (open) {
-    fileInputKey.value++; // clears the <input type="file">
-  } else if (previewUrl.value) {
-    URL.revokeObjectURL(previewUrl.value);
-    previewUrl.value = null;
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (open) {
+      fileInputKey.value++; // clears the <input type="file">
+    } else if (previewUrl.value) {
+      URL.revokeObjectURL(previewUrl.value);
+      previewUrl.value = null;
+    }
   }
-});
+);
 
 // Methods
 const closeModal = () => {
@@ -562,15 +599,19 @@ const closeModal = () => {
 
 const saveChanges = async () => {
   saving.value = true;
-  
+
   try {
     const formData = { ...form.value };
 
     // Ensure we have the teacher ID for update
-    const teacherId = formData.id || formData.user_id || props.teacher?.id || props.teacher?.user_id;
-    
+    const teacherId =
+      formData.id ||
+      formData.user_id ||
+      props.teacher?.id ||
+      props.teacher?.user_id;
+
     if (!teacherId) {
-      showNotification('Teacher ID not found. Please try again.', 'error');
+      showNotification("Teacher ID not found. Please try again.", "error");
       return;
     }
 
@@ -588,30 +629,30 @@ const saveChanges = async () => {
     }
 
     // if uploading a file, don't send a data URL in photo_url
-    if (formData.file instanceof File && typeof formData.photo_url === "string" && formData.photo_url.startsWith("data:")) {
+    if (
+      formData.file instanceof File &&
+      typeof formData.photo_url === "string" &&
+      formData.photo_url.startsWith("data:")
+    ) {
       delete formData.photo_url;
     }
 
     // Normalize IDs (accept number, string, or nested { id })
-    formData.department_id = Number(
-      formData.department_id ??
-      formData.department?.id ??
-      ""
-    ) || null;
+    formData.department_id =
+      Number(formData.department_id ?? formData.department?.id ?? "") || null;
 
-    formData.program_id = Number(
-      formData.program_id ??
-      formData.program?.id ??
-      formData.programId ??
-      ""
-    ) || null;
+    formData.program_id =
+      Number(
+        formData.program_id ?? formData.program?.id ?? formData.programId ?? ""
+      ) || null;
 
-    formData.sub_department_id = Number(
-      formData.sub_department_id ??
-      formData.sub_department?.id ??
-      formData.section?.id ??
-      ""
-    ) || null;
+    formData.sub_department_id =
+      Number(
+        formData.sub_department_id ??
+          formData.sub_department?.id ??
+          formData.section?.id ??
+          ""
+      ) || null;
 
     // Trim email/phone
     if (typeof formData.email === "string") {
@@ -636,16 +677,16 @@ const saveChanges = async () => {
     const result = await TeacherCRUD.updateTeacher(teacherId, formData);
 
     if (result.success) {
-      showNotification('Teacher updated successfully!', 'success');
+      showNotification("Teacher updated successfully!", "success");
       emit("save", result.data); // Emit the updated data to parent for refresh
       closeModal();
     } else {
       console.error("Failed to update teacher:", result.message);
-      showNotification(result.message || 'Failed to update teacher', 'error');
+      showNotification(result.message || "Failed to update teacher", "error");
     }
   } catch (error) {
     console.error("Error updating teacher:", error);
-    showNotification('Error updating teacher. Please try again.', 'error');
+    showNotification("Error updating teacher. Please try again.", "error");
   } finally {
     saving.value = false;
   }
@@ -670,7 +711,6 @@ const onPhotoChange = (e) => {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
   previewUrl.value = URL.createObjectURL(file);
 };
-
 
 // ESC key handler
 const onEsc = (ev) => {

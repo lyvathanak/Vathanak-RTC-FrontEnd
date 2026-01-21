@@ -1,16 +1,10 @@
 <template>
   <section class="px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen">
     <!-- Header -->
-    <div class="flex items-center gap-2 mb-6 sm:mb-8">
-      <Newspaper class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-      <h2
-        :class="[
-          'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-          locale === 'kh' ? 'khmer-text' : '',
-        ]">
-        {{ t("feedback") }}
-      </h2>
-    </div>
+    <PageHeader
+      :title="t('feedback')"
+      subtitle="Track and manage your feedback applications">
+    </PageHeader>
 
     <!-- Loading -->
     <div
@@ -103,12 +97,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, defineExpose } from "vue";
-import api from "@/stores/apis/axios.js";
-import { Newspaper } from "lucide-vue-next";
-import Pagination from "@/components/features/Pagination.vue";
 import { useI18n } from "vue-i18n";
-const { t, locale } = useI18n();
+import api from "@/stores/apis/axios.js";
+import Pagination from "@/components/features/Pagination.vue";
+import PageHeader from "@/components/features/PageHeader.vue";
 
+const { t, locale } = useI18n();
 const items = ref([]);
 const loading = ref(false);
 const currentPage = ref(1);

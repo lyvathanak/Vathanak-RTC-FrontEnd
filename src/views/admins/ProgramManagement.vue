@@ -56,6 +56,7 @@
           :show-view-action="false"
           :show-edit-action="true"
           :show-delete-action="true"
+          :showCloneAction="true"
           view-action-title="View program"
           edit-action-title="Edit program"
           delete-action-title="Delete program"
@@ -65,6 +66,7 @@
           row-key="id"
           @edit="openEditFor($event)"
           @delete="askDelete($event)"
+          @clone="openCloneFor($event)"
           @sort="onSort">
           <!-- Program -->
           <template #column-program_name="{ value }">
@@ -94,6 +96,12 @@
           <template #column-duration_years="{ value }">
             <span>{{
               value ? value + (value > 1 ? " years" : " year") : "—"
+            }}</span>
+          </template>
+
+          <template #column-academic_year="{ value }">
+            <span>{{
+              value 
             }}</span>
           </template>
         </ListTable>
@@ -169,6 +177,91 @@
         </div>
       </DialogContent>
     </Dialog>
+
+    <!-- Clone -->
+    <Dialog v-model:open="openClone">
+      <DialogContent
+        class="max-w-none w-[90vw] sm:w-[80vw] sm:!max-w-[1000px] rounded-sm p-0">
+        <div class="flex flex-col bg-gray-50 rounded-sm overflow-hidden">
+          <!-- Header -->
+          <div class="sticky top-0 z-10 bg-white border-b rounded-t-sm flex items-center justify-between px-6 py-4">
+            <DialogHeader class="p-0">
+              <DialogTitle>Clone Program</DialogTitle>
+            </DialogHeader>
+            <button
+              @click="openClone = false"
+              class="p-1 rounded hover:bg-gray-100"
+              aria-label="Close">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
+            <!-- Program Info -->
+            <div class="bg-white border rounded-lg p-4 shadow-sm">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                Program Details
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 text-sm">
+                <div>
+                  <span class="font-medium">Name:</span> {{ cloningProgram?.program_name }}
+                </div>
+                <div>
+                  <span class="font-medium">Department:</span> {{ getDepartmentName(cloningProgram?.department_id) }}
+                </div>
+                <div>
+                  <span class="font-medium">Degree Level:</span> {{ cloningProgram?.degree_level || "—" }}
+                </div>
+                <div>
+                  <span class="font-medium">Duration:</span>
+                  {{ cloningProgram?.duration_years ? cloningProgram.duration_years + (cloningProgram.duration_years > 1 ? " years" : " year") : "—" }}
+                </div>
+                <div>
+                  <span class="font-medium">Current Academic Year:</span> {{ cloningProgram?.academic_year || "—" }}
+                </div>
+                <div class="bg-white">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Academic Year (optional)
+                </label>
+                <input
+                  v-model="cloneAcademicYear"
+                  type="text"
+                  placeholder="e.g. 2027-2028 (leave empty to auto increase)"
+                  class="w-full h-10 rounded-lg border px-3 outline-none focus:ring-2 focus:ring-green-600"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Leave empty to auto-generate next academic year
+                </p>
+              </div>
+              </div>
+              
+            </div>
+
+            <!-- Confirmation -->
+            <p class="text-gray-600">
+              Are you sure you want to clone this program? A new program will be created with the same details.
+            </p>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-3">
+              <button
+                @click="openClone = false"
+                class="h-10 shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-gray-200 px-4 text-gray-800 font-semibold hover:bg-gray-300">
+                Cancel
+              </button>
+              <button
+                @click="confirmClone"
+                class="h-10 shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 text-white font-semibold hover:bg-green-700">
+                Clone
+              </button>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+
   </div>
 </template>
 
@@ -181,6 +274,8 @@ import ListTable from "@/components/features/ListTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import Filter from "@/components/features/Filter.vue";
 import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import { showNotification } from "@/lib/notifications.js";
+
 import { Plus, X, Search } from "lucide-vue-next";
 import {
   Dialog,
@@ -207,6 +302,7 @@ const deptIndex = ref(new Map());
 const searchTerm = ref("");
 const searching = ref(false);
 const selectedDeptLabel = ref("All");
+const cloneAcademicYear = ref("");
 
 /* sorting */
 const sortField = ref("");
@@ -216,6 +312,9 @@ const sortDirection = ref("asc");
 const page = ref(1);
 const pageSize = ref(25);
 
+const openClone = ref(false);
+const cloningProgram = ref(null);
+
 /* responsive columns */
 const isPhone = ref(false); // <= 768px
 const columnsDesktop = [
@@ -224,6 +323,7 @@ const columnsDesktop = [
   { key: "degree_level", label: "Degree Level", visible: true, sortable: true },
   { key: "duration_years", label: "Duration", visible: true, sortable: true },
   { key: "department_id", label: "Department", visible: true, sortable: true },
+  { key: "academic_year", label: "Academic Year", visible: true, sortable: true },
 ];
 const columnsPhone = [
   { key: "id", label: "ID", visible: true, sortable: true },
@@ -237,13 +337,24 @@ const columnsKey = computed(
 
 /* Filter component */
 const programFilterDefinitions = computed(() => {
-  const deptNames = departmentOptions.value.map(
-    (d) => d.department_name || d.name
-  );
+  const deptNames = departmentOptions.value.map(d => d.department_name || d.name);
+
+  // Collect unique academic years and degree levels from programs
+  const academicYears = Array.from(
+    new Set(programs.value.map(p => p.academic_year).filter(y => y && y !== "—"))
+  ).sort();
+
+  const degreeLevels = Array.from(
+    new Set(programs.value.map(p => p.degree_level).filter(d => d))
+  ).sort();
+
   return [
     { key: "department", label: "Department", options: ["All", ...deptNames] },
+    { key: "academic_year", label: "Academic Year", options: ["All", ...academicYears] },
+    { key: "degree_level", label: "Degree Level", options: ["All", ...degreeLevels] },
   ];
 });
+
 const initialProgramFilters = computed(() => ({ department: "All" }));
 const filterKey = computed(
   () => `program-filter-${departmentOptions.value.length}`
@@ -272,27 +383,41 @@ function buildDeptIndexFromPrograms(list) {
   }
   deptIndex.value = map;
 }
-function normalizePrograms(list) {
-  return (list || []).map((p) => ({
-    id: p.id,
-    program_name: p.program_name,
-    degree_level: p.degree_level,
-    duration_years: p.duration_years,
-    department_id: p.department_id ?? p.department?.id ?? null,
-    department: p.department ?? null,
-  }));
+
+function normalizePrograms(list, programMap) {
+  return (list || []).map((p) => {
+    const isCloned = !!p.original_program_id;
+    const original = isCloned
+      ? programMap.get(p.original_program_id)
+      : null;
+
+    const displayName = isCloned && original
+      ? `${p.program_name} (from ${original.program_name} – ${original.academic_year})`
+      : p.program_name;
+
+    return {
+      id: p.id,
+      program_name: displayName,
+      raw_program_name: p.program_name,
+      degree_level: p.degree_level,
+      duration_years: p.duration_years,
+      department_id: p.department_id ?? p.department?.id ?? null,
+      department: p.department ?? null,
+      academic_year: p.academic_year ?? "—",
+      original_program_id: p.original_program_id ?? null,
+    };
+  });
 }
-function getDepartmentName(id) {
-  if (!id) return "—";
-  const d = deptIndex.value.get(S(id));
-  return d?.department_name || `#${id}`;
-}
+
 
 /* API */
 async function apiListAllPrograms() {
   const { data } = await api.get("/managements/get_all_program");
-  return normalizePrograms(data?.programs || []);
+  const raw = data?.programs || [];
+  const map = new Map(raw.map(p => [p.id, p]));
+  return normalizePrograms(raw, map);
 }
+
 async function apiListProgramsByDepartmentId(deptId) {
   const { data } = await api.get("/managements/get_program_by", {
     params: { department_id: deptId },
@@ -309,18 +434,111 @@ async function apiDeleteProgram(id) {
   await api.delete(`/managements/remove_program/${id}`);
 }
 
-/* Fetch + filters */
+async function apiCloneProgram(id, academicYear = null) {
+  const payload = { program_id: id };
+
+  if (academicYear) {
+    payload.academic_year = academicYear;
+  }
+
+  const { data } = await api.post("/managements/clone_program", payload);
+  return normalizePrograms([data?.program || {}])[0];
+}
+
+const programMap = computed(() => {
+  const map = new Map();
+  programs.value.forEach((p) => {
+    map.set(p.id, p);
+  });
+  return map;
+});
+
+async function apiListAllProgramsRaw() {
+  const { data } = await api.get("/managements/get_all_program");
+  return data?.programs || [];
+}
+
 async function fetchCatalog() {
   searching.value = true;
   try {
-    const list = await apiListAllPrograms();
-    programs.value = list;
-    buildDeptIndexFromPrograms(list);
+    const raw = (await apiListAllProgramsRaw()) || []; // handle 204 / empty
+
+    // build program map
+    const map = new Map(raw.map((p) => [p.id, p]));
+
+    // normalize
+    const normalized = normalizePrograms(raw, map);
+
+    programs.value = normalized;
+    buildDeptIndexFromPrograms(normalized);
     page.value = 1;
+  } catch (err) {
+    console.error("fetchCatalog failed:", err);
+    programs.value = []; // ensure empty state
   } finally {
-    searching.value = false;
+    searching.value = false; // spinner always stops
   }
 }
+
+function getDepartmentName(id) {
+  if (!id) return "—";
+  return deptIndex.value.get(String(id))?.department_name || "—";
+}
+
+
+// async function openCloneFor(row) {
+//   cloningProgram.value = { ...row }; // Keep a copy
+//   openClone.value = true;
+// }
+
+async function confirmClone() {
+  if (!cloningProgram.value?.id) return;
+
+  openClone.value = false;
+
+  try {
+    const cloned = await apiCloneProgram(
+      cloningProgram.value.id,
+      cloneAcademicYear.value.trim() || null
+    );
+
+    await applyFiltersToList();
+
+    showNotification(
+      `Program "${cloned.program_name}" cloned successfully.`,
+      "success"
+    );
+  } catch (err) {
+    console.error(err);
+    showNotification(
+      err?.response?.data?.message || err?.message || "Clone failed",
+      "error"
+    );
+  } finally {
+    cloningProgram.value = null;
+    cloneAcademicYear.value = "";
+  }
+}
+
+
+async function openCloneFor(row) {
+  cloningProgram.value = { ...row };
+  cloneAcademicYear.value = ""; // reset
+  openClone.value = true;
+}
+
+/* Fetch + filters */
+// async function fetchCatalog() {
+//   searching.value = true;
+//   try {
+//     const list = await apiListAllPrograms();
+//     programs.value = list;
+//     buildDeptIndexFromPrograms(list);
+//     page.value = 1;
+//   } finally {
+//     searching.value = false;
+//   }
+// }
 function deptLabelToId(label) {
   if (!label || label === "All") return "";
   const found = departmentOptions.value.find(
@@ -329,18 +547,24 @@ function deptLabelToId(label) {
   return found ? S(found.id) : "";
 }
 async function applyFiltersToList() {
-  const q = searchTerm.value.trim();
-  const deptId = deptLabelToId(selectedDeptLabel.value);
+  const q = searchTerm.value.trim().toLowerCase(); // program name search
+  const deptId = labelToValue(selectedDeptLabel.value, "department");
+  const academicYear = labelToValue(selectedAcademicYear.value, "academic_year");
+  const degreeLevel = labelToValue(selectedDegreeLevel.value, "degree_level");
+
   searching.value = true;
   try {
-    let list = [];
-    if (q && deptId)
-      list = (await apiSearchPrograms(q)).filter(
-        (p) => S(p.department_id) === deptId
-      );
-    else if (q) list = await apiSearchPrograms(q);
-    else if (deptId) list = await apiListProgramsByDepartmentId(deptId);
-    else list = await apiListAllPrograms();
+    let list = await apiListAllPrograms(); // fetch all programs
+
+    // Apply search + filters
+    list = list.filter(p => {
+      const matchesName = q ? (p.program_name || "").toLowerCase().includes(q) : true;
+      const matchesDept = deptId ? S(p.department_id) === deptId : true;
+      const matchesYear = academicYear ? p.academic_year === academicYear : true;
+      const matchesDegree = degreeLevel ? p.degree_level === degreeLevel : true;
+
+      return matchesName && matchesDept && matchesYear && matchesDegree;
+    });
 
     programs.value = list;
     buildDeptIndexFromPrograms(list);
@@ -352,14 +576,21 @@ async function applyFiltersToList() {
     searching.value = false;
   }
 }
+
 function handleFiltersUpdate(f) {
   selectedDeptLabel.value = f.department || "All";
+  selectedAcademicYear.value = f.academic_year || "All";
+  selectedDegreeLevel.value = f.degree_level || "All";
   applyFiltersToList();
 }
+
 function handleClearFilters() {
   selectedDeptLabel.value = "All";
+  selectedAcademicYear.value = "All";
+  selectedDegreeLevel.value = "All";
   applyFiltersToList();
 }
+
 function handleFilterChange() {}
 
 /* sorting */
@@ -466,6 +697,22 @@ onMounted(async () => {
 onUnmounted(() => {
   if (detachMQ) detachMQ();
 });
+
+const selectedAcademicYear = ref("All");
+const selectedDegreeLevel = ref("All");
+
+
+function labelToValue(label, key) {
+  if (!label || label === "All") return "";
+  if (key === "department") {
+    const found = departmentOptions.value.find(d => (d.department_name || d.name) === label);
+    return found ? S(found.id) : "";
+  }
+  return label;
+}
+
+
+
 </script>
 
 <style scoped>

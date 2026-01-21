@@ -88,6 +88,13 @@
                   @click="$emit('edit', row)">
                   <Pencil class="size-4" />
                 </button>
+                <button
+                  v-if="showCloneAction"
+                  class="inline-flex items-center justify-center rounded-md border border-green-200 text-green-600 hover:bg-green-50 px-2.5 py-1.5 transition-colors"
+                  :title="cloneActionTitle"
+                  @click="$emit('clone', row)">
+                  <Copy class="size-4" />
+                </button>
                 <AlertDialog>
                   <AlertDialogTrigger as-child>
                     <button
@@ -127,38 +134,6 @@
             </td>
           </tr>
 
-          <!-- Empty State -->
-          <!-- <tr v-if="!data.length && !loading">
-          <td
-            :colspan="totalColumns"
-            class="px-3 py-12 text-center text-gray-500"
-          >
-            <div class="flex flex-col items-center gap-2">
-              <div class="text-gray-400">
-                <slot name="empty-icon">
-                  <svg
-                    class="w-12 h-12"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </slot>
-              </div>
-              <div class="text-lg font-medium text-gray-900">
-                {{ emptyStateTitle }}
-              </div>
-              <div class="text-sm text-gray-500">{{ emptyStateMessage }}</div>
-            </div>
-          </td>
-        </tr> -->
-
           <!-- Loading State -->
           <tr v-if="loading">
             <td :colspan="totalColumns" class="px-3 py-12 text-center">
@@ -188,11 +163,10 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { computed, defineProps, defineEmits } from "vue";
-import { Eye, Pencil, Trash2 } from "lucide-vue-next";
-
+import { Eye, Pencil, Trash2, Copy } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
-const { locale } = useI18n();
 
+const { locale } = useI18n();
 const isKhmer = computed(() => locale.value === "kh");
 
 // Props
@@ -253,6 +227,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showCloneAction: {
+    type: Boolean,
+    default: false,
+  },
   showDeleteAction: {
     type: Boolean,
     default: true,
@@ -266,6 +244,10 @@ const props = defineProps({
   editActionTitle: {
     type: String,
     default: "Edit item",
+  },
+  cloneActionTitle: {
+    type: String,
+    default: "Clone item",
   },
   deleteActionTitle: {
     type: String,
@@ -290,20 +272,10 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits([
-  "view",
-  "edit",
-  "delete",
-  "select",
-  "selectAll",
-  "sort",
-]);
+const emit = defineEmits(["view","edit","clone","delete","select","selectAll","sort"]);
 
 // Computed properties
-const visibleColumns = computed(() => {
-  return props.columns.filter((column) => column.visible !== false);
-});
-
+const visibleColumns = computed(() => props.columns.filter(c => c.visible !== false));
 const totalColumns = computed(() => {
   let count = visibleColumns.value.length;
   if (props.showSelection) count++;
@@ -391,42 +363,17 @@ const getBadgeClass = (value, badgeConfig = {}) => {
 };
 
 // Event handlers
-const handleSelectAll = () => {
-  if (isAllSelected.value) {
-    emit("selectAll", []);
-  } else {
-    emit(
-      "selectAll",
-      props.data.map((item) => getRowId(item))
-    );
-  }
-};
-
-const handleRowSelect = (itemId) => {
-  emit("select", itemId);
-};
-
+const handleSelectAll = () => emit("selectAll", isAllSelected.value ? [] : props.data.map(getRowId));
+const handleRowSelect = (id) => emit("select", id);
 const handleSort = (field) => {
-  const column = props.columns.find((col) => col.key === field);
-  if (!column || !column.sortable) return;
-
-  let direction = "asc";
-  if (props.sortField === field && props.sortDirection === "asc") {
-    direction = "desc";
-  }
-
-  emit("sort", { field, direction });
+  const column = props.columns.find(c => c.key === field);
+  if(!column || !column.sortable) return;
+  let dir = props.sortField === field && props.sortDirection === 'asc' ? 'desc' : 'asc';
+  emit("sort",{field,direction: dir});
 };
 
-// Expose methods for parent component
-defineExpose({
-  getValue,
-  formatValue,
-  formatDate,
-  formatCurrency,
-  formatNumber,
-  getBadgeClass,
-});
+// Expose methods
+defineExpose({getValue, formatValue, formatDate, formatCurrency, formatNumber, getBadgeClass});
 </script>
 
 <style scoped>

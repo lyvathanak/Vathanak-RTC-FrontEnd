@@ -18,6 +18,7 @@ import {
   BookOpen,
   MapPin,
   Settings,
+  NotebookPen,
 } from "lucide-vue-next";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 
@@ -70,6 +71,14 @@ const data = computed(() => {
         action: handleNavClick,
       },
       {
+        title: t("promote_student"),
+        url: `/${currentLang}/admin/promote_student`,
+        icon: User,
+        isActive: currentPath.includes("/admin/promote_student"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
         title: t("teachers_management"),
         url: `/${currentLang}/admin/teachers`,
         icon: User,
@@ -106,6 +115,14 @@ const data = computed(() => {
         url: `/${currentLang}/admin/subjects`,
         icon: BookOpen,
         isActive: currentPath.includes("/admin/subjects"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
+        title: t("import_score"),
+        url: `/${currentLang}/admin/ImportScore`,
+        icon: BookOpen,
+        isActive: currentPath.includes("/admin/ImportScore"),
         class: khmerClass,
         action: handleNavClick,
       },
@@ -157,6 +174,13 @@ const data = computed(() => {
         class: khmerClass,
       },
       {
+        title: t("external_exam_enrollment"),
+        url: `/${currentLang}/admin/external-exam-enrollment`,
+        icon: NotebookPen,
+        isActive: currentPath.includes("/admin/external-exam-enrollment"),
+        class: khmerClass,
+      },
+      {
         title: t("setting"),
         url: `/${currentLang}/admin/setting`,
         icon: Settings,
@@ -171,7 +195,7 @@ const data = computed(() => {
 
 <template>
   <Sidebar :collapsible="props.collapsible" :default-open="false" variant="sidebar"
-    class="peer/sidebar min-w-0 flex-shrink-0 transition-[width] duration-300 ease-in-out">
+    class="peer/sidebar min-w-0 shrink-0 transition-[width] duration-300 ease-in-out">
     <SidebarContent class="bg-[#235AA6]">
       <!-- Sidebar Header -->
       <div class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">

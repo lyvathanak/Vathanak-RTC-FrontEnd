@@ -1,73 +1,75 @@
 <template>
-  <div :class="['flex flex-col gap-4 py-5', locale === 'kh' ? 'khmer-text' : '']">
+  <div
+    :class="['flex flex-col gap-4 py-5', locale === 'kh' ? 'khmer-text' : '']">
     <!-- Top bar -->
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between px-3 sm:px-5 gap-4">
-      <!-- Search -->
-      <div class="relative w-full max-w-md">
+    <!-- Top bar -->
+    <div class="flex flex-col gap-4 px-3 sm:px-5">
+      <!-- Row: Title + Actions -->
+      <div
+        class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <!-- Title -->
+        <PageHeader
+          :title="t('students_management')"
+          subtitle="Track and manage your Student applications" />
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+          <!-- Selected indicator -->
+          <div
+            v-if="selectedIds.length > 0"
+            class="text-sm text-gray-600 font-medium">
+            {{ selectedIds.length }} {{ t("student") }}
+            <span v-if="selectedIds.length > 1">s</span> {{ t("selected") }}
+          </div>
+
+          <!-- Buttons -->
+          <div
+            class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+            <!-- Group buttons -->
+            <button
+              @click="openAddToNewGroup"
+              :disabled="selectedIds.length === 0"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
+              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+              <span class="hidden sm:inline">{{ t("add_new_group") }}</span>
+              <span class="sm:hidden">New Group</span>
+            </button>
+
+            <button
+              @click="openAddToExistingGroup"
+              :disabled="selectedIds.length === 0"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
+              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+              <span class="hidden sm:inline">{{
+                t("add_existing_group")
+              }}</span>
+              <span class="sm:hidden">Add Group</span>
+            </button>
+
+            <!-- Primary actions -->
+            <button
+              @click="openAdd"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition whitespace-nowrap w-full sm:w-auto">
+              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+              <span class="hidden sm:inline">{{ t("add_student") }}</span>
+              <span class="sm:hidden">Add Student</span>
+            </button>
+
+            <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Row: Search -->
+      <div class="relative w-full sm:max-w-md">
         <input
           v-model="search"
           type="text"
           :placeholder="t('search')"
-          class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-        />
+          class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <Search />
+          <Search class="w-4 h-4" />
         </span>
-      </div>
-
-      <!-- Button Section -->
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
-        <!-- Selected count indicator -->
-        <div v-if="selectedIds.length > 0" class="text-sm text-gray-600 font-medium order-first sm:order-none">
-          {{ selectedIds.length }} {{ t('student') }}<span v-if="selectedIds.length > 1">s</span> {{ t('selected') }}
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <!-- Group Management Buttons - Stack on mobile, inline on larger screens -->
-          <div class="flex flex-col xs:flex-row gap-2 sm:gap-3">
-            <!--Add student to new group-->
-            <button
-              @click="openAddToNewGroup"
-              :disabled="selectedIds.length === 0"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{ t('add_new_group') }}</span>
-              <span class="sm:hidden">New Group</span>
-            </button>
-
-            <!--Add student to existing group-->
-            <button
-              @click="openAddToExistingGroup"
-              :disabled="selectedIds.length === 0"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{ t('add_existing_group') }}</span>
-              <span class="sm:hidden">Add Group</span>
-            </button>
-          </div>
-
-          <!-- Primary Actions - Stack on mobile, inline on larger screens -->
-          <div class="flex flex-col xs:flex-row gap-2 sm:gap-3">
-            <!--Add student-->
-            <button
-              @click="openAdd"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition whitespace-nowrap"
-            >
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{ t('add_student') }}</span>
-              <span class="sm:hidden">Add Student</span>
-            </button>
-
-            <!-- Export (uses ExcelForm component) -->
-            <ExcelForm 
-              :filtered-rows="filteredRows"
-              class="w-full sm:w-auto"
-            />
-          </div>
-        </div>
       </div>
     </div>
 
@@ -76,8 +78,7 @@
       <StudentFilterRole
         ref="filterComponent"
         @update:filters="handleFiltersUpdate"
-        @clear-filters="handleClearFilters"
-      />
+        @clear-filters="handleClearFilters" />
     </div>
 
     <!-- Student Table -->
@@ -95,8 +96,7 @@
         @delete="remove"
         @select="handleRowSelect"
         @selectAll="handleSelectAll"
-        @sort="handleSort"
-      />
+        @sort="handleSort" />
     </div>
 
     <!-- Pagination -->
@@ -105,11 +105,10 @@
         v-model:current-page="page"
         v-model:page-size="pageSize"
         :total-items="filteredRows.length"
-        :page-size-options="[ 5, 10, 25, 50, 100]"
+        :page-size-options="[5, 10, 25, 50, 100]"
         :item-label="t('students')"
         @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
-      />
+        @page-size-change="handlePageSizeChange" />
     </div>
 
     <!-- Add Student Modal -->
@@ -117,8 +116,7 @@
       :showAdd="showAddModal"
       :rows="rows"
       @close="closeAddModal"
-      @save="handleAddSave"
-    />
+      @save="handleAddSave" />
 
     <!-- Edit Student Modal -->
     <EditStudentModal
@@ -130,8 +128,7 @@
       :departments="['ITC', 'Business', 'Arts']"
       :branches="['Battambang', 'Phnom Penh']"
       @save="handleEditSave"
-      @promote="handlePromoteStudent"
-    />
+      @promote="handlePromoteStudent" />
 
     <!-- View Student Modal -->
     <ViewStudentModal v-model="showViewModal" :student="viewStudent" />
@@ -141,19 +138,16 @@
       :is-open="showAddToExistingGroupModal"
       :students="selectedStudents"
       @close="closeAddToExistingGroupModal"
-      @add-students="handleAddStudentsToExistingGroup"
-    />
+      @add-students="handleAddStudentsToExistingGroup" />
 
     <!-- Add Students to New Group Modal -->
     <AddToNewGroup
       :is-open="showAddToNewGroupModal"
       :students="selectedStudents"
       @close="closeAddToNewGroupModal"
-      @create-group="handleCreateNewGroupWithStudents"
-    />
+      @create-group="handleCreateNewGroupWithStudents" />
   </div>
 </template>
-
 
 <script setup>
 import { Download, Plus, Search } from "lucide-vue-next";
@@ -167,10 +161,11 @@ import StudentTable from "@/components/admins/StudentManagement/StudentTable.vue
 import Pagination from "@/components/features/Pagination.vue";
 import AddToExistGroup from "@/components/admins/GroupManagement/AddToExistGroup.vue";
 import AddToNewGroup from "@/components/admins/GroupManagement/AddToNewGroup.vue";
-import ExcelForm from '@/components/features/ExcelForm.vue'
+import ExcelForm from "@/components/features/ExcelForm.vue";
 import { StudentCRUD } from "@/stores/apis/StudentCRUD.js";
 import { GroupCRUD } from "@/stores/apis/GroupCRUD.js";
 import { showNotification } from "@/lib/notifications.js";
+import PageHeader from "@/components/features/PageHeader.vue";
 
 const { t, locale } = useI18n();
 
@@ -184,19 +179,25 @@ const filterComponent = ref(null);
 // Helper functions to get IDs from names for filtering
 const getDepartmentIdByName = (departmentName) => {
   if (!filterComponent.value?.departments) return null;
-  const dept = filterComponent.value.departments.find(d => d.department_name === departmentName);
+  const dept = filterComponent.value.departments.find(
+    (d) => d.department_name === departmentName
+  );
   return dept ? dept.id : null;
 };
 
 const getSectionIdByName = (sectionName) => {
   if (!filterComponent.value?.sections) return null;
-  const section = filterComponent.value.sections.find(s => (s.sub_department_name || s.name) === sectionName);
+  const section = filterComponent.value.sections.find(
+    (s) => (s.sub_department_name || s.name) === sectionName
+  );
   return section ? section.id : null;
 };
 
 const getProgramIdByName = (programName) => {
   if (!filterComponent.value?.programs) return null;
-  const program = filterComponent.value.programs.find(p => (p.program_name || p.name) === programName);
+  const program = filterComponent.value.programs.find(
+    (p) => (p.program_name || p.name) === programName
+  );
   return program ? program.id : null;
 };
 
@@ -272,10 +273,10 @@ const handleAddSave = async (studentData) => {
     // Refresh the entire student list to ensure proper data synchronization
     await loadStudents();
     console.log("Student list refreshed successfully");
-    showNotification("Student created successfully!", 'success');
+    showNotification("Student created successfully!", "success");
   } catch (error) {
     console.error("Error refreshing student list:", error);
-    showNotification("Error refreshing student list", 'error');
+    showNotification("Error refreshing student list", "error");
   }
   closeAddModal();
 };
@@ -301,18 +302,22 @@ const handleEditSave = async (updatedStudent) => {
     if (result.success) {
       // Refresh the entire student list to ensure proper data synchronization
       await loadStudents();
-      showNotification("Student updated successfully!", 'success');
+      showNotification("Student updated successfully!", "success");
       closeEditModal();
     } else {
       // Show error notification with specific error message
-      const errorMessage = result.error?.message || 'Failed to update student. Please check all required fields.';
-      showNotification(errorMessage, 'error');
+      const errorMessage =
+        result.error?.message ||
+        "Failed to update student. Please check all required fields.";
+      showNotification(errorMessage, "error");
       console.error("Failed to update student:", result.error);
       // Don't close modal on error so user can fix the issues
     }
   } catch (error) {
-    const errorMessage = error.response?.data?.message || 'An error occurred while updating the student.';
-    showNotification(errorMessage, 'error');
+    const errorMessage =
+      error.response?.data?.message ||
+      "An error occurred while updating the student.";
+    showNotification(errorMessage, "error");
     console.error("Error updating student:", error);
     // Don't close modal on error
   }
@@ -321,23 +326,34 @@ const handleEditSave = async (updatedStudent) => {
 const handlePromoteStudent = async (promotionData) => {
   try {
     // Use user_id for patch operations instead of id
-    const result = await StudentCRUD.patchStudent(promotionData.user_id || promotionData.id, {
-      academic_year: promotionData.academic_year,
-      promotion: promotionData.promotion,
-    });
+    const result = await StudentCRUD.patchStudent(
+      promotionData.user_id || promotionData.id,
+      {
+        academic_year: promotionData.academic_year,
+        promotion: promotionData.promotion,
+      }
+    );
     if (result.success) {
       // Update local data
       const index = rows.value.findIndex((s) => s.id === promotionData.id);
       if (index !== -1) {
         rows.value[index] = result.data;
       }
-      showNotification("Student promoted successfully!", 'success');
+      showNotification("Student promoted successfully!", "success");
     } else {
-      showNotification("Failed to promote student: " + (result.error?.message || 'Unknown error'), 'error');
+      showNotification(
+        "Failed to promote student: " +
+          (result.error?.message || "Unknown error"),
+        "error"
+      );
       console.error("Failed to promote student:", result.error);
     }
   } catch (error) {
-    showNotification("Error promoting student: " + (error.response?.data?.message || 'Unknown error'), 'error');
+    showNotification(
+      "Error promoting student: " +
+        (error.response?.data?.message || "Unknown error"),
+      "error"
+    );
     console.error("Error promoting student:", error);
   }
   closeEditModal();
@@ -493,14 +509,14 @@ const filteredRows = computed(() => {
   // Apply all filters
   if (filters.value.academic_year !== "All")
     list = list.filter((r) => r.academic_year === filters.value.academic_year);
-  
+
   if (filters.value.department !== "All") {
     const departmentId = getDepartmentIdByName(filters.value.department);
     if (departmentId !== null) {
       list = list.filter((r) => r.department_id === departmentId);
     }
   }
-  
+
   if (filters.value.section !== "All") {
     const sectionId = getSectionIdByName(filters.value.section);
     if (sectionId !== null) {
@@ -548,7 +564,7 @@ watch([filteredRows, pageSize], () => {
 
 // Selected students computed property
 const selectedStudents = computed(() => {
-  return rows.value.filter(student => selectedIds.value.includes(student.id));
+  return rows.value.filter((student) => selectedIds.value.includes(student.id));
 });
 
 // Pagination event handlers
@@ -577,15 +593,15 @@ const remove = async (row) => {
     if (result.success) {
       // Refresh the entire student list to ensure proper data synchronization
       await loadStudents();
-      showNotification("Student deleted successfully!", 'success');
+      showNotification("Student deleted successfully!", "success");
       console.log("Student deleted successfully");
     } else {
       console.error("Failed to delete student:", result.error);
-      showNotification(result.message || 'Failed to delete student', 'error');
+      showNotification(result.message || "Failed to delete student", "error");
     }
   } catch (error) {
     console.error("Error deleting student:", error);
-    showNotification('Error deleting student. Please try again.', 'error');
+    showNotification("Error deleting student. Please try again.", "error");
   }
 };
 
@@ -593,55 +609,67 @@ const remove = async (row) => {
 const handleAddStudentsToExistingGroup = async (data) => {
   try {
     console.log("Handling add students to existing group event:", data);
-    
+
     if (data.success) {
       console.log("Students added to group successfully");
-      
+
       // Update local student data to reflect the group assignment
       await loadStudents(); // Reload students to get updated group information
-      
+
       // Clear selection after successful operation
       selectedIds.value = [];
-      
+
       // Don't show additional notification - AddToExistGroup already showed one
     } else {
       console.error("Failed to add students to group:", data.error);
       // Only show error notification if the modal didn't already show one
-      if (data.message && !data.message.includes('already')) {
-        showNotification(data.message || "Failed to add students to group. Please try again.", 'error');
+      if (data.message && !data.message.includes("already")) {
+        showNotification(
+          data.message || "Failed to add students to group. Please try again.",
+          "error"
+        );
       }
     }
   } catch (error) {
     console.error("Error handling add students to group event:", error);
-    showNotification("An error occurred while processing the group assignment.", 'error');
+    showNotification(
+      "An error occurred while processing the group assignment.",
+      "error"
+    );
   }
 };
 
 const handleCreateNewGroupWithStudents = async (groupData) => {
   try {
     console.log("Creating new group with students:", groupData);
-    
+
     // Create the group with students using the GroupCRUD API
     const result = await GroupCRUD.createGroupWithStudents(groupData);
-    
+
     if (result.success) {
       console.log("New group created successfully:", result.data);
-      
+
       // Update local student data to reflect the group assignment
       await loadStudents(); // Reload students to get updated group information
-      
+
       // Clear selection after successful operation
       selectedIds.value = [];
-      
+
       // Show success message (you can implement a toast notification here)
-      showNotification(`Group "${groupData.name}" created successfully with ${groupData.students.length} students!`, 'success');
+      showNotification(
+        `Group "${groupData.name}" created successfully with ${groupData.students.length} students!`,
+        "success"
+      );
     } else {
       console.error("Failed to create group:", result.error);
-      showNotification("Failed to create group. Please try again.", 'error');
+      showNotification("Failed to create group. Please try again.", "error");
     }
   } catch (error) {
     console.error("Error creating new group:", error);
-    showNotification("An error occurred while creating the group. Please try again.", 'error');
+    showNotification(
+      "An error occurred while creating the group. Please try again.",
+      "error"
+    );
   }
 };
 
@@ -686,7 +714,7 @@ const handleCreateNewGroupWithStudents = async (groupData) => {
   table {
     font-size: 11px;
   }
-  
+
   .khmer-text {
     font-size: 13px;
   }
@@ -697,7 +725,7 @@ const handleCreateNewGroupWithStudents = async (groupData) => {
   table {
     font-size: 12px;
   }
-  
+
   .khmer-text {
     font-size: 14px;
   }
@@ -708,7 +736,7 @@ const handleCreateNewGroupWithStudents = async (groupData) => {
   table {
     font-size: 13px;
   }
-  
+
   .khmer-text {
     font-size: 15px;
   }
@@ -731,11 +759,11 @@ button {
   .gap-4 {
     gap: 0.75rem;
   }
-  
+
   .gap-3 {
     gap: 0.5rem;
   }
-  
+
   .gap-2 {
     gap: 0.375rem;
   }
@@ -746,11 +774,11 @@ button {
   .lg\:flex-row {
     flex-direction: column;
   }
-  
+
   .lg\:justify-between {
     justify-content: flex-start;
   }
-  
+
   .lg\:w-auto {
     width: 100%;
   }
@@ -761,7 +789,7 @@ button {
   .sm\:hidden {
     display: inline;
   }
-  
+
   .hidden.sm\:inline {
     display: none;
   }
@@ -778,7 +806,7 @@ button {
     min-height: 44px;
     touch-action: manipulation;
   }
-  
+
   input {
     min-height: 44px;
   }

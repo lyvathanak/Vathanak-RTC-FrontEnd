@@ -6,16 +6,29 @@
       <div class="absolute inset-0 bg-black/40" @click="closeAdd"></div>
 
       <!-- dialog -->
-      <div class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
+      <div
+        class="absolute inset-0 flex items-center justify-center p-2 sm:p-4 md:p-6">
         <div
           role="dialog"
           aria-modal="true"
-          class="w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[80vh] sm:max-h-[85vh] rounded-xl sm:rounded-2xl bg-white shadow-xl flex flex-col"
-        >
-          <!-- header - fixed -->
-          <div class="flex items-center justify-between px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-b flex-shrink-0">
-            <h3 class="text-base sm:text-lg md:text-xl font-semibold">{{$t('add_student')}}</h3>
-            <button class="p-2 rounded-md hover:bg-gray-100 transition-colors" @click="closeAdd">
+          class="w-full max-w-xs sm:max-w-lg md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[80vh] sm:max-h-[85vh] rounded-xl sm:rounded-2xl bg-white shadow-xl flex flex-col">
+          <!-- header -->
+          <div
+            class="px-6 py-4 border-b bg-gray-50 flex items-center justify-between">
+            <div class="flex items-end gap-2">
+              <div class="text-lg tracking-wider font-bold">
+                ADD STUDENT
+              </div>
+              <div
+                class="hidden sm:inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-xs font-semibold text-[#235AA6] border border-[#235AA6] ring-1 ring-gray-200"
+                :class="[locale === 'kh' ? 'khmer-text' : '']">
+                {{ t("add_hod") }}
+              </div>
+            </div>
+            <button
+              class="p-2 rounded-md hover:bg-gray-100 transition-colors"
+              @click="closeAdd"
+              aria-label="Close">
               <X class="w-5 h-5" />
             </button>
           </div>
@@ -24,39 +37,33 @@
           <div class="flex-1 overflow-y-auto px-4 sm:px-5 md:px-6 py-4 sm:py-5">
             <div class="flex flex-col items-center gap-4 sm:gap-5">
               <!-- photo -->
-              <div class="flex flex-col items-center flex-shrink-0">
+              <div class="flex flex-col items-center shrink-0">
                 <label
-                  class="relative w-28 h-36 sm:w-32 sm:h-40 md:w-36 md:h-44 border-2 border-gray-300 rounded-sm overflow-hidden bg-gray-50 cursor-pointer hover:border-blue-400 hover:bg-gray-100 transition-colors"
-                >
+                  class="relative w-28 h-36 sm:w-32 sm:h-40 md:w-36 md:h-44 border-2 border-gray-300 rounded-sm overflow-hidden bg-gray-50 cursor-pointer hover:border-blue-400 hover:bg-gray-100 transition-colors">
                   <input
                     type="file"
                     accept="image/*"
                     class="hidden"
-                    @change="onPhotoChange"
-                  />
+                    @change="onPhotoChange" />
                   <div
                     v-if="!newStudent.profile_picture"
-                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-500"
-                  >
+                    class="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
                     <Plus class="w-6 sm:w-7 md:w-8 mb-1 sm:mb-2" />
                     <span class="text-xs sm:text-sm text-center px-1">
-                      {{$t('click_to_upload_photo')}}
+                      {{ $t("click_to_upload_photo") }}
                     </span>
                   </div>
                   <img
                     v-if="newStudent.profile_picture"
                     :src="newStudent.profile_picture"
                     alt="Preview"
-                    class="w-full h-full object-cover"
-                  />
+                    class="w-full h-full object-cover" />
                   <div
                     v-if="newStudent.profile_picture"
-                    class="absolute inset-0 bg-opacity-0 hover:bg-opacity-50 transition-all flex items-center justify-center"
-                  >
+                    class="absolute inset-0 bg-opacity-0 hover:bg-opacity-50 transition-all flex items-center justify-center">
                     <span
-                      class="text-white opacity-0 hover:opacity-100 text-sm font-medium"
-                    >
-                      {{$t('change_photo')}}
+                      class="text-white opacity-0 hover:opacity-100 text-sm font-medium">
+                      {{ $t("change_photo") }}
                     </span>
                   </div>
                 </label>
@@ -67,104 +74,135 @@
                 <!-- Personal Information -->
                 <div>
                   <div class="flex items-center font-semibold mb-3">
-                    <Info class="w-4 text-gray-500 mr-2 flex-shrink-0" />
-                    <h1 class="text-sm sm:text-base">{{$t('personal_information')}}</h1>
+                    <Info class="w-4 text-gray-500 mr-2 shrink-0" />
+                    <h1 class="text-sm sm:text-base">
+                      {{ $t("personal_information") }}
+                    </h1>
                   </div>
                   <div
-                    class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-5 gap-y-3"
-                  >
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-5 gap-y-3">
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('name_khmer')}} <span class="text-red-500">*</span>
+                        {{ $t("name_khmer") }}
+                        <span class="text-red-500">*</span>
                       </label>
                       <input
                         v-model="newStudent.khmer_name"
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.khmer_name }"
-                        :placeholder="$t('enter_name_khmer')"
-                      />
-                      <p v-if="errors.khmer_name" class="text-red-500 text-xs mt-1">{{ errors.khmer_name }}</p>
+                        :class="{
+                          'border-red-500 focus:ring-red-500':
+                            errors.khmer_name,
+                        }"
+                        :placeholder="$t('enter_name_khmer')" />
+                      <p
+                        v-if="errors.khmer_name"
+                        class="text-red-500 text-xs mt-1">
+                        {{ errors.khmer_name }}
+                      </p>
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('name_latin')}} <span class="text-red-500">*</span>
+                        {{ $t("name_latin") }}
+                        <span class="text-red-500">*</span>
                       </label>
                       <input
                         v-model="newStudent.latin_name"
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.latin_name }"
-                        :placeholder="$t('enter_name_latin')"
-                      />
-                      <p v-if="errors.latin_name" class="text-red-500 text-xs mt-1">{{ errors.latin_name }}</p>
+                        :class="{
+                          'border-red-500 focus:ring-red-500':
+                            errors.latin_name,
+                        }"
+                        :placeholder="$t('enter_name_latin')" />
+                      <p
+                        v-if="errors.latin_name"
+                        class="text-red-500 text-xs mt-1">
+                        {{ errors.latin_name }}
+                      </p>
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('gender')}} <span class="text-red-500">*</span>
+                        {{ $t("gender") }} <span class="text-red-500">*</span>
                       </label>
                       <div class="relative">
                         <select
                           v-model="newStudent.gender"
                           class="w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          :class="{ 'border-red-500 focus:ring-red-500': errors.gender }"
-                        >
-                          <option value="" disabled>{{$t('select_gender')}}</option>
+                          :class="{
+                            'border-red-500 focus:ring-red-500': errors.gender,
+                          }">
+                          <option value="" disabled>
+                            {{ $t("select_gender") }}
+                          </option>
                           <option
                             v-for="g in genderOptions"
                             :key="g"
-                            :value="g"
-                          >
+                            :value="g">
                             {{ g }}
                           </option>
                         </select>
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
-                      <p v-if="errors.gender" class="text-red-500 text-xs mt-1">{{ errors.gender }}</p>
+                      <p v-if="errors.gender" class="text-red-500 text-xs mt-1">
+                        {{ errors.gender }}
+                      </p>
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('date_of_birth')}} <span class="text-red-500">*</span>
+                        {{ $t("date_of_birth") }}
+                        <span class="text-red-500">*</span>
                       </label>
                       <input
                         v-model="newStudent.date_of_birth"
                         type="date"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.date_of_birth }"
-                        :placeholder="$t('select_date_of_birth')"
-                      />
-                      <p v-if="errors.date_of_birth" class="text-red-500 text-xs mt-1">{{ errors.date_of_birth }}</p>
+                        :class="{
+                          'border-red-500 focus:ring-red-500':
+                            errors.date_of_birth,
+                        }"
+                        :placeholder="$t('select_date_of_birth')" />
+                      <p
+                        v-if="errors.date_of_birth"
+                        class="text-red-500 text-xs mt-1">
+                        {{ errors.date_of_birth }}
+                      </p>
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('email')}}
+                        {{ $t("email") }}
                       </label>
                       <input
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm bg-gray-100 text-gray-600 cursor-not-allowed"
                         :value="newStudent.email || 'Auto-generated on save'"
-                        disabled
-                      />
+                        disabled />
                       <p class="text-xs text-gray-500">
-                        This email will be generated by the system when you save the student.
+                        This email will be generated by the system when you save
+                        the student.
                       </p>
-
                     </div>
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('phone_number')}} <span class="text-red-500">*</span>
+                        {{ $t("phone_number") }}
+                        <span class="text-red-500">*</span>
                       </label>
                       <input
                         v-model="newStudent.phone_number"
                         type="tel"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.phone_number }"
+                        :class="{
+                          'border-red-500 focus:ring-red-500':
+                            errors.phone_number,
+                        }"
                         :placeholder="$t('enter_phone_number')"
-                        @keypress="onlyNumbers"
-                      />
-                      <p v-if="errors.phone_number" class="text-red-500 text-xs mt-1">{{ errors.phone_number }}</p>
+                        @keypress="onlyNumbers" />
+                      <p
+                        v-if="errors.phone_number"
+                        class="text-red-500 text-xs mt-1">
+                        {{ errors.phone_number }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -172,127 +210,163 @@
                 <!-- Academic Information -->
                 <div>
                   <div class="flex items-center font-semibold mb-3">
-                    <Info class="w-4 text-gray-500 mr-2 flex-shrink-0" />
-                    <h1 class="text-sm sm:text-base">{{$t('academic_information')}}</h1>
+                    <Info class="w-4 text-gray-500 mr-2 shrink-0" />
+                    <h1 class="text-sm sm:text-base">
+                      {{ $t("academic_information") }}
+                    </h1>
                   </div>
                   <div
-                    class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-5 gap-y-3"
-                  >
+                    class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-5 gap-y-3">
                     <!-- Academic Year (Disabled but shows current) -->
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('academic_year')}}
+                        {{ $t("academic_year") }}
                       </label>
                       <input
-                        v-model="newStudent.academic_year"
+                        :value="
+                          newStudent.academic_year || getCurrentAcademicYear()
+                        "
                         type="text"
                         disabled
                         class="w-full rounded-lg border px-3 py-2 text-sm bg-gray-100 text-gray-700 cursor-not-allowed"
-                        :placeholder="getCurrentAcademicYear()"
-                      />
+                        :placeholder="getCurrentAcademicYear()" />
+                      <p class="text-xs text-gray-500 mt-1">
+                        Auto-set from selected program
+                      </p>
                     </div>
 
                     <!-- Department -->
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('department')}} <span class="text-red-500">*</span>
+                        {{ $t("department") }}
+                        <span class="text-red-500">*</span>
                       </label>
                       <div class="relative">
                         <select
                           v-model="newStudent.department_id"
                           class="w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          :class="{ 'border-red-500 focus:ring-red-500': errors.department_id }"
-                          :disabled="departmentsLoading"
-                        >
+                          :class="{
+                            'border-red-500 focus:ring-red-500':
+                              errors.department_id,
+                          }"
+                          :disabled="departmentsLoading">
                           <option :value="null">
-                            {{ departmentsLoading ? 'Loading departments...' : $t('select_department') }}
+                            {{
+                              departmentsLoading
+                                ? "Loading departments..."
+                                : $t("select_department")
+                            }}
                           </option>
-                          <option v-for="d in departmentOptions" :key="d.id" :value="d.id">
+                          <option
+                            v-for="d in departmentOptions"
+                            :key="d.id"
+                            :value="d.id">
                             {{ d.name }}
                           </option>
                         </select>
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
-                      <p v-if="errors.department_id" class="text-red-500 text-xs mt-1">{{ errors.department_id }}</p>
+                      <p
+                        v-if="errors.department_id"
+                        class="text-red-500 text-xs mt-1">
+                        {{ errors.department_id }}
+                      </p>
                     </div>
 
                     <!-- Program (renamed from Promotion) -->
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('program')}} <span class="text-red-500">*</span>
+                        {{ $t("program") }} <span class="text-red-500">*</span>
                       </label>
                       <div class="relative">
                         <select
                           v-model.number="newStudent.program_id"
                           class="w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          :class="{ 'border-red-500 focus:ring-red-500': errors.program_id }"
-                          :disabled="programsLoading || !newStudent.department_id"
-                        >
+                          :class="{
+                            'border-red-500 focus:ring-red-500':
+                              errors.program_id,
+                          }"
+                          :disabled="
+                            programsLoading || !newStudent.department_id
+                          ">
                           <!-- force select the placeholder -->
-                          <option :value="null" :selected="newStudent.program_id == null">
+                          <option
+                            :value="null"
+                            :selected="newStudent.program_id == null">
                             {{
                               !newStudent.department_id
-                                ? 'Please select a department first'
+                                ? "Please select a department first"
                                 : programsLoading
-                                  ? 'Loading programs...'
-                                  : $t('select_program')
+                                ? "Loading programs..."
+                                : $t("select_program")
                             }}
                           </option>
 
-                          <option v-for="p in filteredPrograms" :key="p.id" :value="p.id">
-                            {{ p.program_name }} 
+                          <option
+                            v-for="p in filteredPrograms"
+                            :key="p.id"
+                            :value="p.id">
+                            {{ p.program_name }}
                           </option>
                         </select>
 
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
-                      <p v-if="errors.program_id" class="text-red-500 text-xs mt-1">
+                      <p
+                        v-if="errors.program_id"
+                        class="text-red-500 text-xs mt-1">
                         {{ errors.program_id }}
                       </p>
                     </div>
 
-
                     <!-- Section -->
                     <div>
                       <label class="block text-sm text-gray-600 mb-1">
-                        {{$t('section')}} <span class="text-red-500">*</span>
+                        {{ $t("section") }} <span class="text-red-500">*</span>
                       </label>
                       <div class="relative">
                         <select
                           v-model.number="newStudent.sub_department_id"
                           class="w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                          :class="{ 'border-red-500 focus:ring-red-500': errors.sub_department_id }"
-                          :disabled="sectionsLoading || !newStudent.department_id"
-                        >
+                          :class="{
+                            'border-red-500 focus:ring-red-500':
+                              errors.sub_department_id,
+                          }"
+                          :disabled="
+                            sectionsLoading || !newStudent.department_id
+                          ">
                           <!-- force select the placeholder -->
-                          <option :value="null" :selected="newStudent.sub_department_id == null">
+                          <option
+                            :value="null"
+                            :selected="newStudent.sub_department_id == null">
                             {{
                               !newStudent.department_id
-                                ? 'Please select a department first'
+                                ? "Please select a department first"
                                 : sectionsLoading
-                                  ? 'Loading sections...'
-                                  : $t('select_section')
+                                ? "Loading sections..."
+                                : $t("select_section")
                             }}
                           </option>
 
-                          <option v-for="s in filteredSections" :key="s.id" :value="s.id">
+                          <option
+                            v-for="s in filteredSections"
+                            :key="s.id"
+                            :value="s.id">
                             {{ s.name }}
                           </option>
                         </select>
 
                         <ChevronDown
-                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
-                        />
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                       </div>
-                      <p v-if="errors.sub_department_id" class="text-red-500 text-xs mt-1">
+                      <p
+                        v-if="errors.sub_department_id"
+                        class="text-red-500 text-xs mt-1">
                         {{ errors.sub_department_id }}
                       </p>
                     </div>
-
                   </div>
                 </div>
               </div>
@@ -300,18 +374,17 @@
           </div>
 
           <!-- footer - fixed -->
-          <div class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex justify-end gap-3 flex-shrink-0 rounded-b-2xl bg-white">
+          <div
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex justify-end gap-3 shrink-0 rounded-b-2xl bg-white">
             <button
               class="px-4 py-2 text-sm rounded-lg bg-[#FF4040] text-white border hover:bg-[#ff3030] transition-colors"
-              @click="closeAdd"
-            >
-              {{$t('cancel')}}
+              @click="closeAdd">
+              {{ $t("cancel") }}
             </button>
             <button
               class="px-4 py-2 text-sm rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a91] transition-colors"
-              @click="saveStudent"
-            >
-              {{$t('save')}}
+              @click="saveStudent">
+              {{ $t("save") }}
             </button>
           </div>
         </div>
@@ -322,12 +395,26 @@
 
 <script setup>
 import { ChevronDown, Info, Plus, X } from "lucide-vue-next";
-import { onMounted, onBeforeUnmount, computed, ref, reactive, watch } from "vue";
+import {
+  onMounted,
+  onBeforeUnmount,
+  computed,
+  ref,
+  reactive,
+  watch,
+} from "vue";
 import { useAddStudent } from "@/stores/Student/useAddStudent.js";
 import { StudentCRUD } from "@/stores/apis/StudentCRUD.js";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment, useSectionsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+  useSectionsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
 import { useStudentFormValidate } from "@/stores/global/useFormValidate.js";
 import { getAcademicYearForProgram } from "@/stores/global/getAcademicYear.js";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 // Props
 const props = defineProps({
@@ -339,48 +426,49 @@ const props = defineProps({
 const emit = defineEmits(["close", "save"]);
 
 // 🎯 Use the reusable composable
-const { state: newStudent, setPhotoFile, submit, reset } = useAddStudent({
+const {
+  state: newStudent,
+  setPhotoFile,
+  submit,
+  reset,
+} = useAddStudent({
   createFn: StudentCRUD.createStudent,
   studentFullNameFromKhmer: true,
 });
 
 // ✅ Use reusable form validation composable
-const { 
-  errors, 
-  validateStudent, 
-  clearErrors, 
-  mapServerErrors 
-} = useStudentFormValidate();
+const { errors, validateStudent, clearErrors, mapServerErrors } =
+  useStudentFormValidate();
 
 function getCurrentAcademicYear() {
   const y = new Date().getFullYear();
-  return `${y}-${y + 1}`;
+  return `${y - 1}-${y}`;
 }
 
 // 🎯 Use FilterByDepartment composables
 // Get departments for the dropdown
-const { 
-  departments, 
+const {
+  departments,
   departmentOptions,
-  loading: departmentsLoading 
+  loading: departmentsLoading,
 } = useFilteredByDepartment({ immediate: true });
 
 // Get programs filtered by department
-const { 
+const {
   selectedDepartmentId: selectedDepartmentIdForPrograms,
-  filtered: programsFiltered, 
+  filtered: programsFiltered,
   rawList: allPrograms,
   loading: programsLoading,
-  setDepartment: setProgramsDepartment
+  setDepartment: setProgramsDepartment,
 } = useProgramsFilteredByDepartment({ immediate: true });
 
-// Get sections filtered by department  
-const { 
+// Get sections filtered by department
+const {
   selectedDepartmentId: selectedDepartmentIdForSections,
-  filtered: sectionsFiltered, 
+  filtered: sectionsFiltered,
   rawList: allSections,
   loading: sectionsLoading,
-  setDepartment: setSectionsDepartment
+  setDepartment: setSectionsDepartment,
 } = useSectionsFilteredByDepartment({ immediate: true });
 
 // Options for selects
@@ -388,8 +476,13 @@ const genderOptions = ["Male", "Female"];
 
 // Computed properties for filtered options
 const filteredPrograms = computed(() => {
-  if (!newStudent.department_id) return allPrograms.value;
-  return programsFiltered.value;
+  const currentYear = getCurrentAcademicYear();
+  let programs = newStudent.department_id
+    ? programsFiltered.value
+    : allPrograms.value;
+
+  // Filter by current academic year
+  return programs.filter((p) => p.academic_year === currentYear);
 });
 
 const filteredSections = computed(() => {
@@ -399,68 +492,101 @@ const filteredSections = computed(() => {
 
 const programOptions = computed(() => {
   if (programsLoading.value) return ["Loading..."];
-  return filteredPrograms.value.map(p => p.program_name).filter(Boolean);
+  return filteredPrograms.value.map((p) => p.program_name).filter(Boolean);
 });
 
 const sectionOptions = computed(() => {
   if (sectionsLoading.value) return ["Loading..."];
-  return filteredSections.value.map(s => s.name).filter(Boolean);
+  return filteredSections.value.map((s) => s.name).filter(Boolean);
 });
 
 // Helper functions for ID mapping
 const getDepartmentId = (departmentName) => {
-  const dept = departments.value.find(d => d.department_name === departmentName);
+  const dept = departments.value.find(
+    (d) => d.department_name === departmentName
+  );
   return dept ? dept.id : null;
 };
 
 const getProgramId = (programName) => {
-  const program = allPrograms.value.find(p => p.program_name === programName);
+  const program = allPrograms.value.find((p) => p.program_name === programName);
   return program ? program.id : null;
 };
 
 const getSectionId = (sectionName) => {
-  const section = allSections.value.find(s => s.name === sectionName);
+  const section = allSections.value.find((s) => s.name === sectionName);
   return section ? section.id : null;
 };
 
 // Watch for department changes to reset dependent fields and update filters
-watch(() => newStudent.department_id, (newDeptId, oldDeptId) => {
-  if (newDeptId !== oldDeptId) {
-    newStudent.program_id = null;
-    newStudent.sub_department_id = null;
-    newStudent.academic_year = getCurrentAcademicYear(); // Reset to default
-    if (newDeptId) { setProgramsDepartment(newDeptId); setSectionsDepartment(newDeptId); }
-    else { setProgramsDepartment(''); setSectionsDepartment(''); }
-  }
-});
-
-// 🎯 Watch for program changes to auto-generate academic year
-watch(() => newStudent.program_id, async (newProgramId) => {
-  if (!newProgramId) {
-    newStudent.academic_year = getCurrentAcademicYear();
-    return;
-  }
-
-  try {
-    console.log('🔍 Fetching academic year for program:', newProgramId);
-    const result = await getAcademicYearForProgram(newProgramId);
-    
-    if (result.success && result.academicYear) {
-      const dates = result.academicYear.dates;
-      const academicYearString = `${dates.start_year}-${dates.end_year}`;
-      newStudent.academic_year = academicYearString;
-      console.log('✅ Academic year auto-generated:', academicYearString);
-      console.log('📊 Program generation info:', result.generation);
-    } else {
-      console.warn('⚠️ Could not auto-generate academic year:', result.error);
-      newStudent.academic_year = getCurrentAcademicYear();
+watch(
+  () => newStudent.department_id,
+  (newDeptId, oldDeptId) => {
+    if (newDeptId !== oldDeptId) {
+      newStudent.program_id = null;
+      newStudent.sub_department_id = null;
+      newStudent.academic_year = getCurrentAcademicYear(); // Reset to default
+      if (newDeptId) {
+        setProgramsDepartment(newDeptId);
+        setSectionsDepartment(newDeptId);
+      } else {
+        setProgramsDepartment("");
+        setSectionsDepartment("");
+      }
     }
-  } catch (error) {
-    console.error('❌ Error fetching academic year:', error);
-    newStudent.academic_year = getCurrentAcademicYear();
   }
-});
+);
 
+// 🎯 Watch for program changes to auto-set academic year
+watch(
+  () => newStudent.program_id,
+  async (newProgramId) => {
+    if (!newProgramId) {
+      newStudent.academic_year = getCurrentAcademicYear();
+      newStudent.academic_year_id = null;
+      newStudent.generation_id = null;
+      return;
+    }
+
+    try {
+      console.log("🔍 Fetching academic year for program:", newProgramId);
+
+      // Get the selected program details to extract academic_year_id and generation_id
+      const selectedProgram = allPrograms.value.find(
+        (p) => p.id === newProgramId
+      );
+
+      if (selectedProgram) {
+        // Set the academic year string
+        newStudent.academic_year =
+          selectedProgram.academic_year || getCurrentAcademicYear();
+
+        // Set the academic_year_id if available
+        newStudent.academic_year_id = selectedProgram.academic_year_id || null;
+
+        // Set the generation_id if available
+        newStudent.generation_id = selectedProgram.generation_id || null;
+
+        console.log("✅ Program data extracted:", {
+          academic_year: newStudent.academic_year,
+          academic_year_id: newStudent.academic_year_id,
+          generation_id: newStudent.generation_id,
+          program: selectedProgram,
+        });
+      } else {
+        console.warn("⚠️ Program not found in list");
+        newStudent.academic_year = getCurrentAcademicYear();
+        newStudent.academic_year_id = null;
+        newStudent.generation_id = null;
+      }
+    } catch (error) {
+      console.error("❌ Error fetching academic year:", error);
+      newStudent.academic_year = getCurrentAcademicYear();
+      newStudent.academic_year_id = null;
+      newStudent.generation_id = null;
+    }
+  }
+);
 
 // Close modal and reset
 const closeAdd = () => {
@@ -483,14 +609,20 @@ const closeAdd = () => {
     newStudent.file = null;
 
     // Reset file inputs
-    document.querySelectorAll('input[type="file"]').forEach(i => (i.value = ""));
+    document
+      .querySelectorAll('input[type="file"]')
+      .forEach((i) => (i.value = ""));
   }, 0);
 };
 
 // 🚀 Save
 const saveStudent = async () => {
   clearErrors(); // fresh run
-  newStudent.academic_year = getCurrentAcademicYear();
+
+  // ✅ Ensure academic_year is set (either from program or default)
+  if (!newStudent.academic_year) {
+    newStudent.academic_year = getCurrentAcademicYear();
+  }
 
   // ✅ Use the reusable validation composable
   const formData = {
@@ -505,6 +637,9 @@ const saveStudent = async () => {
     section: newStudent.sub_department_id,
     sub_department_id: newStudent.sub_department_id,
     academic_year: newStudent.academic_year,
+    academic_year_id: newStudent.academic_year_id,
+    generation_id: newStudent.generation_id,
+    year: newStudent.year || 1, // Default to year 1 for new students
     profile_picture: newStudent.profile_picture,
     start_year: newStudent.start_year,
   };
@@ -522,7 +657,11 @@ const saveStudent = async () => {
   // if (programId !== undefined && programId !== null) newStudent.program_id = Number(programId);
 
   // Ensure numeric department_id
-  if (newStudent.department_id !== undefined && newStudent.department_id !== null && newStudent.department_id !== "") {
+  if (
+    newStudent.department_id !== undefined &&
+    newStudent.department_id !== null &&
+    newStudent.department_id !== ""
+  ) {
     newStudent.department_id = Number(newStudent.department_id);
   }
 
@@ -542,6 +681,9 @@ const saveStudent = async () => {
     sub_department_id: newStudent.sub_department_id,
     program_id: newStudent.program_id,
     academic_year: newStudent.academic_year,
+    academic_year_id: newStudent.academic_year_id,
+    generation_id: newStudent.generation_id,
+    year: newStudent.year || 1,
     profile_picture: newStudent.profile_picture,
     file: newStudent.file,
   });
@@ -568,7 +710,8 @@ const onPhotoChange = (e) => {
 
   const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   if (!allowedTypes.includes(f.type)) {
-    errors.global = "Please select a valid image file (JPEG, PNG, GIF, or WebP)";
+    errors.global =
+      "Please select a valid image file (JPEG, PNG, GIF, or WebP)";
     return;
   }
   if (f.size > 2 * 1024 * 1024) {
@@ -577,7 +720,11 @@ const onPhotoChange = (e) => {
   }
 
   setPhotoFile(f);
-  console.log("📸 Photo selected:", { name: f.name, size: f.size, type: f.type });
+  console.log("📸 Photo selected:", {
+    name: f.name,
+    size: f.size,
+    type: f.type,
+  });
 };
 
 // 🔢 Only allow numbers in phone input
@@ -590,20 +737,21 @@ const onlyNumbers = (event) => {
 };
 
 // ESC to close
-const onEsc = (e) => { if (e.key === "Escape") closeAdd(); };
+const onEsc = (e) => {
+  if (e.key === "Escape") closeAdd();
+};
 
 onMounted(async () => {
   window.addEventListener("keydown", onEsc);
-  
+
   // FilterByDepartment composables handle data loading automatically
   // No need to manually call getAllDepartments, getAllPrograms, getAllSections
-  
+
   newStudent.academic_year = getCurrentAcademicYear();
   newStudent.department_id = null;
   newStudent.program_id = null;
   newStudent.sub_department_id = null;
   if (!newStudent.gender) newStudent.gender = "";
-
 
   console.log("Modal mounted - Initial state:", {
     latin_name: newStudent.latin_name,
@@ -644,12 +792,12 @@ onBeforeUnmount(() => {
   .max-h-\[95vh\] {
     max-height: 100vh;
   }
-  
+
   /* Reduce gaps on very short screens */
   .gap-3 {
     gap: 0.5rem;
   }
-  
+
   .gap-4 {
     gap: 0.75rem;
   }
@@ -661,7 +809,7 @@ onBeforeUnmount(() => {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
-  
+
   .py-4 {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;

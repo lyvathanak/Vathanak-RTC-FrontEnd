@@ -413,7 +413,8 @@ const createGroup = async () => {
       section_id: selectedSection?.id,
       program_id: selectedProgram?.id,
       semester_id: selectedSemesterObj?.id ?? Number(groupForm.value.semester),
-      academic_year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1), // Auto-generate academic year
+      academic_year: selectedSemesterObj?.academic_year_label || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)),
+      academic_year_id: selectedSemesterObj?.academic_year_id,
       created_at: new Date().toISOString(),
       status: "Active",
     };

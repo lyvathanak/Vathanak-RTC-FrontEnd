@@ -75,7 +75,7 @@
             </div>
 
             <!-- Department (4/6) -->
-            <div class="flex flex-col md:col-span-4">
+            <div class="flex flex-col md:col-span-2">
               <label class="text-sm font-medium mb-1"
                 >Department <span class="text-red-600">*</span></label
               >
@@ -101,6 +101,22 @@
               </div>
               <p v-if="errors.department_id" class="text-red-600 text-sm mt-1">
                 {{ errors.department_id }}
+              </p>
+            </div>
+
+            <div class="flex flex-col md:col-span-2">
+              <label class="text-sm font-medium mb-1">
+                Academic Year <span class="text-red-600">*</span>
+              </label>
+              <input
+                v-model="form.academic_year"
+                type="text"
+                placeholder="Enter Academic Year"
+                class="h-10 w-full rounded-2xl border px-3 outline-none focus:ring-2 focus:ring-[#235AA6]"
+                required
+              />
+              <p v-if="errors.academic_year" class="text-red-600 text-sm mt-1">
+                {{ errors.academic_year }}
               </p>
             </div>
           </div>
@@ -589,6 +605,7 @@ const form = ref({
   degree_level: "",
   duration_years: 1,
   department_id: "",
+  academic_year:"",
 });
 const errors = ref({});
 const loading = ref(false);
@@ -619,6 +636,16 @@ const subjectCatalog = computed(() =>
 /* ---------- subjects per semester ---------- */
 const semesterSubjects = reactive({}); // { [semesterId]: Subject[] }
 const removingSet = ref(new Set()); // keys "semesterId|subjectId"
+
+const academicYears = ref([]);
+async function loadAcademicYears() {
+  try {
+    const { data } = await api.get("/managements/academic_years");
+    academicYears.value = data?.academic_years || [];
+  } catch (e) {
+    console.error("Failed to load academic years:", e);
+  }
+}
 
 /* =============================== Date helpers =============================== */
 function pad2(n) {
@@ -1046,6 +1073,7 @@ async function submit() {
       degree_level: form.value.degree_level,
       duration_years: Number(form.value.duration_years),
       department_id: Number(form.value.department_id),
+      academic_year: form.value.academic_year || ""
     };
     await api.put(`/managements/update_program/${props.program.id}`, payload);
     emit("success", { ...payload, id: props.program.id });
@@ -1076,6 +1104,7 @@ watch(
     form.value.department_id = String(
       p.department_id ?? p.department?.id ?? ""
     );
+    form.value.academic_year = p.academic_year || "";
 
     await Promise.all([loadDepartments(), loadAllSubjects()]);
     await loadSemesters(p.id);
@@ -1084,8 +1113,23 @@ watch(
   { immediate: true }
 );
 
-onMounted(async () => {
-  await Promise.all([loadDepartments(), loadAllSubjects()]);
-  if (props.program?.id) await loadSemesters(props.program.id);
+// onMounted(async () => {
+//   await Promise.all([loadDepartments(), loadAllSubjects()]);
+//   if (props.program?.id) await loadSemesters(props.program.id);
+// });
+
+onMounted(() => {
+  Object.assign(form.value, {
+    program_code: props.program.program_code || "",
+    program_name: props.program.program_name || "",
+    degree_level: props.program.degree_level || "",
+    duration_years: props.program.duration_years || 1,
+    department_id: props.program.department_id || "",
+    academic_year: props.program.academic_year || "",
+  });
+  loadDepartments();
+  loadAllSubjects();
+  loadAcademicYears();
+  loadSemesters();
 });
 </script>

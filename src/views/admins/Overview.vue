@@ -4,26 +4,46 @@
       <!-- Header -->
       <div class="mb-8 flex justify-between items-center">
         <div>
-          <h1 :class="['text-3xl font-bold text-gray-900', locale === 'kh' ? 'khmer-text' : '']">
-            {{ t('admin_dashboard') }}
+          <h1
+            :class="[
+              'text-3xl font-bold text-gray-900',
+              locale === 'kh' ? 'khmer-text' : '',
+            ]">
+            {{ t("admin_dashboard") }}
           </h1>
-          <p :class="['text-gray-600 mt-2', locale === 'kh' ? 'khmer-text' : '']">
+          <p
+            :class="[
+              'text-gray-600 mt-2',
+              locale === 'kh' ? 'khmer-text' : '',
+            ]">
             <!-- {{ t('welcome') }}, {{ authStore.user?.name }}! -->
-            {{ t('welcome') }}, {{ authStore.userRole }}!
+            {{ t("welcome") }}, {{ authStore.userRole }}!
           </p>
         </div>
-        
       </div>
 
       <!-- User Info Card -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 :class="['text-xl font-semibold mb-4', locale === 'kh' ? 'khmer-text' : '']">
+      <div>
+        <UserInfoCard
+          :role="authStore.userRole"
+          :user="detailUser"
+          :locale="locale" />
+      </div>
+
+      <!-- <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2
+          :class="[
+            'text-xl font-semibold mb-4',
+            locale === 'kh' ? 'khmer-text' : '',
+          ]">
           User Information
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label class="text-sm font-medium text-gray-500">Role:</label>
-            <p class="text-lg font-semibold text-blue-600 capitalize">{{ authStore.userRole }}</p>
+            <p class="text-lg font-semibold text-blue-600 capitalize">
+              {{ authStore.userRole }}
+            </p>
           </div>
           <div>
             <label class="text-sm font-medium text-gray-500">Email:</label>
@@ -34,82 +54,31 @@
             <p class="text-lg">{{ authStore.user?.profile?.department }}</p>
           </div>
         </div>
+      </div> -->
+
+      <!-- Widgets -->
+      <div>
+        <OverviewWidgets
+          :role="authStore.userRole"
+          :stats="stats"
+          v-model:range="lineRange"
+          @send="onChatSend" />
       </div>
 
-      <!-- Admin Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Total Users</p>
-              <p class="text-3xl font-bold text-blue-600">1,234</p>
-            </div>
-            <div class="p-3 bg-blue-100 rounded-full">
-              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Active Courses</p>
-              <p class="text-3xl font-bold text-green-600">45</p>
-            </div>
-            <div class="p-3 bg-green-100 rounded-full">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Teachers</p>
-              <p class="text-3xl font-bold text-purple-600">28</p>
-            </div>
-            <div class="p-3 bg-purple-100 rounded-full">
-              <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 6V9a2 2 0 00-2-2H10a2 2 0 00-2 2v3.1M16 20h4v-4M8 20H4v-4"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-lg shadow-md p-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Students</p>
-              <p class="text-3xl font-bold text-orange-600">1,206</p>
-            </div>
-            <div class="p-3 bg-orange-100 rounded-full">
-              <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"></path>
-              </svg>
-            </div>
-          </div>
-        </div>
+      <!-- Permissions Admin -->
+      <div class="mt-6">
+        <RolePermissions
+          :role="authStore.userRole"
+          :permissions="authStore.userPermissions"
+          :locale="locale" />
       </div>
 
-      <!-- Permissions Display -->
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 :class="['text-xl font-semibold mb-4', locale === 'kh' ? 'khmer-text' : '']">
-          Admin Permissions
-        </h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <div 
-            v-for="permission in authStore.userPermissions" 
-            :key="permission"
-            class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium"
-          >
-            {{ permission.replace('_', ' ').toUpperCase() }}
-          </div>
-        </div>
+      <!-- Admin Actions -->
+      <div class="mt-6">
+        <RoleQuickActions
+          :role="authStore.userRole"
+          :lang="route.params.lang || 'en'"
+          :locale="locale" />
       </div>
     </div>
   </div>
@@ -117,9 +86,21 @@
 
 <script setup>
 import { useRouter, useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
+import { getAdminProfile } from "@/stores/Admin/AdminProfile";
+import { getAllLeaveRequests } from "@/stores/apis/LeaveRequestManagement.js";
 import ChangeLanguage from "@/components/language/ChangLanguage.vue";
+import { getAllStudents } from "@/stores/apis/StudentCRUD.js";
+import { getAllTeachers } from "@/stores/apis/TeacherCRUD.js";
+import { getAllHODs } from "@/stores/apis/HeadOfDepartmentCRUD.js";
+import { useDepartment } from "@/stores/global/useDepartment.js";
+import { useProgram } from "@/stores/global/useProgram.js";
+import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
+import RolePermissions from "@/components/overview/RolePermissions.vue";
+import RoleQuickActions from "@/components/overview/RoleQuickActions.vue";
+import UserInfoCard from "@/components/overview/UserInfoCard.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -128,7 +109,204 @@ const authStore = useAuthStore();
 
 const handleLogout = () => {
   authStore.logout();
-  const currentLang = route.params.lang || 'en';
+  const currentLang = route.params.lang || "en";
   router.push(`/${currentLang}/login`);
 };
+
+const detailUser = ref(null);
+
+onMounted(async () => {
+  // Profile
+  const data = await getAdminProfile();
+  detailUser.value = data?.user ?? data;
+
+  // Departments (donut)
+  await getAllDepartments();
+
+  // Leave requests (line)
+  await fetchLeaveRequests(lineRange.value);
+
+  // User totals (bar + total users)
+  await fetchUserRoleTotals();
+
+  // Programs KPI
+  await getAllPrograms();
+  totals.value.programs = programs.value?.length ?? 0;
+});
+
+/**
+ * Doughnut chart
+ */
+const donutDeptLabels = computed(() =>
+  (departments.value || []).map((d) => d.department_name).filter(Boolean)
+);
+
+const donutDeptValues = computed(() => donutDeptLabels.value.map(() => 1));
+
+/**
+ * Line chart
+ */
+const lineRange = ref("7");
+const leaveRequests = ref([]);
+
+function toYMD(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function buildLeaveLineChart(requests, range) {
+  const normalizeStatus = (s) => {
+    const v = String(s || "")
+      .trim()
+      .toLowerCase();
+    if (v.includes("approve")) return "approved";
+    if (v.includes("reject") || v.includes("deny") || v.includes("decline"))
+      return "rejected";
+    return "pending";
+  };
+
+  const toISOFromDDMMYYYY = (raw) => {
+    if (!raw) return null;
+    const s = String(raw).trim();
+
+    // "10-01-2026" -> "2026-01-10"
+    if (/^\d{2}-\d{2}-\d{4}/.test(s)) {
+      const [dd, mm, yyyy] = s.slice(0, 10).split("-");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // "2026-01-10..." -> "2026-01-10"
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+
+    return null;
+  };
+
+  const getKey = (r) =>
+    toISOFromDDMMYYYY(r?.start_date) ||
+    toISOFromDDMMYYYY(r?.end_date) ||
+    toISOFromDDMMYYYY(r?.submit_at) ||
+    toISOFromDDMMYYYY(r?.created_at);
+
+  // ✅ 1) collect all dates from requests
+  let allDates = (requests || []).map(getKey).filter(Boolean);
+
+  // unique + sort
+  allDates = Array.from(new Set(allDates)).sort(); // "YYYY-MM-DD" sorts correctly
+
+  // ✅ 2) Optional: if range = 7/14/30, keep only last N dates (not last N days)
+  const n = Number(range || 0);
+  const labels = n > 0 ? allDates.slice(-n) : allDates;
+
+  // ✅ 3) init counts
+  const counts = {};
+  labels.forEach((d) => (counts[d] = { approved: 0, rejected: 0, pending: 0 }));
+
+  // ✅ 4) count requests
+  for (const r of requests || []) {
+    const key = getKey(r);
+    if (!key || !counts[key]) continue;
+    counts[key][normalizeStatus(r.status)] += 1;
+  }
+
+  return {
+    line_labels: labels,
+    line_datasets: [
+      { label: "Approved", data: labels.map((d) => counts[d].approved) },
+      { label: "Rejected", data: labels.map((d) => counts[d].rejected) },
+      { label: "Pending", data: labels.map((d) => counts[d].pending) },
+    ],
+  };
+}
+
+async function fetchLeaveRequests(days) {
+  const n = Number(days || 7);
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (n - 1));
+
+  const res = await getAllLeaveRequests({
+    start_date: toYMD(start),
+    end_date: toYMD(end),
+    limit: 1000, // optional: get enough records for chart
+  });
+
+  leaveRequests.value = res?.requests || [];
+}
+
+const { getAllDepartments, departments } = useDepartment();
+const { getAllPrograms, programs } = useProgram();
+
+watch(lineRange, (v) => fetchLeaveRequests(v));
+
+/**
+ * Bar chart
+ */
+const totals = ref({
+  students: 0,
+  teachers: 0,
+  hods: 0,
+  programs: 0,
+});
+
+async function fetchUserRoleTotals() {
+  // if backend supports pagination, ask for 1 item only (fast) and rely on usersData.total
+  const params = { page: 1, per_page: 1 };
+
+  const [stuRes, teaRes, hodRes] = await Promise.all([
+    getAllStudents(params),
+    getAllTeachers(params),
+    getAllHODs(params),
+  ]);
+
+  // ✅ Prefer backend pagination.total if your functions return it
+  totals.value.students =
+    stuRes?.pagination?.total ?? stuRes?.total ?? stuRes?.data?.length ?? 0;
+
+  totals.value.teachers =
+    teaRes?.pagination?.total ?? teaRes?.total ?? teaRes?.data?.length ?? 0;
+
+  totals.value.hods =
+    hodRes?.pagination?.total ?? hodRes?.total ?? hodRes?.data?.length ?? 0;
+}
+
+const barLabels = computed(() => ["Students", "Teachers", "HOD"]);
+const barValues = computed(() => [
+  totals.value.students,
+  totals.value.teachers,
+  totals.value.hods,
+]);
+
+const stats = computed(() => {
+  const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
+
+  return {
+    total_users:
+      totals.value.students + totals.value.teachers + totals.value.hods, // example
+    teachers: totals.value.teachers,
+    students: totals.value.students,
+    programs: totals.value.programs,
+
+    // ✅ Line chart from API
+    line_labels: leaveLine.line_labels,
+    line_datasets: leaveLine.line_datasets,
+
+    // ✅ bar chart (use API totals)
+    bar_labels: ["Students", "Teachers", "HOD"],
+    bar_values: [
+      totals.value.students,
+      totals.value.teachers,
+      totals.value.hods,
+    ],
+
+    // ✅ donut chart
+    donut_labels: donutDeptLabels.value,
+    donut_values: donutDeptValues.value,
+  };
+});
+
+function onChatSend(payload) {
+  console.log("Teacher send:", payload);
+}
 </script>

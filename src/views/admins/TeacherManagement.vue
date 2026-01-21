@@ -1,45 +1,60 @@
 <template>
   <div class="flex flex-col gap-4 py-3 sm:py-5">
     <!-- Top bar -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-3 sm:px-5"
-    >
-      <!-- Search -->
-      <div class="relative w-full sm:max-w-md">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search teachers..."
-          class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <Search class="w-4 h-4" />
-        </span>
-      </div>
+    <div class="px-3 sm:px-5 space-y-4">
+      <!-- Row 1: Title (left) + Actions (right) -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <!-- Title -->
+        <PageHeader
+          :title="t('teachers_management')"
+          subtitle="Track and manage your Teacher applications" />
 
-      <!-- Button Section -->
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-        <!-- Selected count indicator -->
-        <div v-if="selectedIds.length > 0" class="text-xs sm:text-sm text-gray-600 font-medium order-3 sm:order-1 text-center sm:text-left">
-          {{ selectedIds.length }} teacher{{ selectedIds.length > 1 ? 's' : '' }} selected
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 order-1 sm:order-2">
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <!--Add teacher-->
           <button
             @click="openAdd"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 transition text-sm font-medium"
-          >
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 transition text-sm font-medium">
             <Plus class="w-4 h-4" />
             Add Teacher
           </button>
 
           <!-- Export -->
-          <ExcelForm 
+          <ExcelForm
             :filtered-rows="filteredRows"
             :programs-map="programLookup"
-            :departments-map="departmentLookup"
-          />
+            :departments-map="departmentLookup" />
+        </div>
+      </div>
+
+      <!-- Row 2: Search (bottom) -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ">
+        <!-- Search -->
+        <div class="relative w-full sm:max-w-md">
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search teachers..."
+            class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Search class="w-4 h-4" />
+          </span>
+        </div>
+
+        <!-- Button Section -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+          <!-- Selected count indicator -->
+          <div
+            v-if="selectedIds.length > 0"
+            class="text-xs sm:text-sm text-gray-600 font-medium order-3 sm:order-1 text-center sm:text-left">
+            {{ selectedIds.length }} teacher{{
+              selectedIds.length > 1 ? "s" : ""
+            }}
+            selected
+          </div>
         </div>
       </div>
     </div>
@@ -47,8 +62,7 @@
     <!-- Filters -->
     <TeacherFilterRole
       @update:filters="handleFiltersUpdate"
-      @clear-filters="handleClearFilters"
-    />
+      @clear-filters="handleClearFilters" />
 
     <!-- Teacher Table -->
     <div class="overflow-x-auto px-3 sm:px-5">
@@ -66,8 +80,7 @@
           @delete="remove"
           @select="handleRowSelect"
           @selectAll="handleSelectAll"
-          @sort="handleSort"
-        />
+          @sort="handleSort" />
       </div>
     </div>
 
@@ -80,22 +93,20 @@
         :page-size-options="[10, 25, 50, 100]"
         item-label="teachers"
         @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange"
-      />
+        @page-size-change="handlePageSizeChange" />
     </div>
 
     <!-- Add Teacher Modal -->
     <AddTeacherModal
       :showAdd="showAddModal"
       @close="closeAddModal"
-      @save="handleAddSave"
-    />
+      @save="handleAddSave" />
 
     <!-- Edit Teacher Modal -->
     <EditTeacherModal
       v-model="showEditModal"
       :teacher="selectedTeacher"
-      :departments="departmentOptions.map(d => d.department_name || d.name)"
+      :departments="departmentOptions.map((d) => d.department_name || d.name)"
       :positions="[
         'Lecturer',
         'Assistant Professor',
@@ -103,8 +114,7 @@
         'Professor',
         'Instructor',
       ]"
-      @save="handleEditSave"
-    />
+      @save="handleEditSave" />
 
     <!-- View Teacher Modal -->
     <ViewTeacherModal v-model="showViewModal" :teacher="viewTeacher" />
@@ -120,31 +130,36 @@ import ViewTeacherModal from "@/components/admins/TeacherManagement/ViewTeacherM
 import TeacherFilterRole from "@/components/admins/TeacherManagement/TeacherFilterRole.vue";
 import TeacherTable from "@/components/admins/TeacherManagement/TeacherTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
-import ExcelForm from '@/components/features/ExcelForm.vue';
+import ExcelForm from "@/components/features/ExcelForm.vue";
 import { TeacherCRUD } from "@/stores/apis/TeacherCRUD.js";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
 import { showNotification } from "@/lib/notifications.js";
+import PageHeader from "@/components/features/PageHeader.vue";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 /** ------- Load teacher data from API ------- */
 const rows = ref([]);
 const loading = ref(false);
 
 // 🎯 USE DYNAMIC DEPARTMENT AND PROGRAM DATA
-const { 
-  departments, 
+const {
+  departments,
   departmentOptions,
-  loading: departmentsLoading 
+  loading: departmentsLoading,
 } = useFilteredByDepartment({ immediate: true });
 
-const { 
-  rawList: allPrograms,
-  loading: programsLoading
-} = useProgramsFilteredByDepartment({ immediate: true });
+const { rawList: allPrograms, loading: programsLoading } =
+  useProgramsFilteredByDepartment({ immediate: true });
 
 // Create lookup maps for efficient department/program name resolution
 const departmentLookup = computed(() => {
   const lookup = {};
-  departments.value.forEach(dept => {
+  departments.value.forEach((dept) => {
     lookup[dept.id] = dept.department_name || dept.name;
   });
   return lookup;
@@ -152,35 +167,39 @@ const departmentLookup = computed(() => {
 
 const programLookup = computed(() => {
   const lookup = {};
-  allPrograms.value.forEach(program => {
+  allPrograms.value.forEach((program) => {
     lookup[program.id] = program.program_name;
   });
   return lookup;
 });
 
 // Clear any potential localStorage issues
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   try {
-    localStorage.removeItem('teachers');
-    sessionStorage.removeItem('teachers');
+    localStorage.removeItem("teachers");
+    sessionStorage.removeItem("teachers");
   } catch (e) {
-    console.warn('Could not clear storage:', e);
+    console.warn("Could not clear storage:", e);
   }
 }
 
 onMounted(async () => {
   // Wait for department and program data to load first
   await Promise.all([
-    new Promise(resolve => {
-      const unwatch = watch([departmentsLoading, programsLoading], ([deptLoading, progLoading]) => {
-        if (!deptLoading && !progLoading) {
-          unwatch();
-          resolve();
-        }
-      }, { immediate: true });
-    })
+    new Promise((resolve) => {
+      const unwatch = watch(
+        [departmentsLoading, programsLoading],
+        ([deptLoading, progLoading]) => {
+          if (!deptLoading && !progLoading) {
+            unwatch();
+            resolve();
+          }
+        },
+        { immediate: true }
+      );
+    }),
   ]);
-  
+
   // Then load teachers with proper department/program mapping
   await loadTeachers();
 });
@@ -188,43 +207,34 @@ onMounted(async () => {
 const loadTeachers = async () => {
   loading.value = true;
   try {
-    console.log("🔍 Attempting to load teachers...");
     const result = await TeacherCRUD.getAllTeachers();
-    console.log("📊 Teacher API result:", result);
     if (result.success) {
       // Transform the data to include department/program names
-      const transformedTeachers = result.data.map(teacher => {
+      const transformedTeachers = result.data.map((teacher) => {
         // Map department_id to department name
-        const departmentName = departmentLookup.value[teacher.department_id] || teacher.department || 'N/A';
-        
+        const departmentName =
+          departmentLookup.value[teacher.department_id] ||
+          teacher.department ||
+          "N/A";
+
         // Map program_id to program name (if available)
-        const programName = programLookup.value[teacher.program_id] || teacher.program || 'N/A';
-        
+        const programName =
+          programLookup.value[teacher.program_id] || teacher.program || "N/A";
+
         return {
           ...teacher,
           department: departmentName,
           department_name: departmentName, // Also add as department_name for table slots
           program: programName,
-          program_name: programName // Also add as program_name for table slots
+          program_name: programName, // Also add as program_name for table slots
         };
       });
-      
+
       rows.value = transformedTeachers;
-      console.log("✅ Teachers loaded successfully:", transformedTeachers.length, "teachers");
-      
-      // Debug: Log the first teacher to see what fields are available
-      if (transformedTeachers.length > 0) {
-        console.log("🔍 Sample transformed teacher data:", transformedTeachers[0]);
-        console.log("🔍 Available fields:", Object.keys(transformedTeachers[0]));
-        console.log("🔍 permanent_address:", transformedTeachers[0].permanent_address);
-        console.log("🔍 address:", transformedTeachers[0].address);
-        console.log("🔍 current_address:", transformedTeachers[0].current_address);
-      }
     } else {
-      console.error("❌ Failed to load teachers:", result.error);
     }
   } catch (error) {
-    console.error("💥 Error loading teachers:", error);
+    // Error handled silently
   } finally {
     loading.value = false;
   }
@@ -256,16 +266,14 @@ const handleAddSave = async (teacherData) => {
   try {
     const result = await TeacherCRUD.createTeacher(teacherData);
     if (result.success) {
-      showNotification('Teacher created successfully!', 'success');
+      showNotification("Teacher created successfully!", "success");
       // Reload teachers from server
       await loadTeachers();
     } else {
-      console.error("Failed to create teacher:", result.error);
-      showNotification(result.message || 'Failed to create teacher', 'error');
+      showNotification(result.message || "Failed to create teacher", "error");
     }
   } catch (error) {
-    console.error("Error creating teacher:", error);
-    showNotification('Error creating teacher. Please try again.', 'error');
+    showNotification("Error creating teacher. Please try again.", "error");
   }
   closeAddModal();
 };
@@ -281,16 +289,11 @@ const closeEditModal = () => {
 };
 
 const handleEditSave = async (updatedTeacher) => {
-  console.log("🔄 handleEditSave received:", updatedTeacher);
-  console.log("🔄 permanent_address in updatedTeacher:", updatedTeacher?.permanent_address);
-  console.log("🔄 address in updatedTeacher:", updatedTeacher?.address);
-  
   // The modal now handles the API call and notifications
   // We just need to refresh the data and close the modal
   await loadTeachers();
   closeEditModal();
 };
-
 
 const openView = (teacher) => {
   // Create teacher data for the view modal
@@ -334,10 +337,9 @@ const handleFiltersUpdate = (query) => {
   filters.value = {
     ...FILTER_DEFAULTS,
     ...filters.value, // keep anything already set
-    ...query,         // clean keys: department_id, program_id, etc.
+    ...query, // clean keys: department_id, program_id, etc.
   };
 };
-
 
 const handleClearFilters = () => {
   search.value = "";
@@ -349,12 +351,50 @@ const selectedIds = ref([]);
 
 // Table configuration with responsive columns
 const tableColumns = ref([
-  { key: "id_card", label: "ID", visible: true, sortable: true, width: "w-20 sm:w-24" },
-  { key: "khmer_name", label: "Khmer Name", visible: true, sortable: true, width: "min-w-32 sm:min-w-40" },  
-  { key: "latin_name", label: "Latin Name", visible: true, sortable: true, width: "min-w-32 sm:min-w-40" },
-  { key: "email", label: "Email", visible: true, sortable: true, width: "min-w-40 sm:min-w-48", hideOnMobile: true },
-  { key: "phone_number", label: "Phone", visible: true, sortable: false, width: "min-w-28 sm:min-w-32", hideOnMobile: true },
-  { key: "department", label: "Department", visible: true, sortable: true, width: "min-w-28 sm:min-w-36" },
+  {
+    key: "id_card",
+    label: "ID",
+    visible: true,
+    sortable: true,
+    width: "w-20 sm:w-24",
+  },
+  {
+    key: "khmer_name",
+    label: "Khmer Name",
+    visible: true,
+    sortable: true,
+    width: "min-w-32 sm:min-w-40",
+  },
+  {
+    key: "latin_name",
+    label: "Latin Name",
+    visible: true,
+    sortable: true,
+    width: "min-w-32 sm:min-w-40",
+  },
+  {
+    key: "email",
+    label: "Email",
+    visible: true,
+    sortable: true,
+    width: "min-w-40 sm:min-w-48",
+    hideOnMobile: true,
+  },
+  {
+    key: "phone_number",
+    label: "Phone",
+    visible: true,
+    sortable: false,
+    width: "min-w-28 sm:min-w-32",
+    hideOnMobile: true,
+  },
+  {
+    key: "department",
+    label: "Department",
+    visible: true,
+    sortable: true,
+    width: "min-w-28 sm:min-w-36",
+  },
 ]);
 
 // Sorting state
@@ -402,22 +442,22 @@ const filteredRows = computed(() => {
   let list = rows.value;
 
   const q = search.value.trim().toLowerCase();
-  
+
   if (q) {
     list = list.filter((r) => {
       // Safe property access with fallback to empty string
       const searchFields = [
-        r.id_card || r.id || '',       // ID field
-        r.khmer_name || '',            // Khmer name
-        r.latin_name || '',            // Latin name
-        r.email || '',                 // Email
-        r.phone_number || '',          // Phone number
-        r.department || '',            // Department
-        r.program || '',               // Program
-        r.section || ''                // Section
+        r.id_card || r.id || "", // ID field
+        r.khmer_name || "", // Khmer name
+        r.latin_name || "", // Latin name
+        r.email || "", // Email
+        r.phone_number || "", // Phone number
+        r.department || "", // Department
+        r.program || "", // Program
+        r.section || "", // Section
       ];
-      
-      return searchFields.some(field => 
+
+      return searchFields.some((field) =>
         field.toString().toLowerCase().includes(q)
       );
     });
@@ -429,10 +469,14 @@ const filteredRows = computed(() => {
 
   // by department/program **ID**
   if (filters.value.department_id)
-    list = list.filter((r) => Number(r.department_id) === Number(filters.value.department_id));
+    list = list.filter(
+      (r) => Number(r.department_id) === Number(filters.value.department_id)
+    );
 
   if (filters.value.program_id)
-    list = list.filter((r) => Number(r.program_id) === Number(filters.value.program_id));
+    list = list.filter(
+      (r) => Number(r.program_id) === Number(filters.value.program_id)
+    );
 
   // by gender/origin when present
   if (filters.value.gender && filters.value.gender !== "All")
@@ -451,7 +495,7 @@ const pageSize = ref(25);
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;
   const result = filteredRows.value.slice(start, start + pageSize.value);
-  
+
   return result;
 });
 
@@ -461,23 +505,28 @@ watch([filteredRows, pageSize], () => {
 
 // Pagination event handlers
 const handlePageChange = (paginationData) => {
-  console.log("Page changed:", paginationData);
+  // Page changed
 };
 
 const handlePageSizeChange = (paginationData) => {
-  console.log("Page size changed:", paginationData);
+  // Page size changed
 };
 
 // Watch for department/program data changes and reload teachers
-watch([departmentLookup, programLookup], () => {
-  // Only reload if we have teacher data and the lookups have content
-  if (rows.value.length > 0 && 
-      Object.keys(departmentLookup.value).length > 0 && 
-      Object.keys(programLookup.value).length > 0) {
-    console.log("📊 Department/Program data updated, reloading teachers for proper mapping");
-    loadTeachers();
-  }
-}, { deep: true });
+watch(
+  [departmentLookup, programLookup],
+  () => {
+    // Only reload if we have teacher data and the lookups have content
+    if (
+      rows.value.length > 0 &&
+      Object.keys(departmentLookup.value).length > 0 &&
+      Object.keys(programLookup.value).length > 0
+    ) {
+      loadTeachers();
+    }
+  },
+  { deep: true }
+);
 
 /** ------- Actions ------- */
 function view(row) {
@@ -491,16 +540,14 @@ const remove = async (row) => {
   try {
     const result = await TeacherCRUD.deleteTeacher(row.id);
     if (result.success) {
-      showNotification('Teacher deleted successfully!', 'success');
+      showNotification("Teacher deleted successfully!", "success");
       // Reload teachers from server
       await loadTeachers();
     } else {
-      console.error("Failed to delete teacher:", result.error);
-      showNotification(result.message || 'Failed to delete teacher', 'error');
+      showNotification(result.message || "Failed to delete teacher", "error");
     }
   } catch (error) {
-    console.error("Error deleting teacher:", error);
-    showNotification('Error deleting teacher. Please try again.', 'error');
+    showNotification("Error deleting teacher. Please try again.", "error");
   }
 };
 </script>
@@ -513,24 +560,24 @@ const remove = async (row) => {
   :deep(.table-phone-column) {
     display: none;
   }
-  
+
   /* Smaller table text on mobile */
   :deep(.teacher-table) {
     font-size: 14px;
   }
-  
+
   /* Compact table cells */
   :deep(.teacher-table td),
   :deep(.teacher-table th) {
     padding: 8px 4px;
   }
-  
+
   /* Stack action buttons in table rows */
   :deep(.table-actions) {
     flex-direction: column;
     gap: 4px;
   }
-  
+
   /* Smaller action buttons */
   :deep(.table-action-btn) {
     padding: 4px 8px;
@@ -543,7 +590,7 @@ const remove = async (row) => {
   :deep(.teacher-table) {
     font-size: 13px;
   }
-  
+
   /* Reduce table cell padding */
   :deep(.teacher-table td),
   :deep(.teacher-table th) {
@@ -563,23 +610,23 @@ const remove = async (row) => {
     margin: 10px;
     max-height: calc(100vh - 20px);
   }
-  
+
   :deep(.modal-header) {
     padding: 16px;
   }
-  
+
   :deep(.modal-body) {
     padding: 16px;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
   }
-  
+
   :deep(.modal-footer) {
     padding: 16px;
     flex-direction: column;
     gap: 8px;
   }
-  
+
   :deep(.modal-footer button) {
     width: 100%;
   }

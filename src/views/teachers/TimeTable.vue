@@ -1,164 +1,183 @@
 <template>
-  <div class="p-6">
+  <div class="px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen flex flex-col gap-4 sm:gap-5">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-3xl font-bold flex items-center gap-2">
-        <span class="i-lucide-clock"></span>
-        Time Table
-      </h2>
+    <PageHeader
+      :title="t('timetable_management') || 'Head of Department Timetable'"
+      subtitle="View and manage weekly timetable slots ">
+      <WeekSelector v-model="selectedWeek" :weeks="weeks" />
 
-      <!-- Week selector -->
-      <div class="relative">
-        <select
-          v-model="selectedWeek"
-          class="appearance-none border rounded-lg px-4 py-2 pr-9 font-semibold">
-          <option v-for="w in weeks" :key="w" :value="w">{{ w }}</option>
-        </select>
-        <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">▾</span>
-      </div>
-    </div>
+      <button
+        @click="readOnly = !readOnly"
+        :class="[
+          'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-all',
+          readOnly
+            ? 'bg-[#235AA6] border border-gray-200 text-white'
+            : 'bg-red-600 text-white',
+        ]">
+        <Eye v-if="readOnly" class="w-4 h-4" />
+        <Pencil v-else class="w-4 h-4" />
+        {{ readOnly ? "Read-only" : "Editable" }}
+      </button>
+    </PageHeader>
 
-    <!-- Morning table -->
-    <h3 class="text-xl font-semibold mb-2">Morning (7:00–11:00)</h3>
-    <table class="w-full table-fixed border-collapse">
-      <thead>
-        <tr class="bg-gray-200 text-gray-700">
-          <th class="border border-gray-300 w-30 py-3 text-center px-3">Time</th>
-          <th v-for="d in days" :key="d" class="border border-gray-300 py-3 font-semibold text-center">
-            {{ d }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in timesMorning" :key="t">
-          <td class="border border-gray-300 px-3 py-6 text-center font-medium">{{ t }}</td>
-          <td
-            v-for="d in days"
-            :key="d + t"
-            class="border border-gray-300 px-3 py-4 cursor-pointer hover:bg-gray-100"
-            @click="editCell(d, t)"
-          >
-            <div v-if="slot(d, t)">
-              <div class="text-center font-semibold">{{ slot(d, t)?.subject }}</div>
-              <div class="mt-2 text-xs flex items-center text-gray-700">
-                <span>{{ slot(d, t)?.teacher }}</span>
-                <span class="ml-auto text-red-500">{{ slot(d, t)?.room }}</span>
-              </div>
-            </div>
-            <div v-else class="h-16 text-gray-400 italic flex items-center justify-center">
-              empty
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Morning -->
+    <TimetableSection
+      title="Morning"
+      subtitle="7:00–11:00"
+      period="morning"
+      :days="days"
+      :times="timesMorning"
+      :getSlot="getSlot"
+      :readOnly="readOnly"
+      @edit="editCell" />
 
-    <!-- Afternoon table -->
-    <h3 class="text-xl font-semibold my-4">Afternoon (1:00–5:00)</h3>
-    <table class="w-full table-fixed border-collapse">
-      <thead>
-        <tr class="bg-gray-200 text-gray-700">
-          <th class="border border-gray-300 w-30 py-3 text-center px-3">Time</th>
-          <th v-for="d in days" :key="d" class="border border-gray-300 py-3 font-semibold text-center">
-            {{ d }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="t in timesAfternoon" :key="t">
-          <td class="border border-gray-300 px-3 py-6 text-center font-medium">{{ t }}</td>
-          <td
-            v-for="d in days"
-            :key="d + t"
-            class="border border-gray-300 px-3 py-4 cursor-pointer hover:bg-gray-100"
-            @click="editCell(d, t)"
-          >
-            <div v-if="slot(d, t)">
-              <div class="text-center font-semibold">{{ slot(d, t)?.subject }}</div>
-              <div class="mt-2 text-xs flex items-center text-gray-700">
-                <span>{{ slot(d, t)?.teacher }}</span>
-                <span class="ml-auto text-red-500">{{ slot(d, t)?.room }}</span>
-              </div>
-            </div>
-            <div v-else class="h-16 text-gray-400 italic flex items-center justify-center">
-              empty
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Afternoon -->
+    <TimetableSection
+      className="mt-8"
+      title="Afternoon"
+      subtitle="13:00–17:00"
+      period="afternoon"
+      :days="days"
+      :times="timesAfternoon"
+      :getSlot="getSlot"
+      :readOnly="readOnly"
+      @edit="editCell" />
 
     <!-- Edit Modal -->
-    <div v-if="editing" class="fixed inset-0 bg-black/40 flex items-center justify-center">
-      <div class="bg-white p-6 rounded-lg w-96 shadow-lg">
-        <h3 class="text-lg font-semibold mb-4">Edit Slot ({{ editing.day }} {{ editing.time }})</h3>
-        
-        <div class="space-y-3">
-          <input v-model="form.subject" type="text" placeholder="Subject" class="w-full border rounded px-3 py-2" />
-          <input v-model="form.teacher" type="text" placeholder="Teacher" class="w-full border rounded px-3 py-2" />
-          <input v-model="form.room" type="text" placeholder="Room" class="w-full border rounded px-3 py-2" />
-        </div>
-
-        <div class="flex justify-end gap-3 mt-4">
-          <button @click="editing = null" class="px-4 py-2 rounded bg-gray-300">Cancel</button>
-          <button @click="saveCell" class="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
-        </div>
-      </div>
-    </div>
+    <EditSlotModal
+      v-if="!readOnly"
+      :open="!!editing"
+      :day="editing?.day"
+      :time="editing?.time"
+      :modelValue="form"
+      @update:modelValue="(v) => (form = v)"
+      @close="closeModal"
+      @save="saveCell"
+      @delete="clearSlot" />
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, ref } from 'vue'
+<script setup>
+import { ref, computed } from "vue";
+import { useI18n } from "vue-i18n";
+import { Eye, Pencil } from "lucide-vue-next";
 
-type Slot = { subject: string; teacher?: string; room?: string }
-type DaySchedule = { [time: string]: Slot | undefined }
-type WeekSchedule = { [day: string]: DaySchedule }
-type Schedule = { [week: string]: WeekSchedule }
+import WeekSelector from "@/components/teachers/timetable/WeekSelector.vue";
+import TimetableSection from "@/components/teachers/timetable/TimetableSection.vue";
+import EditSlotModal from "@/components/teachers/timetable/EditSlotModal.vue";
+import PageHeader from "@/components/features/PageHeader.vue";
 
-const days = ['Monday', 'Tuesday', 'Wedenesday', 'Thursday', 'Friday']
-const timesMorning = ['7:00-8:00', '8:00-9:00', '9:00-10:00', '10:00-11:00']
-const timesAfternoon = ['13:00-14:00','14:00-15:00','15:00-16:00','16:00-17:00']
+const { t, locale } = useI18n();
 
-function makeWeek(): WeekSchedule {
-  const wk: WeekSchedule = {}
+/** view mode toggle */
+const readOnly = ref(true);
+
+/** fixed labels */
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+const timesMorning = ["7:00-8:00", "8:00-9:00", "9:00-10:00", "10:00-11:00"];
+const timesAfternoon = [
+  "13:00-14:00",
+  "14:00-15:00",
+  "15:00-16:00",
+  "16:00-17:00",
+];
+
+/** create empty schedule structure */
+function makeWeek() {
+  const wk = {};
   for (const d of days) {
-    wk[d] = {}
-    for (const t of [...timesMorning, ...timesAfternoon]) {
-      wk[d][t] = undefined // start empty
+    wk[d] = {};
+    for (const tm of [...timesMorning, ...timesAfternoon]) {
+      wk[d][tm] = undefined;
     }
   }
-  return wk
+  return wk;
 }
 
-const schedule = ref<Schedule>({
-  'Week 1': makeWeek(),
-  'Week 2': makeWeek(),
-  'Week 3': makeWeek(),
-})
+/** schedule storage */
+const schedule = ref({
+  "Week 1": makeWeek(),
+  "Week 2": makeWeek(),
+  "Week 3": makeWeek(),
+});
 
-const weeks = Object.keys(schedule.value)
-const selectedWeek = ref(weeks[0])
-const weekData = computed<WeekSchedule>(() => schedule.value[selectedWeek.value] || {})
+/** weeks list */
+const weeks = computed(() => Object.keys(schedule.value));
 
-function slot(day: string, time: string): Slot | undefined {
-  return weekData.value?.[day]?.[time]
+const selectedWeek = ref(weeks.value[0] || "Week 1");
+
+/** current week data (read-only computed) */
+const weekData = computed(() => schedule.value[selectedWeek.value] || {});
+
+/** getter */
+function getSlot(day, time) {
+  return weekData.value?.[day]?.[time];
 }
 
-/* Editing state */
-const editing = ref<{day: string; time: string} | null>(null)
-const form = ref<Slot>({ subject: '', teacher: '', room: '' })
+/** editing state */
+const editing = ref(null);
 
-function editCell(day: string, time: string) {
-  editing.value = { day, time }
-  const existing = slot(day, time)
-  form.value = existing ? { ...existing } : { subject: '', teacher: '', room: '' }
+/** ✅ FIX: form should be a ref, and template should use form.value */
+const formRef = ref({ subject: "", teacher: "", room: "" });
+
+/** ✅ expose as computed-like getter/setter for easy template usage */
+const form = computed({
+  get: () => formRef.value,
+  set: (v) => (formRef.value = v),
+});
+
+function editCell({ day, time }) {
+  if (readOnly.value) return;
+
+  editing.value = { day, time };
+
+  const existing = getSlot(day, time);
+  form.value = existing
+    ? { ...existing }
+    : { subject: "", teacher: "", room: "" };
 }
 
+function closeModal() {
+  editing.value = null;
+}
+
+/** ✅ safer write into schedule source, not computed */
 function saveCell() {
-  if (!editing.value) return
-  const { day, time } = editing.value
-  weekData.value[day][time] = { ...form.value }
-  editing.value = null
+  if (!editing.value) return;
+
+  const { day, time } = editing.value;
+
+  const subject = (form.value.subject || "").trim();
+  if (!subject) return;
+
+  const teacher = (form.value.teacher || "").trim();
+  const room = (form.value.room || "").trim();
+
+  if (!schedule.value[selectedWeek.value]) {
+    schedule.value[selectedWeek.value] = makeWeek();
+  }
+
+  schedule.value[selectedWeek.value][day][time] = { subject, teacher, room };
+  editing.value = null;
+}
+
+function clearSlot() {
+  if (!editing.value) return;
+
+  const { day, time } = editing.value;
+
+  if (schedule.value[selectedWeek.value]?.[day]) {
+    schedule.value[selectedWeek.value][day][time] = undefined;
+  }
+
+  editing.value = null;
 }
 </script>

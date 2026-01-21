@@ -1,66 +1,47 @@
 <template>
-  <div class="flex flex-col gap-4 py-6 sm:py-8">
+  <div
+    class="p-4 space-y-4 px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen">
     <!-- Header with Search, Filters and Create Button -->
-    <div class="px-3 sm:px-5">
-      <div class="flex flex-col gap-4 ">
-        <!-- Title and Create Button Row -->
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-          <div class="flex items-center gap-2">
-            <UserCheck class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-            <h1
-              :class="[
-                'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-                locale === 'kh' ? 'khmer-text' : '',
-              ]">
-              {{ t("groups_management") }}
-            </h1>
-          </div>
-          <!-- <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
-            Group Management
-          </h1> -->
-          <button
-            @click="openCreateModal"
-            class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#235AA6] text-white rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap"
-          >
-            <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-            <span class="hidden xs:inline">Create Group</span>
-            <span class="xs:hidden">Create</span>
-          </button>
-        </div>
-
-        <!-- Filters -->
-        <GroupFilter
-          v-model="filters"
-          :groups="groups"
-          :loading="loading"
-          @refresh="loadGroups" />
+    <PageHeader
+      :title="t('groups_management')"
+      subtitle="Track and manage your group applications">
+      <div>
+        <button
+          @click="openCreateModal"
+          class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#235AA6] text-white rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap">
+          <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+          <span class="hidden xs:inline">Create Group</span>
+          <span class="xs:hidden">Create</span>
+        </button>
       </div>
-    </div>
+    </PageHeader>
+
+    <!-- Filters -->
+    <GroupFilter
+      v-model="filters"
+      :groups="groups"
+      :loading="loading"
+      @refresh="loadGroups" />
 
     <!-- Groups Table -->
-    <div class="mx-3 sm:mx-5">
-      <div class="overflow-x-auto">
-        <GroupTable
-          :groups="pagedGroups"
-          :loading="loading"
-          @view="viewGroup"
-          @edit="editGroup"
-          @delete="deleteGroup" />
-      </div>
+    <div class="overflow-x-auto">
+      <GroupTable
+        :groups="pagedGroups"
+        :loading="loading"
+        @view="viewGroup"
+        @edit="editGroup"
+        @delete="deleteGroup" />
     </div>
 
     <!-- Pagination -->
-    <div class="px-3 sm:px-5">
-      <Pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total-items="filteredGroups.length"
-        :page-size-options="[5, 10, 25, 50, 100]"
-        item-label="groups"
-        @page-change="handlePageChange"
-        @page-size-change="handlePageSizeChange" />
-    </div>
+    <Pagination
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      :total-items="filteredGroups.length"
+      :page-size-options="[5, 10, 25, 50, 100]"
+      item-label="groups"
+      @page-change="handlePageChange"
+      @page-size-change="handlePageSizeChange" />
 
     <!-- View Group Modal -->
     <ViewGroupModal
@@ -86,20 +67,22 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
-import Pagination from "@/components/features/Pagination.vue";
-import ViewGroupModal from "@/components/admins/GroupManagement/ViewGroupModal.vue";
 import { GroupCRUD } from "@/stores/apis/GroupCRUD.js";
 import { showNotification } from "@/lib/notifications.js";
-
-import GroupTable from "@/components/admins/GroupManagement/GroupTable.vue";
-import UpdateGroupModal from "@/components/admins/GroupManagement/UpdateGroupModal.vue";
-import CreateNewGroupModal from "@/components/admins/GroupManagement/CreateNewGroupModal.vue";
-import GroupFilter from "@/components/admins/GroupManagement/GroupFilter.vue";
 import { useDepartment } from "@/stores/global/useDepartment.js";
 import { useProgram } from "@/stores/global/useProgram.js";
 import { useSection } from "@/stores/global/useSection.js";
 import { Plus, UserCheck } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
+import Pagination from "@/components/features/Pagination.vue";
+import ViewGroupModal from "@/components/admins/GroupManagement/ViewGroupModal.vue";
+import GroupTable from "@/components/admins/GroupManagement/GroupTable.vue";
+import UpdateGroupModal from "@/components/admins/GroupManagement/UpdateGroupModal.vue";
+import CreateNewGroupModal from "@/components/admins/GroupManagement/CreateNewGroupModal.vue";
+import GroupFilter from "@/components/admins/GroupManagement/GroupFilter.vue";
+import PageHeader from "@/components/features/PageHeader.vue";
+
+// Internationalization
 const { t, locale } = useI18n();
 
 // Composables for dynamic name resolution

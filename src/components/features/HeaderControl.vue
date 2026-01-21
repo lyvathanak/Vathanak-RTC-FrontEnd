@@ -16,11 +16,14 @@
         {{ roleDisplay }}
       </h1>
     </div>
+    <!-- Right side - Controls -->
     <div class="flex items-center gap-2 sm:gap-3 md:gap-4">
-      <Bell class="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
+      <NotificationBell />
+      <!-- <Bell class="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" /> -->
       <div class="hidden sm:block">
         <ChangeLanguage class="text-white" />
       </div>
+      <!-- User Profile Dropdown -->
       <div
         ref="dropdownRef"
         class="relative"
@@ -45,11 +48,13 @@
             {{ profile.name }}
           </p>
         </button>
+        <!-- Dropdown Menu -->
         <div
           v-if="isDropdownOpen"
           class="absolute right-0 top-full mt-2 w-64 sm:w-52 md:w-56 bg-white rounded-lg shadow-lg border overflow-hidden z-50 min-w-[250px] sm:min-w-0"
           @mouseenter="showDropdown"
           @mouseleave="hideDropdown">
+          <!-- Language selector for mobile -->
           <div class="block sm:hidden border-b border-gray-200 p-3">
             <div class="flex items-center gap-2 text-gray-700">
               <span class="text-sm font-medium">Language:</span>
@@ -57,6 +62,7 @@
             </div>
           </div>
 
+          <!-- Menu Items -->
           <div class="py-1">
             <button
               @click="viewProfile"
@@ -151,9 +157,13 @@ import ChangeLanguage from "@/components/language/ChangLanguage.vue";
 import { Bell, LogOut, BookOpen, KeyRound, Menu } from "lucide-vue-next";
 import { getStudentProfile } from "@/stores/Student/StudentProfile";
 import { useSidebar } from "@/components/ui/sidebar";
+import { showNotification } from "@/lib/notifications";
+// import { getTeacherProfile } from '@/stores/Teacher/TeacherProfile';
+// import { getHodProfile } from '@/stores/Hod/HodProfile';
 import image from "@/assets/default-avatar.png";
+import NotificationBell from "@/components/features/NotificationBell.vue";
 
-const { t, locale, te } = useI18n(); // Added 'te' (translate exists) helper
+const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -163,15 +173,17 @@ const hoverTimeout = ref(null);
 const error = ref(null);
 const loading = ref(false);
 
-// Get sidebar context
+// Get sidebar context - this might be undefined if outside SidebarProvider
 const sidebar = useSidebar();
 
 const emit = defineEmits(["toggleSidebar"]);
 
 const toggleSidebar = () => {
+  // If sidebar context is available, use it
   if (sidebar && sidebar.toggleSidebar) {
     sidebar.toggleSidebar();
   } else {
+    // Fallback to emit
     emit("toggleSidebar");
   }
 };
@@ -184,22 +196,7 @@ const profile = reactive({
 const khmerTextClass = computed(() =>
   locale.value === "kh" ? "khmer-text" : ""
 );
-
-// --- FIXED COMPUTED PROPERTY ---
-// This handles the fallback manually to avoid [intlify] warnings
-const roleDisplay = computed(() => {
-  const role = authStore.userRole;
-  if (!role) return '';
-
-  // Manual Mapping for roles known to cause issues
-  if (role === 'Head_Department') {
-    // Return translation if key 'Head_Department' exists, otherwise hardcoded fallback
-    return te('Head_Department') ? t('Head_Department') : 'Head of Department'; 
-  }
-
-  // General case: Check if translation exists before calling t()
-  return te(role) ? t(role) : role;
-});
+const roleDisplay = computed(() => t(authStore.userRole) || authStore.userRole);
 
 const toggleDropdown = () => {
   isDropdownOpen.value = !isDropdownOpen.value;
@@ -234,6 +231,7 @@ const viewProfile = () => {
 };
 
 const goToLibrary = () => {
+  console.log("📚 Library button clicked!");
   try {
     authStore.redirectToLibrary();
     isDropdownOpen.value = false;
@@ -257,12 +255,14 @@ const changePassword = () => {
     changePasswordRoute = `/${currentLang}/admin/change-password`;
   }
 
+  console.log("🔑 Redirecting to:", changePasswordRoute);
   router.push(changePasswordRoute);
   isDropdownOpen.value = false;
 };
 
 const logout = () => {
   authStore.logout();
+  showNotification("Logout successful", "success", 3000);
   const currentLang = route.params.lang || "en";
   router.push(`/${currentLang}/login`);
   isDropdownOpen.value = false;
@@ -278,7 +278,7 @@ onMounted(async () => {
   document.addEventListener("click", handleClickOutside);
   try {
     loading.value = true;
-    const data = await getStudentProfile(); 
+    const data = await getStudentProfile(); // Replace with role-based fetching if needed
     profile.name = data?.user?.name || "";
     profile.photo = data.user.user_detail?.profile_picture || "";
   } catch (err) {

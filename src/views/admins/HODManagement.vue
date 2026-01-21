@@ -1,9 +1,31 @@
 <template>
   <div class="flex flex-col gap-4 py-3 sm:py-5">
     <!-- Top bar -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-3 sm:px-5">
-      <!-- Search -->
+    <div class="px-3 sm:px-5 space-y-4">
+      <!-- Row 1: Title (left) + Actions (right) -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <!-- Title -->
+        <PageHeader
+          :title="t('hod_management')"
+          subtitle="Track and manage your HOD applications" />
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <!-- Add HOD -->
+          <button
+            @click="openAdd"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#235AA6] text-white rounded-lg hover:bg-[#1e4a94] transition-colors text-sm font-medium">
+            <Plus class="w-4 h-4" />
+            Add HOD
+          </button>
+
+          <!-- Export -->
+          <ExcelForm :filtered-rows="filteredRows" :departments-map="deptMap" />
+        </div>
+      </div>
+
+      <!-- Row 2: Search (bottom) -->
       <div class="relative w-full sm:max-w-md">
         <input
           v-model="search"
@@ -13,27 +35,6 @@
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
           <Search class="w-4 h-4" />
         </span>
-      </div>
-
-      <!-- Button Section -->
-      <div
-        class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <!-- Add HOD -->
-          <button
-            @click="openAdd"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-[#235AA6] text-white rounded-lg hover:bg-[#1e4a94] transition-colors text-sm font-medium">
-            <Plus class="w-4 h-4" />
-            Add HOD
-          </button>
-
-          <!-- Export -->
-          <ExcelForm
-            :filtered-rows="filteredRows"
-            :departments-map="deptMap"
-            class="w-full sm:w-auto"
-          />
-        </div>
       </div>
     </div>
 
@@ -102,7 +103,10 @@ import Pagination from "@/components/features/Pagination.vue";
 import HODCRUD from "@/stores/apis/HeadOfDepartmentCRUD.js";
 import { showNotification } from "@/lib/notifications.js";
 import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import PageHeader from "@/components/features/PageHeader.vue";
+import { useI18n } from "vue-i18n";
 
+const { t, locale } = useI18n();
 /** ------- Data ------- */
 const rows = ref([]); // raw from API
 const loading = ref(false);
@@ -472,11 +476,9 @@ const remove = async (row) => {
     }
   } catch (error) {
     console.error("Error deleting HOD:", error);
-    showNotification('Error deleting HOD', 'error');
+    showNotification("Error deleting HOD", "error");
   }
 };
-
-
 </script>
 
 <style scoped>

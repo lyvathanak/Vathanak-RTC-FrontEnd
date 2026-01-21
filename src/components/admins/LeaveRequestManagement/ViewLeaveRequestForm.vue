@@ -1,255 +1,330 @@
 <template>
   <div
-    class="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50">
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
+    <!-- Modal -->
     <div
-      class="bg-[#E3E3E3] rounded-2xl shadow-xl w-3xl max-h-[90vh] flex flex-col">
-      <!-- Header - Fixed -->
-      <div class="flex justify-between items-center p-6 shrink-0">
-        <div class="text-center flex-1">
-          <h2 class="text-xl font-bold text-center flex-1">Leave Request</h2>
-          <p class="text-center text-gray-600">
-            Submit your leave application for approval !
+      class="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10">
+      <!-- Header (sticky) -->
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between border-b bg-white/90 px-6 py-4 backdrop-blur">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
+            View Leave Request
+          </h2>
+          <p class="text-sm text-gray-500">
+            Submit your leave application for approval!
           </p>
         </div>
 
         <button
           @click="$emit('close')"
-          class="text-gray-500 hover:text-black text-xl font-bold">
+          class="inline-flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 active:scale-95"
+          aria-label="Close">
           ✕
         </button>
       </div>
 
-      <!-- Body - Scrollable -->
-      <div class="flex-1 overflow-y-auto px-12 py-4">
-        <div class="space-y-4">
-          <!-- ID and Full Name -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-semibold mb-1">
-                ID <span class="text-red-500">*</span>
-              </label>
-              <input
-                :value="leaveRequest.id_card"
-                type="text"
-                class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-                readonly />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1">
-                Full name <span class="text-red-500">*</span>
-              </label>
-              <input
-                :value="leaveRequest.latin_name"
-                type="text"
-                class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-                readonly />
-            </div>
-          </div>
+      <!-- Body (scrollable) -->
+      <div class="max-h-[75vh] overflow-y-auto px-6 py-6 sm:px-10">
+        <div class="space-y-6">
+          <!-- Card: Personal Info -->
+          <section
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">
+              Personal Info
+            </h3>
 
-          <!-- Leave Type -->
-          <div>
-            <label class="block text-sm font-semibold mb-2">
-              Leave Type <span class="text-red-500">*</span>
-            </label>
-            <div class="grid grid-cols-3 gap-2">
-              <div
-                v-for="type in leaveTypes"
-                :key="type"
-                :class="[
-                  'p-2 text-center rounded-lg border text-sm',
-                  leaveRequest.originalData?.type === type
-                    ? 'bg-[#235AA6] text-white hover:bg-[#1f4f93]'
-                    : 'bg-gray-100 text-gray-500 border-gray-300',
-                ]">
-                {{ type }}
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  ID <span class="text-red-500">*</span>
+                </label>
+                <input
+                  :value="leaveRequest.id_card"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Full name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  :value="leaveRequest.latin_name"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
               </div>
             </div>
-          </div>
+          </section>
 
-          <!-- Dates -->
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-semibold mb-1">
-                Start Date <span class="text-red-500">*</span>
-              </label>
-              <input
-                :value="leaveRequest.originalData?.start_date"
-                type="text"
-                class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-                readonly />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1">
-                End Date <span class="text-red-500">*</span>
-              </label>
-              <input
-                :value="leaveRequest.originalData?.end_date"
-                type="text"
-                class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-                readonly />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-1">Total Days</label>
-              <input
-                :value="leaveRequest.originalData?.total_days + ' days'"
-                type="text"
-                class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-                readonly />
-            </div>
-          </div>
-
-          <!-- Reason for Leave -->
-          <div>
-            <label class="block text-sm font-semibold mb-1">
-              Reason for Leave <span class="text-red-500">*</span>
+          <!-- Card: Leave Type -->
+          <section
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <label class="block text-sm font-semibold text-gray-800">
+              Leave Type <span class="text-red-500">*</span>
             </label>
-            <textarea
-              :value="leaveRequest.originalData?.reason"
-              class="w-full p-2 border border-gray-400 rounded-lg bg-white h-20 resize-none"
-              readonly></textarea>
-          </div>
 
-          <!-- Handover Details -->
-          <div>
-            <label class="block text-sm font-semibold mb-1"
-              >Handover Details</label
-            >
-            <textarea
-              :value="
-                leaveRequest.originalData?.handover_detail ||
-                'No handover details provided'
-              "
-              class="w-full p-2 border border-gray-400 rounded-lg bg-white h-20 resize-none"
-              readonly></textarea>
-          </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div
+                v-for="t in leaveTypes"
+                :key="t.value"
+                :class="[
+                  'rounded-lg border px-3 py-2 text-center text-sm font-semibold transition',
+                  normalizedType === t.value
+                    ? 'border-[#235AA6] bg-[#235AA6] text-white shadow-sm'
+                    : 'border-gray-200 bg-gray-50 text-gray-600',
+                ]">
+                {{ t.label }}
+              </div>
+            </div>
+          </section>
 
-          <!-- Emergency Contact -->
-          <div>
-            <label class="block text-sm font-semibold mb-1">
-              Emergency Contact Information <span class="text-red-500">*</span>
-            </label>
-            <input
-              :value="leaveRequest.originalData?.emergency_contact"
-              type="text"
-              class="w-full p-2 border border-gray-400 rounded-lg bg-white"
-              readonly />
-          </div>
+          <!-- Card: Dates -->
+          <section
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">
+              Leave Dates
+            </h3>
 
-          <!-- Supporting Documents -->
-          <div>
-            <label class="block text-sm font-semibold mb-2"
-              >Supporting Documents</label
-            >
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Start Date <span class="text-red-500">*</span>
+                </label>
+                <input
+                  :value="leaveRequest.originalData?.start_date"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  End Date <span class="text-red-500">*</span>
+                </label>
+                <input
+                  :value="leaveRequest.originalData?.end_date"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800"
+                  >Total Days</label
+                >
+                <input
+                  :value="leaveRequest.originalData?.total_days + ' days'"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Card: Reason -->
+          <section
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">Details</h3>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Reason for Leave <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  :value="leaveRequest.originalData?.reason"
+                  readonly
+                  class="mt-2 min-h-[110px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800"
+                  >Handover Details</label
+                >
+                <textarea
+                  :value="
+                    leaveRequest.originalData?.handover_detail ||
+                    'No handover details provided'
+                  "
+                  readonly
+                  class="mt-2 min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Emergency Contact Information
+                  <span class="text-red-500">*</span>
+                </label>
+                <input
+                  :value="leaveRequest.originalData?.emergency_contact"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Card: Document -->
+          <section
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">
+              Supporting Documents
+            </h3>
 
             <div
               v-if="docPath"
-              class="border border-gray-400 rounded-lg p-4 bg-white">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                  <svg
-                    class="w-5 h-5 text-[#235AA6]"
-                    fill="currentColor"
-                    viewBox="0 0 20 20">
-                    <path
-                      fill-rule="evenodd"
-                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                  <span class="text-sm">{{ fileName }}</span>
+              class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <div
+                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#235AA6]/10">
+                    <svg
+                      class="h-5 w-5 text-[#235AA6]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20">
+                      <path
+                        fill-rule="evenodd"
+                        d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                        clip-rule="evenodd"></path>
+                    </svg>
+                  </div>
+
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-gray-800">
+                      {{ fileName }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      Click preview to view the file.
+                    </p>
+                  </div>
                 </div>
 
                 <button
-                  class="px-3 py-1.5 text-sm rounded bg-[#235AA6] text-white hover:bg-[#1f4f93]"
+                  class="inline-flex items-center justify-center rounded-lg bg-[#235AA6] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#1f4f93] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   @click="previewDocument"
                   :disabled="previewLoading">
                   {{ previewLoading ? "Loading…" : "Preview" }}
                 </button>
               </div>
 
-              <!-- Preview area -->
-              <div v-if="showPreview" class="mt-4">
-                <UniversalFilePreview
-                  v-if="publicDocUrl"
-                  :src="publicDocUrl"
-                  :filename="fileDisplayName"
-                  :mime="''"
-                  officeViewer="google"
-                  height="70vh" />
-
-                <div v-else class="text-sm text-gray-600">
-                  No inline preview available for {{ fileName }}.
+              <!-- Preview -->
+              <div
+                v-if="showPreview"
+                class="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                <div
+                  class="flex items-center justify-between border-b bg-gray-50 px-4 py-3">
+                  <p class="text-sm font-semibold text-gray-800">Preview</p>
+                  <button
+                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm hover:bg-gray-50"
+                    @click="closePreview">
+                    Close
+                  </button>
                 </div>
 
-                <div class="mt-3 text-right">
-                  <button
-                    class="px-3 py-1.5 text-sm rounded border hover:bg-gray-50"
-                    @click="closePreview">
-                    Close preview
-                  </button>
+                <div class="p-4">
+                  <UniversalFilePreview
+                    v-if="publicDocUrl"
+                    :src="publicDocUrl"
+                    :filename="fileDisplayName"
+                    :mime="''"
+                    officeViewer="google"
+                    height="70vh" />
+
+                  <div v-else class="text-sm text-gray-600">
+                    No inline preview available for {{ fileName }}.
+                  </div>
                 </div>
               </div>
             </div>
 
             <div
               v-else
-              class="border border-gray-400 rounded-lg p-4 bg-white text-center text-gray-500">
+              class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">
               No supporting documents provided
             </div>
-          </div>
+          </section>
 
           <!-- Remark -->
-          <div v-if="isPending">
-            <label class="block text-sm font-semibold mb-1">Remark</label>
-            <textarea
-              v-model="remark"
-              placeholder="Reason for Reject..."
-              class="w-full p-2 border border-gray-400 rounded-lg bg-white h-16 resize-none"></textarea>
-          </div>
+          <section
+            v-if="isPending"
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">
+              Admin Action
+            </h3>
 
-          <!-- Show existing remark for processed requests -->
-          <div v-else-if="existingRemark">
-            <label class="block text-sm font-semibold mb-1">Admin Remark</label>
+            <div>
+              <label class="block text-sm font-semibold text-gray-800"
+                >Remark</label
+              >
+              <textarea
+                v-model="remark"
+                placeholder="Reason for Reject..."
+                class="mt-2 min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"></textarea>
+            </div>
+          </section>
+
+          <section
+            v-else-if="existingRemark"
+            class="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
+            <h3 class="mb-4 text-sm font-semibold text-gray-900">
+              Admin Remark
+            </h3>
+
             <textarea
               :value="existingRemark"
-              class="w-full p-2 border border-gray-400 rounded-lg bg-gray-50 h-16 resize-none"
-              readonly></textarea>
-          </div>
+              readonly
+              class="min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+          </section>
         </div>
       </div>
 
-      <!-- Footer - Fixed -->
+      <!-- Footer (sticky) -->
       <div
-        v-if="isPending"
-        class="flex justify-center space-x-4 p-6 border-t shrink-0">
-        <button
-          @click="handleReject"
-          :disabled="loading || !remark || !remark.trim()"
-          class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ loading && actionType === "reject" ? "Rejecting..." : "Reject" }}
-        </button>
-        <button
-          @click="handleApprove"
-          :disabled="loading"
-          class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ loading && actionType === "approve" ? "Approving..." : "Approve" }}
-        </button>
-      </div>
+        class="sticky bottom-0 border-t border-black/10 bg-white/90 backdrop-blur">
+        <div class="px-6 py-4 sm:px-10">
+          <!-- Pending actions -->
+          <div
+            v-if="isPending"
+            class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              @click="handleReject"
+              :disabled="loading || !remark || !remark.trim()"
+              class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              {{
+                loading && actionType === "reject" ? "Rejecting..." : "Reject"
+              }}
+            </button>
 
-      <!-- Status Display for Non-Pending Requests -->
-      <div v-else class="flex justify-center p-6 border-t shrink-0">
-        <div class="text-center">
-          <p class="text-sm text-gray-600 mb-2">
-            This request has been processed
-          </p>
-          <span
-            :class="[
-              'px-4 py-2 rounded-full text-sm font-medium',
-              currentStatus === 'approved'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800',
-            ]">
-            {{ currentStatus === "approved" ? "Approved" : "Rejected" }}
-          </span>
+            <button
+              @click="handleApprove"
+              :disabled="loading"
+              class="inline-flex items-center justify-center rounded-lg bg-[#235AA6] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1f4f93] disabled:opacity-50 disabled:cursor-not-allowed">
+              {{
+                loading && actionType === "approve" ? "Approving..." : "Approve"
+              }}
+            </button>
+          </div>
+
+          <!-- Non-pending status -->
+          <div v-else class="flex items-center justify-between">
+            <p class="text-sm text-gray-600">
+              This request has been processed.
+            </p>
+
+            <span
+              :class="[
+                'rounded-lg px-4 py-2 text-sm font-semibold',
+                currentStatus === 'approved'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800',
+              ]">
+              {{ currentStatus === "approved" ? "Approved" : "Rejected" }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -282,13 +357,24 @@ const emit = defineEmits(["close", "updated"]);
 
 // ---------- UI DATA ----------
 const leaveTypes = [
-  "Annual Leave",
-  "Sick Leave",
-  "Personal Leave",
-  "Emergency",
-  "Maternity",
-  "Other",
+  { value: "Annual", label: "Annual Leave" },
+  { value: "Sick", label: "Sick Leave" },
+  { value: "Personal", label: "Personal Leave" },
+  { value: "Emergency", label: "Emergency" },
+  { value: "Maternity", label: "Maternity" },
+  { value: "Other", label: "Other" },
 ];
+
+const normalizedType = computed(() => {
+  const raw = (currentReq.value?.type || "").toString().trim().toLowerCase();
+  if (!raw) return "";
+  if (raw.includes("annual")) return "Annual";
+  if (raw.includes("sick")) return "Sick";
+  if (raw.includes("personal")) return "Personal";
+  if (raw.includes("emergency")) return "Emergency";
+  if (raw.includes("maternity")) return "Maternity";
+  return "Other";
+});
 const remark = ref("");
 const loading = ref(false);
 const actionType = ref("");

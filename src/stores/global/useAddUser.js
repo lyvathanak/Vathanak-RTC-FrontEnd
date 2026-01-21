@@ -140,7 +140,11 @@ export function useAddUser(type, options = {}) {
         is_radie: state.is_radie,
         // Add required ID fields
         sub_department_id: state.sub_department_id,
-        program_id: state.program_id
+        program_id: state.program_id,
+        // Add academic year relational IDs for backend
+        academic_year_id: state.academic_year_id,
+        generation_id: state.generation_id,
+        year: state.year
       }
     }
     if (type === 'teacher') {
@@ -167,6 +171,18 @@ export function useAddUser(type, options = {}) {
     if (errors.length) return { ok: false, errors }
 
     const payload = buildPayload()
+    
+    // 🔍 Debug: Log the payload being sent
+    console.log('📦 useAddUser.submit() - Payload built:', {
+      academic_year: payload.academic_year,
+      academic_year_id: payload.academic_year_id,
+      generation_id: payload.generation_id,
+      year: payload.year,
+      program_id: payload.program_id,
+      department_id: payload.department_id,
+      sub_department_id: payload.sub_department_id
+    });
+    
     if (options.createFn) {
       const res = await options.createFn(payload)
 

@@ -1,163 +1,235 @@
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 overflow-hidden">
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <!-- Modal -->
     <div
-      class="relative bg-gray-200 p-6 rounded-[10px] shadow-[0px_4px_4px_#00000040] w-full max-w-[700px] max-h-[90vh] overflow-y-auto">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Leave Request</h2>
+      class="relative w-full max-w-[760px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10">
+      <!-- Sticky Header -->
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between border-b bg-white/90 px-6 py-4 backdrop-blur">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
+            Leave Request
+          </h2>
+          <p class="text-sm text-gray-500">
+            Fill out the form to submit your leave request.
+          </p>
+        </div>
+
         <button
           @click="$emit('close')"
-          class="text-gray-500 hover:text-black text-xl">
+          class="inline-flex h-10 w-10 items-center justify-center rounded-full text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 active:scale-95"
+          aria-label="Close">
           ✕
         </button>
       </div>
 
-      <!-- Form -->
-      <form @submit.prevent="submitLeaveRequest" class="space-y-4">
-        <!-- ID + Name -->
-        <div class="grid grid-cols-2 gap-4">
+      <!-- Body -->
+      <div class="max-h-[80vh] overflow-y-auto px-6 py-6">
+        <form @submit.prevent="submitLeaveRequest" class="space-y-6">
+          <!-- Section: Identity -->
+          <div class="rounded-lg border bg-wghite p-4">
+            <h3 class="mb-3 text-sm font-semibold text-gray-900">
+              Personal Info
+            </h3>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  ID <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.id"
+                  type="text"
+                  disabled
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-sm cursor-not-allowed" />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Full name <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.fullName"
+                  type="text"
+                  disabled
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-sm cursor-not-allowed" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Leave Type -->
           <div>
-            <label class="font-semi-bold"
-              >ID<span class="text-red-500">*</span></label
-            >
+            <label class="block text-sm font-semibold text-gray-800">
+              Leave Type <span class="text-red-500">*</span>
+            </label>
+
+            <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <button
+                type="button"
+                v-for="type in leaveTypes"
+                :key="type"
+                @click="selectLeaveType(type)"
+                :disabled="isAnnualAndStudent(type)"
+                :class="[
+                  'rounded-lg border px-3 py-2 text-sm font-semibold transition active:scale-[0.98]',
+                  form.leaveType === type
+                    ? 'border-[#235AA6] bg-[#235AA6] text-white shadow-sm'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50',
+                  isAnnualAndStudent(type) ? 'opacity-60' : '',
+                ]">
+                {{ type }}
+              </button>
+            </div>
+
+            <p class="mt-2 text-xs text-gray-500">
+              Choose the leave category that matches your request.
+            </p>
+          </div>
+
+          <!-- Dates -->
+          <div class="rounded-lg border bg-white p-4">
+            <h3 class="mb-3 text-sm font-semibold text-gray-900">
+              Leave Dates
+            </h3>
+
+            <div class="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Start Day <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.startDate"
+                  type="date"
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"
+                  @change="updateTotalDays"
+                  required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  End Day <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model="form.endDate"
+                  type="date"
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"
+                  @change="updateTotalDays"
+                  required />
+              </div>
+
+              <div>
+                <label class="block text-sm font-semibold text-gray-800">
+                  Total Day
+                </label>
+                <input
+                  v-model="form.totalDays"
+                  type="text"
+                  readonly
+                  class="mt-2 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Reason -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-800">
+              Reason for Leave <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              v-model="form.reason"
+              placeholder="Please provide detail about your leave request ..."
+              class="mt-2 min-h-[110px] w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15 resize-none"
+              required></textarea>
+          </div>
+
+          <!-- Handover -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-800">
+              Handover Details
+            </label>
+            <textarea
+              v-model="form.handover"
+              placeholder="Describe work handover arrangements or coverage plans ..."
+              class="mt-2 min-h-[90px] w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15 resize-none"></textarea>
+          </div>
+
+          <!-- Emergency -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-800">
+              Emergency Contact <span class="text-red-500">*</span>
+            </label>
             <input
-              v-model="form.id"
+              v-model="form.emergencyContact"
               type="text"
-              class="border p-2 rounded-[10px] w-full bg-white cursor-not-allowed"
-              disabled />
+              placeholder="Phone number of alternative contact"
+              class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"
+              required
+              @input="allowOnlyDigits" />
+            <p v-if="errorEmergency" class="mt-2 text-sm text-red-600">
+              {{ errorEmergency }}
+            </p>
           </div>
+
+          <!-- File Upload -->
           <div>
-            <label class="font-semi-bold"
-              >Full name<span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="form.fullName"
-              type="text"
-              class="border p-2 rounded-[10px] w-full bg-white cursor-not-allowed"
-              disabled />
+            <label class="block text-sm font-semibold text-gray-800">
+              Supporting Documents
+            </label>
+
+            <div
+              class="mt-2 rounded-lg border-2 border-dashed border-gray-200 bg-white p-4 text-center transition hover:border-[#235AA6] cursor-pointer"
+              @click="$refs.fileInput.click()">
+              <p class="text-sm font-semibold text-gray-700">
+                Drag & Drop your file here
+              </p>
+              <p class="mt-1 text-xs text-gray-500">
+                or click to browse (PDF, JPG, PNG, DOCX)
+              </p>
+
+              <input
+                ref="fileInput"
+                type="file"
+                class="hidden"
+                @change="handleFileUpload" />
+            </div>
+
+            <div
+              v-if="form.fileName"
+              class="mt-3 flex items-center justify-between rounded-lg border bg-gray-50 px-4 py-3 text-sm">
+              <div class="truncate text-gray-700">
+                <span class="font-semibold">Selected:</span>
+                {{ form.fileName }}
+              </div>
+
+              <button
+                type="button"
+                class="ml-4 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#235AA6] hover:bg-white border border-transparent hover:border-gray-200"
+                @click="
+                  form.file = null;
+                  form.fileName = '';
+                  $refs.fileInput.value = null;
+                ">
+                Remove
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- Leave Type -->
-        <div>
-          <label class="font-semi-bold">
-            Leave Type <span class="text-red-500">*</span>
-          </label>
-          <div class="grid grid-cols-3 gap-4 mt-2">
-            <button
-              type="button"
-              v-for="type in leaveTypes"
-              :key="type"
-              @click="selectLeaveType(type)"
-              :class="[
-                'border p-2 rounded-[10px] text-center transition-colors',
-                form.leaveType === type ? 'bg-blue-600 text-white' : 'bg-white',
-                isAnnualAndStudent(type)
-                  ? 'bg-gray-100 cursor-not-allowed'
-                  : 'hover:bg-gray-100',
-              ]"
-              :disabled="isAnnualAndStudent(type)">
-              {{ type }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Dates -->
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="flex font-semi-bold"
-              >Start Day<span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="form.startDate"
-              type="date"
-              class="border p-2 rounded-[10px] w-full bg-white"
-              @change="updateTotalDays"
-              required />
-          </div>
-          <div>
-            <label class="flex font-semi-bold"
-              >End Day<span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="form.endDate"
-              type="date"
-              class="border p-2 rounded-[10px] w-full bg-white"
-              @change="updateTotalDays"
-              required />
-          </div>
-          <div>
-            <label class="flex font-semi-bold">Total Day</label>
-            <input
-              type="text"
-              v-model="form.totalDays"
-              class="border p-2 rounded-[10px] w-full bg-white"
-              readonly />
-          </div>
-        </div>
-
-        <!-- Reason -->
-        <label class="text-semi-bold"
-          >Reason for Leave <span class="text-red-500">*</span></label
-        >
-        <textarea
-          v-model="form.reason"
-          placeholder="Please provide detail about your leave request ..."
-          class="border p-2 rounded-[10px] w-full bg-white resize-none"
-          required></textarea>
-
-        <!-- Handover -->
-        <label class="text-semi-bold">Handover Details</label>
-        <textarea
-          v-model="form.handover"
-          placeholder="Describe work handover arrangements or coverage plans ..."
-          class="border p-2 rounded-[10px] w-full bg-white resize-none"></textarea>
-
-        <!-- Emergency -->
-        <div>
-          <label class="text-semi-bold"
-            >Emergency Contact <span class="text-red-500">*</span></label
-          >
-          <input
-            v-model="form.emergencyContact"
-            type="text"
-            placeholder="Phone number of alternative contact"
-            class="border p-2 rounded-[10px] w-full bg-white"
-            required
-            @input="allowOnlyDigits" />
-          <small v-if="errorEmergency" class="text-red-500">{{
-            errorEmergency
-          }}</small>
-        </div>
-
-        <!-- File Upload -->
-        <div>
-          <label class="font-semi-bold">Supporting Documents</label>
           <div
-            class="border-2 border-dashed border-gray-300 rounded-[10px] p-3 text-center cursor-pointer hover:border-blue-500 transition bg-white"
-            @click="$refs.fileInput.click()">
-            <p class="text-gray-500">Drag & Drop your file here</p>
-            <input
-              ref="fileInput"
-              type="file"
-              class="hidden"
-              @change="handleFileUpload" />
-          </div>
-          <div v-if="form.fileName" class="mt-2 text-sm text-gray-700">
-            Selected: {{ form.fileName }}
-          </div>
-        </div>
+            class="sticky bottom-0 border-t border-black/10 bg-white/90 backdrop-blur">
+            <!-- Submit -->
+            <div class="pt-2">
+              <button
+                type="submit"
+                class="w-full rounded-lg bg-[#235AA6] px-6 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#1f4f93] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-[#235AA6]/20">
+                Submit Leave Request
+              </button>
 
-        <!-- Submit -->
-        <div class="flex justify-center mt-6">
-          <button
-            type="submit"
-            class="bg-[#235AA6] text-white hover:bg-[#1f4f93] px-6 py-2 rounded-[10px] w-full sm:w-[250px] transition">
-            Submit Leave Request
-          </button>
-        </div>
-      </form>
+              <p class="mt-2 text-center text-xs text-gray-500">
+                Please double-check your details before submitting.
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>

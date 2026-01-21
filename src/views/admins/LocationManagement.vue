@@ -1,23 +1,10 @@
 <template>
   <div
-    :class="[
-      'p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6',
-      locale === 'kh' ? 'khmer-text' : '',
-    ]">
+    class="p-4 space-y-4 px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen">
     <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
-      <div class="flex items-center gap-2 ">
-        <Building class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-        <h1
-          :class="[
-            'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          {{ t("building_management") }}
-        </h1>
-      </div>
-
+    <PageHeader
+      :title="t('building_management')"
+      subtitle="Track and manage your location applications">
       <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <button
           @click="openAddBuildingModal"
@@ -36,7 +23,7 @@
           </span>
         </button>
       </div>
-    </div>
+    </PageHeader>
 
     <!-- Buildings List -->
     <div class="space-y-3 sm:space-y-4">
@@ -191,7 +178,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-const { t, locale } = useI18n();
 import { Building, Plus, ChevronDown, Pencil, Trash2 } from "lucide-vue-next";
 import {
   AlertDialog,
@@ -204,14 +190,16 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { showNotification } from "@/lib/notifications";
 import LocationFilter from "@/components/admins/LocationManagement/LocationFilter.vue";
 import LocationTable from "@/components/admins/LocationManagement/LocationTable.vue";
 import UpdateBuildingModal from "@/components/admins/LocationManagement/UpdateBuildingModal.vue";
 import UpdateLocationModal from "@/components/admins/LocationManagement/UpdateLocationModal.vue";
 import ViewLocationModal from "@/components/admins/LocationManagement/ViewLocationModal.vue";
 import LocationCRUD from "@/stores/apis/LocationCRUD.js";
-import { showNotification } from "@/lib/notifications";
+import PageHeader from "@/components/features/PageHeader.vue";
 
+const { t, locale } = useI18n();
 // State
 const loading = ref(false);
 const submitting = ref(false);
@@ -245,7 +233,7 @@ const loadBuildings = async () => {
 
     if (result.success) {
       buildings.value = result.data;
-      
+
       // Auto-expand first building
       if (buildings.value.length > 0) {
         buildings.value.forEach((building, index) => {
