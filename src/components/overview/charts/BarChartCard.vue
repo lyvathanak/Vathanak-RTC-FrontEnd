@@ -22,32 +22,69 @@ const props = defineProps({
 
 const COLORS = ["#2563eb", "#16a34a", "#f59e0b"];
 
-const barData = computed(() => ({
-  labels: props.labels,
-  datasets: [
-    {
-      label: props.title,
-      data: props.values,
-      backgroundColor: COLORS,
-      borderColor: COLORS,
-      borderWidth: 1,
-      borderRadius: 10,
-    },
-  ],
-}));
+const barData = computed(() => {
+  const colors = COLORS.slice(0, props.labels.length);
+  return {
+    labels: props.labels,
+    datasets: [
+      {
+        label: props.title,
+        data: props.values,
+        backgroundColor: colors,
+        borderColor: colors,
+        borderWidth: 1,
+        borderRadius: 10,
+      },
+    ],
+  };
+});
+
+const maxY = computed(() => {
+  const m = Math.max(...(props.values || [0]));
+  return m <= 10 ? 10 : Math.ceil(m * 1.2);
+});
 
 const optionsComputed = computed(() => ({
   responsive: true,
   maintainAspectRatio: true,
   plugins: { legend: { display: false } },
   scales: {
+    /* =======================
+       Y AXIS
+       ======================= */
     y: {
-      min: 0,
-      max: 2000,
-      ticks: { stepSize: 500 },
-      grid: { drawBorder: false },
+      beginAtZero: true,
+      suggestedMax: maxY.value,
+      title: {
+        display: true,
+        text: "Number of Users",
+        font: { size: 13, weight: "bold" },
+      },
+      ticks: {
+        stepSize: Math.ceil(maxY.value / 5),
+      },
+      grid: {
+        drawBorder: false,
+        color: "#e5e7eb",
+      },
     },
-    x: { grid: { display: false } },
+
+    /* =======================
+       X AXIS
+       ======================= */
+    x: {
+      title: {
+        display: true,
+        text: "User Roles",
+        font: { size: 13, weight: "bold" },
+      },
+      ticks: {
+        font: { size: 12 },
+      },
+      grid: {
+        display: false,
+      },
+    },
   },
   ...props.options,
 }));

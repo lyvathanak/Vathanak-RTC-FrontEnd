@@ -120,12 +120,6 @@
           </span>
         </template>
       </ListTable>
-
-      <ViewTeacherModal
-        v-if="showViewModal"
-        v-model="showViewModal"
-        :teacher="selectedTeacher"
-      />
     </div>
   </div>
 </template>
@@ -138,7 +132,6 @@ import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
 import { useDepartment } from "@/stores/global/useDepartment";
 import ListTable from "@/components/features/ListTable.vue";
-import ViewTeacherModal from "@/components/admins/TeacherManagement/ViewTeacherModal.vue";
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -154,10 +147,6 @@ const departmentName = ref("");
 const departmentId = ref(null);
 const sortField = ref("latin_name");
 const sortDirection = ref("asc");
-
-// Modal State
-const showViewModal = ref(false);
-const selectedTeacher = ref(null);
 
 // Table Columns (Splitting Name into Khmer/Latin)
 const columns = ref([
@@ -220,8 +209,7 @@ const handleSort = ({ field, direction }) => {
 };
 
 const handleViewTeacher = (teacher) => {
-  selectedTeacher.value = teacher;
-  showViewModal.value = true;
+  console.log('View profile', teacher.id);
 };
 
 // Data Fetching

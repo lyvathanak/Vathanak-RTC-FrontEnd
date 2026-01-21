@@ -274,6 +274,7 @@ async function fetchProfile() {
     const gen = latestProgram?.number_generation_program ?? "";
     profile.promotion = gen !== "" ? `Generation ${gen}` : "-";
     
+    
     // Use year from the program data for academic year
     profile.year = latestProgram?.year ? `Year ${latestProgram.year}` : "-";
   } catch (err) {

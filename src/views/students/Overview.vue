@@ -20,11 +20,11 @@
     <!-- Student Info Card -->
     <div>
       <UserInfoCard
-          :role="authStore.userRole"
-          :user="detailUser"
-          :locale="locale" />
+        :role="authStore.userRole"
+        :user="detailUser"
+        :locale="locale" />
     </div>
-    
+
     <!-- <div class="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2
         :class="[
@@ -72,6 +72,7 @@
       <OverviewWidgets
         :role="authStore.userRole"
         :stats="stats"
+        v-model:range="lineRange"
         @send="onChatSend" />
     </div>
 
@@ -103,13 +104,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { getAttendanceOverview } from "@/stores/Student/Overview";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
 import { getStudentProfile } from "@/stores/Student/StudentProfile";
 import { CalendarDaysIcon, Circle, Sun, SunMoon } from "lucide-vue-next";
+import { getStudentLeaveRequestsService } from "@/stores/Student/LeaveRequestFrom";
+
 import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
 import TimetableOverview from "@/components/students/timetable/TimetableOverview.vue";
 import AttendanceStatus from "@/components/students/AttendanceStatus.vue";
@@ -136,11 +139,11 @@ onMounted(async () => {
 });
 
 // ---------------- Attendance ---------------- //
-const rawStats = ref({
-  onTime: 0,
-  late: 0,
-  absence: 0,
-});
+// const rawStats = ref({
+//   onTime: 0,
+//   late: 0,
+//   absence: 0,
+// });
 
 // const stats = computed(() => ({
 //   present: rawStats.value.onTime + rawStats.value.late + rawStats.value.absence,
@@ -149,14 +152,14 @@ const rawStats = ref({
 //   absence: rawStats.value.absence,
 // }));
 
-onMounted(async () => {
-  try {
-    const data = await getAttendanceOverview();
-    rawStats.value = data;
-  } catch (err) {
-    console.error("Failed to fetch attendance stats:", err);
-  }
-});
+// onMounted(async () => {
+//   try {
+//     const data = await getAttendanceOverview();
+//     rawStats.value = data;
+//   } catch (err) {
+//     console.error("Failed to fetch attendance stats:", err);
+//   }
+// });
 
 // ---------------- Timetable ---------------- //
 const days = [
@@ -238,19 +241,125 @@ const slot = (day, time) => {
   return weekData.value?.[day]?.[time];
 };
 
-const stats = computed(() => ({
-  department_teachers: 12,
-  department_courses: 18,
-  department_students: 285,
-  pending_requests: 7,
+/**
+ * Line chart
+ */
 
-  // charts
-  line_series: [70, 72, 71, 74, 73, 75, 76],
-  bar_labels: ["Leave", "Attendance", "Other"],
-  bar_values: [4, 9, 2],
-  donut_labels: ["Light", "Medium", "Heavy"],
-  donut_values: [30, 50, 20],
-}));
+const lineRange = ref("7"); // for 7/14/30 selector
+const leaveRequests = ref([]);
+
+function toYMD(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function buildLeaveLineChart(requests, range) {
+  const normalizeStatus = (s) => {
+    const v = String(s || "")
+      .trim()
+      .toLowerCase();
+    if (v.includes("approve")) return "approved";
+    if (v.includes("reject") || v.includes("deny") || v.includes("decline"))
+      return "rejected";
+    return "pending";
+  };
+
+  const toISOFromDDMMYYYY = (raw) => {
+    if (!raw) return null;
+    const s = String(raw).trim();
+
+    // "10-01-2026" -> "2026-01-10"
+    if (/^\d{2}-\d{2}-\d{4}/.test(s)) {
+      const [dd, mm, yyyy] = s.slice(0, 10).split("-");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // "2026-01-10..." -> "2026-01-10"
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+
+    return null;
+  };
+
+  const getKey = (r) =>
+    toISOFromDDMMYYYY(r?.start_date) ||
+    toISOFromDDMMYYYY(r?.end_date) ||
+    toISOFromDDMMYYYY(r?.submit_at) ||
+    toISOFromDDMMYYYY(r?.created_at);
+
+  // ✅ 1) collect all dates from requests
+  let allDates = (requests || []).map(getKey).filter(Boolean);
+
+  // unique + sort
+  allDates = Array.from(new Set(allDates)).sort(); // "YYYY-MM-DD" sorts correctly
+
+  // ✅ 2) Optional: if range = 7/14/30, keep only last N dates (not last N days)
+  const n = Number(range || 0);
+  const labels = n > 0 ? allDates.slice(-n) : allDates;
+
+  // ✅ 3) init counts
+  const counts = {};
+  labels.forEach((d) => (counts[d] = { approved: 0, rejected: 0, pending: 0 }));
+
+  // ✅ 4) count requests
+  for (const r of requests || []) {
+    const key = getKey(r);
+    if (!key || !counts[key]) continue;
+    counts[key][normalizeStatus(r.status)] += 1;
+  }
+
+  return {
+    line_labels: labels,
+    line_datasets: [
+      { label: "Approved", data: labels.map((d) => counts[d].approved) },
+      { label: "Rejected", data: labels.map((d) => counts[d].rejected) },
+      { label: "Pending", data: labels.map((d) => counts[d].pending) },
+    ],
+  };
+}
+
+async function fetchLeaveRequests(days) {
+  const n = Number(days || 7);
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - (n - 1));
+
+  const res = await getStudentLeaveRequestsService({
+    start_date: toYMD(start),
+    end_date: toYMD(end),
+  });
+
+  leaveRequests.value = res?.requests || [];
+}
+
+onMounted(() => fetchLeaveRequests(lineRange.value));
+watch(lineRange, (v) => fetchLeaveRequests(v));
+
+const stats = computed(() => {
+  const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
+
+  return {
+    // ✅ Student KPI cards (map to OverviewWidgets Student kpis keys)
+    leaverequests: 4,
+    on_time: 11,
+    late: 12,
+    absence: 1,
+    total_present: 20,
+
+    // ✅ Line chart from API
+    line_labels: leaveLine.line_labels,
+    line_datasets: leaveLine.line_datasets,
+
+    // ✅ bar chart (use API totals)
+    bar_labels: ["Leave", "Attendance", "Other"],
+    bar_values: [4, 9, 2],
+
+    // ✅ donut chart
+    donut_labels: ["Light", "Medium", "Heavy"],
+    donut_values: [30, 50, 20],
+  };
+});
 
 function onChatSend(payload) {
   console.log("HOD send:", payload);

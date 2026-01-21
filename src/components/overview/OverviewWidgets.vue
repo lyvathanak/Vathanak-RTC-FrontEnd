@@ -62,9 +62,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   BookOpen,
-  Users,
   ClipboardList,
-  GraduationCap,
   AlertCircle,
   Layers,
   UserCheck,
@@ -73,6 +71,11 @@ import {
   UserX,
   Presentation,
   FileText,
+  Users,
+  BookOpenCheck,
+  UserCog,
+  GraduationCap,
+  CalendarCheck,
 } from "lucide-vue-next";
 
 import CalendarCard from "@/components/overview/charts/CalendarCard.vue";
@@ -106,9 +109,9 @@ const rangeModel = computed({
 const ROLE_CONFIG = {
   Teacher: {
     kpis: [
-      { key: "courses", label: "My Courses" },
+      { key: "leaverequests", label: "My Leave Requests" },
       { key: "students", label: "My Students" },
-      { key: "assignments", label: "Assignments" },
+      { key: "subjects", label: "My Subjects" },
     ],
     titles: {
       line: "Leave Request Trend",
@@ -119,6 +122,7 @@ const ROLE_CONFIG = {
 
   Student: {
     kpis: [
+      { key: "leaverequests", label: "My Leave Requests" },
       { key: "on_time", label: "On Time" },
       { key: "late", label: "Late" },
       { key: "absence", label: "Absence" },
@@ -132,14 +136,14 @@ const ROLE_CONFIG = {
 
   "Head of Department": {
     kpis: [
-      { key: "pending_requests", label: "Pending Requests" },
+      { key: "leaverequests", label: "My Leave Requests" },
       { key: "department_teachers", label: "Department Teachers" },
-      { key: "department_courses", label: "Department Courses" },
       { key: "department_students", label: "Department Students" },
+      { key: "department_subjects", label: "Department Subjects" },
     ],
     titles: {
       line: "Leave Request Trend",
-      bar: "Requests by Type",
+      bar: "User Roles Share",
       donut: "Teacher Workload",
     },
   },
@@ -147,9 +151,9 @@ const ROLE_CONFIG = {
   Admin: {
     kpis: [
       { key: "total_users", label: "Total Users" },
-      { key: "active_courses", label: "Active Courses" },
       { key: "teachers", label: "Teachers" },
       { key: "students", label: "Students" },
+      { key: "programs", label: "Programs" },
     ],
     titles: {
       line: "Leave Request Trend",
@@ -182,7 +186,9 @@ const barTitle = computed(() => roleConfig.value.titles?.bar || "Bar");
 const donutTitle = computed(() => roleConfig.value.titles?.donut || "Doughnut");
 
 /** Charts visibility (keep same behavior you had: only Admin shows bar/donut) */
-const showBar = computed(() => roleKey.value === "Admin");
+const showBar = computed(
+  () => roleKey.value === "Admin" || roleKey.value === "Head of Department"
+);
 const showDonut = computed(() => roleKey.value === "Admin");
 
 /** ---------------------------
@@ -197,11 +203,11 @@ const DEFAULT_META = {
 
 const KPI_META = {
   Teacher: {
-    courses: {
-      icon: BookOpen,
-      valueClass: "text-blue-600",
-      iconBgClass: "bg-blue-100",
-      iconClass: "text-blue-600",
+    leaverequests: {
+      icon: CalendarCheck,
+      valueClass: "text-purple-600",
+      iconBgClass: "bg-purple-100",
+      iconClass: "text-purple-600",
     },
     students: {
       icon: Users,
@@ -209,15 +215,21 @@ const KPI_META = {
       iconBgClass: "bg-green-100",
       iconClass: "text-green-600",
     },
-    assignments: {
-      icon: ClipboardList,
-      valueClass: "text-purple-600",
-      iconBgClass: "bg-purple-100",
-      iconClass: "text-purple-600",
+    subjects: {
+      icon: BookOpen,
+      valueClass: "text-blue-600",
+      iconBgClass: "bg-blue-100",
+      iconClass: "text-blue-600",
     },
   },
 
   Student: {
+    leaverequests: {
+      icon: CalendarCheck,
+      valueClass: "text-purple-600",
+      iconBgClass: "bg-purple-100",
+      iconClass: "text-purple-600",
+    },
     on_time: {
       icon: CheckCircle2,
       valueClass: "text-green-600",
@@ -245,29 +257,32 @@ const KPI_META = {
   },
 
   "Head of Department": {
-    pending_requests: {
-      icon: AlertCircle,
-      valueClass: "text-orange-600",
-      iconBgClass: "bg-orange-100",
-      iconClass: "text-orange-600",
+    leaverequests: {
+      icon: CalendarCheck,
+      valueClass: "text-purple-600",
+      iconBgClass: "bg-purple-100",
+      iconClass: "text-purple-600",
     },
+
     department_teachers: {
-      icon: Users,
+      icon: Users, // Faculty members
       valueClass: "text-blue-600",
       iconBgClass: "bg-blue-100",
       iconClass: "text-blue-600",
     },
-    department_courses: {
-      icon: Layers,
-      valueClass: "text-green-600",
-      iconBgClass: "bg-green-100",
-      iconClass: "text-green-600",
-    },
+
     department_students: {
       icon: GraduationCap,
-      valueClass: "text-purple-600",
-      iconBgClass: "bg-purple-100",
-      iconClass: "text-purple-600",
+      valueClass: "text-emerald-600",
+      iconBgClass: "bg-emerald-100",
+      iconClass: "text-emerald-600",
+    },
+
+    department_subjects: {
+      icon: BookOpenCheck,
+      valueClass: "text-amber-600",
+      iconBgClass: "bg-amber-100",
+      iconClass: "text-amber-600",
     },
   },
 
@@ -278,18 +293,21 @@ const KPI_META = {
       iconBgClass: "bg-blue-100",
       iconClass: "text-blue-600",
     },
-    active_courses: {
-      icon: BookOpen,
-      valueClass: "text-green-600",
-      iconBgClass: "bg-green-100",
-      iconClass: "text-green-600",
+
+    programs: {
+      icon: BookOpenCheck,
+      valueClass: "text-indigo-600",
+      iconBgClass: "bg-indigo-100",
+      iconClass: "text-indigo-600",
     },
+
     teachers: {
-      icon: Presentation,
+      icon: UserCog,
       valueClass: "text-purple-600",
       iconBgClass: "bg-purple-100",
       iconClass: "text-purple-600",
     },
+
     students: {
       icon: GraduationCap,
       valueClass: "text-orange-600",

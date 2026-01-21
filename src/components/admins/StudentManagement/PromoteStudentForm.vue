@@ -91,10 +91,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { X } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useProgram } from "@/stores/global/useProgram.js";
+import { showNotification } from "@/lib/notifications.js";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -128,21 +129,29 @@ const filteredPrograms = computed(() => {
   );
 });
 
-const promote = () => {
+const promote = async () => {
   if (!newProgramId.value || !props.students.length) return;
 
   const userIds = props.students.map(s => s.user_detail?.user_id).filter(Boolean);
   if (!userIds.length) return;
 
-  // backend will handle year increment
-  emit('promote', {
-    newProgramId: newProgramId.value
-  })
+  try {
+    await emit('promote', { newProgramId: newProgramId.value });
 
-
-  newProgramId.value = '';
-  close();
+    
+  } catch (error) {
+    
+  } finally {
+    newProgramId.value = '';
+    close();
+  }
 };
+
+// Reset newProgramId when students change
+watch(() => props.students, () => {
+  newProgramId.value = '';
+}, { immediate: true });
+
 </script>
 
 <style scoped>
