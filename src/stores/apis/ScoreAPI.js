@@ -44,6 +44,29 @@ export default {
       console.error('Error fetching subject scores:', error);
       return { subjects: [] };
     }
-  }
+  },
 
+  // --- NEW METHODS FOR EXAM SCORING ---
+
+  // Fetch all subjects for the dropdown
+  async getAllSubjects() {
+    try {
+      const response = await api.get('managements/get_all_subjects');
+      return response.data?.subjects || response.data || [];
+    } catch (error) {
+      console.error('Error fetching all subjects:', error);
+      return [];
+    }
+  },
+
+  // Save the student score
+  async scoreStudent(payload) {
+    try {
+      const response = await api.post('users/score_student', payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error scoring student:', error);
+      throw error;
+    }
+  }
 };

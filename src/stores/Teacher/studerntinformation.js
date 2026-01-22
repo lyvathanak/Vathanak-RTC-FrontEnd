@@ -17,8 +17,11 @@ export async function getStudentsByTeacherDepartment(params = {}) {
     const paginated = response.data.students;
     const departmentInfo = response.data.department || {};
 
+    // Safely extract data array: paginated?.data (if Laravel resource) or paginated (if simple array)
+    const rawData = Array.isArray(paginated) ? paginated : (paginated?.data || []);
+
     // Normalize data → same shape used by StudentTable
-    const students = (paginated?.data || []).map((student) => {
+    const students = rawData.map((student) => {
       const userDetail = student.userDetail || student.user_detail || {};
 
       return {
@@ -55,12 +58,13 @@ export async function getStudentsByTeacherDepartment(params = {}) {
     return {
       success: true,
       data: students,
-      department: departmentInfo, // still returning full department info if needed
-      total: paginated.total,
+      department: departmentInfo,
+      // Safely access pagination or default to basic values
+      total: paginated?.total || students.length,
       pagination: {
-        current_page: paginated.current_page,
-        last_page: paginated.last_page,
-        per_page: paginated.per_page,
+        current_page: paginated?.current_page || 1,
+        last_page: paginated?.last_page || 1,
+        per_page: paginated?.per_page || params.per_page || 15,
       },
       message: response.data.message,
     };

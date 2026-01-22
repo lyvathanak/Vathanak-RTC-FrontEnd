@@ -1,6 +1,5 @@
 <template>
   <div ref="notifRef" class="relative">
-    <!-- Button -->
     <button
       @click="toggleNotifDropdown"
       @mouseenter="showNotifDropdown"
@@ -10,7 +9,6 @@
       :aria-expanded="isNotifOpen">
       <Bell class="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" />
 
-      <!-- Badge -->
       <span
         v-if="unreadCount > 0"
         class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
@@ -18,13 +16,11 @@
       </span>
     </button>
 
-    <!-- Dropdown -->
     <div
       v-if="isNotifOpen"
       class="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border overflow-hidden z-50"
       @mouseenter="showNotifDropdown"
       @mouseleave="hideNotifDropdown">
-      <!-- Header -->
       <div class="flex items-center justify-between px-4 py-3 border-b">
         <div class="font-semibold text-gray-900">Notifications</div>
 
@@ -44,11 +40,10 @@
         </div>
       </div>
 
-      <!-- List -->
       <div class="max-h-80 overflow-y-auto">
         <div
           v-if="notifications.length === 0"
-          class="px-4 py-6 text-sm text-gray-500">
+          class="px-4 py-6 text-sm text-gray-500 text-center">
           No notifications
         </div>
 
@@ -57,7 +52,6 @@
           :key="n.id"
           @click="openNotification(n)"
           class="w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition flex gap-3">
-          <!-- dot -->
           <div class="pt-1">
             <span
               class="w-2.5 h-2.5 rounded-full inline-block"
@@ -96,7 +90,6 @@
         </button>
       </div>
 
-      <!-- Footer -->
       <div
         class="px-4 py-3 border-t bg-gray-50 flex items-center justify-between">
         <button
@@ -128,109 +121,134 @@ const { locale } = useI18n();
 const notifRef = ref(null);
 const isNotifOpen = ref(false);
 const hoverTimer = ref(null);
+const STORAGE_KEY = 'rtc_user_notifications'; // Key for localStorage
 
-// ✅ 10 fake notifications (created_at used for real time-ago formatting)
-const now = Date.now();
-const notifications = ref([
-  {
-    id: 1,
-    title: "New Announcement",
-    message: "Admin posted: Final exam schedule is updated.",
-    type: "info",
-    url: `/${locale.value}/student/dashboard`,
-    read_at: null,
-    created_at: new Date(now - 2 * 60 * 1000).toISOString(), // 2m
-  },
-  {
-    id: 2,
-    title: "Attendance Marked",
-    message: "You were marked ABSENT in Web Programming.",
-    type: "warning",
-    url: `/${locale.value}/student/attendance`,
-    read_at: null,
-    created_at: new Date(now - 60 * 60 * 1000).toISOString(), // 1h
-  },
-  {
-    id: 3,
-    title: "Grade Published",
-    message: "Your score for Database Design is now available.",
-    type: "success",
-    url: `/${locale.value}/student/grades`,
-    read_at: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date(now - 26 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 4,
-    title: "Leave Request Approved",
-    message: "Your leave request has been approved by Admin.",
-    type: "success",
-    url: `/${locale.value}/student/leave`,
-    read_at: null,
-    created_at: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 5,
-    title: "New Assignment",
-    message: "A new assignment was posted for Web Programming.",
-    type: "info",
-    url: `/${locale.value}/student/assignments`,
-    read_at: null,
-    created_at: new Date(now - 7 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 6,
-    title: "Payment Reminder",
-    message: "Your tuition payment is due soon. Please review.",
-    type: "warning",
-    url: `/${locale.value}/student/payments`,
-    read_at: null,
-    created_at: new Date(now - 10 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 7,
-    title: "Profile Updated",
-    message: "Your profile information was updated successfully.",
-    type: "success",
-    url: `/${locale.value}/student/profile`,
-    read_at: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date(now - 12 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 8,
-    title: "New Message",
-    message: "You received a new message from your advisor.",
-    type: "info",
-    url: `/${locale.value}/student/messages`,
-    read_at: null,
-    created_at: new Date(now - 20 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 9,
-    title: "Attendance Warning",
-    message: "Your attendance is below 80% in Database Design.",
-    type: "warning",
-    url: `/${locale.value}/student/attendance`,
-    read_at: null,
-    created_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 10,
-    title: "System Update",
-    message: "System maintenance scheduled for tonight.",
-    type: "info",
-    url: `/${locale.value}/student/dashboard`,
-    read_at: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    created_at: new Date(now - 4 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]);
+// Default fake data generator
+const generateFakeData = () => {
+  const now = Date.now();
+  return [
+    {
+      id: 1,
+      title: "New Announcement",
+      message: "Admin posted: Final exam schedule is updated.",
+      type: "info",
+      url: `/student/dashboard`,
+      read_at: null,
+      created_at: new Date(now - 2 * 60 * 1000).toISOString(), // 2m
+    },
+    {
+      id: 2,
+      title: "Attendance Marked",
+      message: "You were marked ABSENT in Web Programming.",
+      type: "warning",
+      url: `/student/attendance`,
+      read_at: null,
+      created_at: new Date(now - 60 * 60 * 1000).toISOString(), // 1h
+    },
+    {
+      id: 3,
+      title: "Grade Published",
+      message: "Your score for Database Design is now available.",
+      type: "success",
+      url: `/student/grades`,
+      read_at: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now - 26 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 4,
+      title: "Leave Request Approved",
+      message: "Your leave request has been approved by Admin.",
+      type: "success",
+      url: `/student/leave`,
+      read_at: null,
+      created_at: new Date(now - 5 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 5,
+      title: "New Assignment",
+      message: "A new assignment was posted for Web Programming.",
+      type: "info",
+      url: `/student/assignments`,
+      read_at: null,
+      created_at: new Date(now - 7 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 6,
+      title: "Payment Reminder",
+      message: "Your tuition payment is due soon. Please review.",
+      type: "warning",
+      url: `/student/payments`,
+      read_at: null,
+      created_at: new Date(now - 10 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 7,
+      title: "Profile Updated",
+      message: "Your profile information was updated successfully.",
+      type: "success",
+      url: `/student/profile`,
+      read_at: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now - 12 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 8,
+      title: "New Message",
+      message: "You received a new message from your advisor.",
+      type: "info",
+      url: `/student/messages`,
+      read_at: null,
+      created_at: new Date(now - 20 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 9,
+      title: "Attendance Warning",
+      message: "Your attendance is below 80% in Database Design.",
+      type: "warning",
+      url: `/student/attendance`,
+      read_at: null,
+      created_at: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      id: 10,
+      title: "System Update",
+      message: "System maintenance scheduled for tonight.",
+      type: "info",
+      url: `/student/dashboard`,
+      read_at: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      created_at: new Date(now - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+};
 
-// If locale changes, update URLs automatically
+const notifications = ref(generateFakeData());
+
+// Load from local storage on mount
+onMounted(() => {
+  document.addEventListener("click", onDocClick);
+  
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      notifications.value = JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to parse notifications from storage", e);
+      // If error, fallback to fake data (already set)
+    }
+  }
+});
+
+// Save to local storage whenever notifications change
+watch(notifications, (newVal) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newVal));
+}, { deep: true });
+
+// If locale changes, update URLs dynamically
 watch(
   () => locale.value,
   (newLocale) => {
     notifications.value = notifications.value.map((n) => ({
       ...n,
-      url: n.url?.replace(/^\/(en|kh)\//, `/${newLocale}/`) || n.url,
+      url: n.url ? `/${newLocale}${n.url.replace(/^\/(en|kh|fr)/, '')}` : n.url,
     }));
   }
 );
@@ -239,7 +257,7 @@ const unreadCount = computed(
   () => notifications.value.filter((n) => !n.read_at).length
 );
 
-// Dropdown behaviors (avoid flicker)
+// Dropdown behaviors
 const toggleNotifDropdown = () => {
   clearHoverTimer();
   isNotifOpen.value = !isNotifOpen.value;
@@ -280,7 +298,14 @@ const markAllAsRead = () => {
 
 const openNotification = (n) => {
   if (!n.read_at) n.read_at = new Date().toISOString();
-  if (n.url) router.push(n.url);
+  
+  if (n.url) {
+    // Ensure URL has current locale prefix
+    const path = n.url.startsWith(`/${locale.value}`) 
+      ? n.url 
+      : `/${locale.value}${n.url.replace(/^\/(en|kh|fr)/, '')}`;
+    router.push(path);
+  }
   isNotifOpen.value = false;
 };
 
@@ -290,7 +315,6 @@ const clearAllFake = () => {
 };
 
 const viewAll = () => {
-  // change route if you have a dedicated notifications page
   router.push(`/${locale.value}/student/notifications`);
   isNotifOpen.value = false;
 };
@@ -302,7 +326,6 @@ const onDocClick = (e) => {
   }
 };
 
-onMounted(() => document.addEventListener("click", onDocClick));
 onUnmounted(() => {
   document.removeEventListener("click", onDocClick);
   clearHoverTimer();

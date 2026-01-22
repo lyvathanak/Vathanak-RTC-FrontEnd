@@ -54,14 +54,14 @@
           <h2 :class="['text-xl font-semibold text-gray-800', isKhmer ? 'khmer-text' : '']">Student List</h2>
           
           <div class="relative">
-            <select 
+            <!-- <select 
               v-model="filterType"
               @change="fetchStudents"
               class="appearance-none bg-purple-50 border border-purple-200 text-purple-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
             >
               <option value="department">All Department</option>
               <option value="my_students">My Students</option>
-            </select>
+            </select> -->
             <svg class="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </div>
         </div>

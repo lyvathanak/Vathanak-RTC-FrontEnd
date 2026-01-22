@@ -15,8 +15,8 @@
           <TimetableCell
             v-for="d in days"
             :key="d + t"
-            :data="getSlot(d, t)"
-            @edit="$emit('edit', { day: d, time: t })" />
+            :data="getSlot(d, t)" 
+          />
         </tr>
       </tbody>
     </table>
@@ -29,8 +29,7 @@ import TimetableCell from "./TimetableCell.vue";
 defineProps({
   days: Array,
   times: Array,
-  getSlot: Function, // ⬅️ NOT slot
+  getSlot: Function,
 });
 
-defineEmits(["edit"]);
 </script>
