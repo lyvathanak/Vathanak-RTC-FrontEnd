@@ -58,6 +58,7 @@ import {
   Gauge,
   FileText,
   UserCheck,
+  Lock, // Added Lock icon
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -306,6 +307,14 @@ const actions = computed(() => {
         iconBg: "bg-gray-700",
         to: `${base.value}/teacher/teacher-profile`,
       },
+      {
+        title: "Change Password",
+        desc: "Update your password",
+        icon: Lock,
+        bg: "bg-rose-50 hover:bg-rose-100",
+        iconBg: "bg-rose-500",
+        to: `${base.value}/teacher/change-password`,
+      },
     ];
   }
 
@@ -360,6 +369,14 @@ const actions = computed(() => {
         iconBg: "bg-gray-700",
         to: `${base.value}/hod/hod-profile`,
       },
+      {
+        title: "Change Password",
+        desc: "Update your password",
+        icon: Lock,
+        bg: "bg-rose-50 hover:bg-rose-100",
+        iconBg: "bg-rose-500",
+        to: `${base.value}/hod/change-password`,
+      },
     ];
   }
 
@@ -397,6 +414,14 @@ const actions = computed(() => {
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
         to: `${base.value}/student/student-profile`,
+      },
+      {
+        title: "Change Password",
+        desc: "Update your password",
+        icon: Lock,
+        bg: "bg-rose-50 hover:bg-rose-100",
+        iconBg: "bg-rose-500",
+        to: `${base.value}/student/change-password`,
       },
     ];
   }

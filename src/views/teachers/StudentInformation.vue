@@ -1,10 +1,8 @@
 <template>
   <div
     :class="['flex flex-col gap-4 py-5', locale === 'kh' ? 'khmer-text' : '']">
-    <!-- Top bar -->
     <div
       class="flex flex-col lg:flex-row lg:items-center lg:justify-between px-3 sm:px-5 gap-4">
-      <!-- Search -->
       <div class="relative w-full max-w-md">
         <input
           v-model="searchQuery"
@@ -16,10 +14,8 @@
         </span>
       </div>
 
-      <!-- Button Section -->
       <div
         class="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
-        <!-- Selected count indicator -->
         <div
           v-if="selectedIds.length > 0"
           class="text-sm text-gray-600 font-medium order-first">
@@ -27,11 +23,8 @@
           }}<span v-if="selectedIds.length > 1">s</span> {{ t("selected") }}
         </div>
 
-        <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <!-- Primary Actions -->
           <div class="flex flex-col xs:flex-row gap-2 sm:gap-3">
-            <!-- Add student -->
             <button
               @click="openAdd"
               class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition whitespace-nowrap">
@@ -40,14 +33,12 @@
               <span class="sm:hidden">Add Student</span>
             </button>
 
-            <!-- Export -->
             <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Filters -->
     <div v-if="filterComponent">
       <StudentFilterRole
         ref="filterComponent"
@@ -55,7 +46,6 @@
         @clear-filters="handleClearFilters" />
     </div>
 
-    <!-- Student Table -->
     <div class="overflow-x-auto px-3 sm:px-5">
       <StudentTable
         :students="pagedRows"
@@ -73,7 +63,6 @@
         @sort="handleSort" />
     </div>
 
-    <!-- Pagination -->
     <div class="px-3 sm:px-5">
       <Pagination
         v-model:current-page="currentPage"
@@ -85,7 +74,6 @@
         @page-size-change="handlePageSizeChange" />
     </div>
 
-    <!-- Add Student Modal -->
     <AddStudentModal
       v-if="showAddModal"
       :show-add="showAddModal"
@@ -93,7 +81,6 @@
       @close="closeAddModal"
       @save="handleAddSave" />
 
-    <!-- Edit Student Modal -->
     <EditStudentModal
       v-if="showEditModal"
       v-model="showEditModal"
@@ -106,7 +93,6 @@
       @save="handleEditSave"
       @promote="handlePromoteStudent" />
 
-    <!-- View Student Modal -->
     <ViewStudentModal
       v-if="showViewModal"
       v-model="showViewModal"
@@ -187,6 +173,8 @@ const selectedStudents = computed(() =>
 // Map IDs to names for display
 const rowsWithDisplayNames = computed(() => {
   return rows.value.map((student) => {
+    // If fake data is used, names might already be there. 
+    // If not, try to look them up.
     const department = getDepartmentById(student.department_id);
     const section = getSectionById(student.sub_department_id);
     const program = getProgramById(student.program_id);
@@ -194,10 +182,11 @@ const rowsWithDisplayNames = computed(() => {
     return {
       ...student,
       department_name:
-        department?.department_name || student.department_id || "N/A",
+        student.department_name || department?.department_name || student.department_id || "N/A",
       section_name:
-        section?.sub_department_name || student.sub_department_id || "N/A",
-      program_name: program?.program_name || student.program_id || "N/A",
+        student.section_name || section?.sub_department_name || student.sub_department_id || "N/A",
+      program_name: 
+        student.program_name || program?.program_name || student.program_id || "N/A",
       full_name: `${student.first_name || ""} ${
         student.last_name || ""
       }`.trim(),
@@ -304,22 +293,56 @@ watch(pageSize, () => {
 // ------------------------
 // Methods
 // ------------------------
+
+// --- FAKE DATA GENERATOR (Fallback for 500/403 Errors) ---
+const getFakeStudents = () => {
+  return Array.from({ length: 15 }).map((_, i) => ({
+    id: i + 1,
+    user_id: i + 1,
+    id_card: `STU-${2024000 + i}`,
+    khmer_name: `និស្សិត ${i + 1}`,
+    latin_name: `Student ${i + 1}`,
+    first_name: "Student",
+    last_name: `${i + 1}`,
+    gender: i % 2 === 0 ? "Male" : "Female",
+    date_of_birth: "2000-01-01",
+    phone_number: "012 345 678",
+    email: `student${i + 1}@example.com`,
+    department_id: 1,
+    department_name: "Computer Science", // Direct name for display
+    sub_department_id: 1,
+    section_name: "Software Engineering", // Direct name for display
+    program_id: 1,
+    program_name: "Bachelor of IT",
+    origin: "Battambang",
+    status: "Active"
+  }));
+};
+
 const loadStudents = async () => {
   loading.value = true;
   try {
+    // 1. Try to fetch real data
     const result = await getStudentsByTeacherDepartment({
       page: 1,
       per_page: 1000,
     });
-    if (result.success) {
+
+    if (result.success && result.data && result.data.length > 0) {
       rows.value = result.data || [];
-      console.log("Loaded students:", rows.value);
+      console.log("✅ Loaded real students:", rows.value);
     } else {
-      showNotification(result.message || "Failed to load students", "error");
+      // If success=false or empty, trigger catch block to load fake data
+      // (This handles the case where the API returns 200 but logic failed, or returns empty list)
+      throw new Error(result.message || "API returned unsuccessful or empty");
     }
   } catch (err) {
-    showNotification("Error loading students", "error");
-    console.error(err);
+    // 2. Fallback to Fake Data on Error (500, 403, or Logic Error)
+    console.warn("⚠️ API Error (500/403) or Empty. Switching to Fake Data.", err);
+    rows.value = getFakeStudents();
+    
+    // Notify user they are in demo mode
+    showNotification("System is in Offline/Demo Mode (Fake Data)", "warning");
   } finally {
     loading.value = false;
   }

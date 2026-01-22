@@ -50,7 +50,22 @@
       </div>
 
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <h2 :class="['text-xl font-semibold text-gray-800', isKhmer ? 'khmer-text' : '']">Student List</h2>
+        <div class="flex items-center gap-3">
+          <h2 :class="['text-xl font-semibold text-gray-800', isKhmer ? 'khmer-text' : '']">Student List</h2>
+          
+          <div class="relative">
+            <select 
+              v-model="filterType"
+              @change="fetchStudents"
+              class="appearance-none bg-purple-50 border border-purple-200 text-purple-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+            >
+              <option value="department">All Department</option>
+              <option value="my_students">My Students</option>
+            </select>
+            <svg class="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+        </div>
+
         <div class="w-full sm:w-auto relative">
           <input 
             v-model="searchQuery" 
@@ -75,7 +90,7 @@
         :sort-field="sortField"
         :sort-direction="sortDirection"
         :empty-state-title="$t('no_students_found') || 'No Students Found'"
-        :empty-state-message="$t('no_students_message') || 'There are no students in this department matching your criteria.'"
+        :empty-state-message="getEmptyMessage"
         @sort="handleSort"
         @view="handleViewStudent"
       >
@@ -131,6 +146,12 @@
           </span>
         </template>
       </ListTable>
+
+      <ViewStudentModal
+        v-if="showViewModal"
+        v-model="showViewModal"
+        :student="selectedStudent"
+      />
     </div>
   </div>
 </template>
@@ -143,6 +164,7 @@ import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
 import { useDepartment } from "@/stores/global/useDepartment";
 import ListTable from "@/components/features/ListTable.vue";
+import ViewStudentModal from "@/components/head-of-departments/ViewStudentModal.vue";
 
 const router = useRouter();
 const { t, locale } = useI18n();
@@ -156,10 +178,16 @@ const students = ref([]);
 const searchQuery = ref("");
 const departmentName = ref("");
 const departmentId = ref(null);
+const filterType = ref("department"); // 'department' | 'my_students'
 const sortField = ref("latin_name");
 const sortDirection = ref("asc");
+const currentUser = ref(null);
 
-// Table Columns (UPDATED per requirements)
+// Modal State
+const showViewModal = ref(false);
+const selectedStudent = ref(null);
+
+// Table Columns
 const columns = ref([
   { key: "id_card", label: "ID", visible: true, sortable: true },
   { key: "khmer_name", label: "Khmer Fullname", visible: true, sortable: true },
@@ -209,8 +237,14 @@ const filteredStudents = computed(() => {
   return result;
 });
 
+const getEmptyMessage = computed(() => {
+  if (filterType.value === 'my_students') {
+    return "You do not have any students assigned to your classes yet (or system data is missing).";
+  }
+  return "There are no students in this department matching your criteria.";
+});
+
 const isActive = (row) => {
-  // Check mapped value first, then fallback
   if (row.is_active !== undefined) return row.is_active;
   return false;
 };
@@ -227,57 +261,99 @@ const handleSort = ({ field, direction }) => {
 };
 
 const handleViewStudent = (student) => {
-  console.log("View student:", student.id);
+  selectedStudent.value = student;
+  showViewModal.value = true;
 };
 
 // Data Fetching
+const fetchStudents = async () => {
+  if (!departmentId.value) return;
+
+  loading.value = true;
+  students.value = []; // Clear list during load
+
+  try {
+    // 1. Fetch ALL Department Students (Allowed Endpoint)
+    // We do NOT use /users/by_teacher because it returns 403 Forbidden for HODs
+    const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
+      params: { role: 'student' } 
+    });
+    
+    let rawData = res.data.users || res.data.data || [];
+
+    // 2. Client-Side Filtering for "My Students"
+    if (filterType.value === 'my_students') {
+       // Get HOD's assigned groups
+       const hodGroups = currentUser.value?.groups || [];
+       const hodGroupIds = hodGroups.map(g => g.id);
+
+       if (hodGroupIds.length > 0) {
+          // Filter students who are in at least one of the HOD's groups
+          rawData = rawData.filter(student => {
+             // Students might have 'groups' array directly or nested
+             const sGroups = student.groups || student.user_programs?.[0]?.groups || [];
+             return sGroups.some(g => hodGroupIds.includes(g.id));
+          });
+       } else {
+          // If HOD has no groups, they have no students
+          rawData = [];
+       }
+    }
+
+    // 3. Normalize Data for Table
+    if (Array.isArray(rawData)) {
+      students.value = rawData.map(s => {
+        const detail = s.user_detail || {};
+        return {
+          ...s,
+          id_card: s.id_card || detail.id_card,
+          khmer_name: s.khmer_name || detail.khmer_name,
+          latin_name: s.latin_name || s.name || detail.latin_name,
+          date_of_birth: s.date_of_birth || detail.date_of_birth,
+          gender: s.gender || detail.gender,
+          department_id: detail.department?.department_name || departmentName.value,
+          sub_department_id: detail.sub_department?.sub_department_name || 'N/A',
+          profile_picture: s.profile_picture || detail.profile_picture,
+          user_detail: detail,
+          is_active: s.is_active ?? detail.is_active ?? true,
+          groups: s.groups || [], // Ensure groups are preserved for future debugging
+          current_program: s.current_program || (s.user_programs?.[0] || null)
+        };
+      });
+    }
+  } catch (err) {
+    console.error("Error fetching students:", err);
+  } finally {
+    loading.value = false;
+  }
+};
+
 onMounted(async () => {
   try {
     loading.value = true;
-    const profileData = await getHODProfile();
-    const userDetail = profileData.user?.user_detail || {};
-    const headDept = userDetail.head_department || profileData.user?.head_department;
-    const directDept = userDetail.department || profileData.user?.department;
     
-    departmentId.value = headDept?.id || directDept?.id || userDetail.department_id;
-    departmentName.value = headDept?.department_name || directDept?.department_name || "";
+    // Load HOD Profile
+    const profileData = await getHODProfile();
+    currentUser.value = profileData.user || profileData; // Handle both response structures
 
+    const userDetail = currentUser.value?.user_detail || {};
+    const headDept = userDetail.head_department || currentUser.value?.head_department;
+    
+    departmentId.value = headDept?.id || userDetail.department_id;
+    departmentName.value = headDept?.department_name || "";
+
+    // Fallback if name missing
     if (!departmentName.value && departmentId.value) {
       await getAllDepartments();
       const dept = getDepartmentById(departmentId.value);
       if (dept) departmentName.value = dept.department_name;
     }
 
-    if (departmentId.value) {
-      const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
-        params: { role: 'student' } 
-      });
-      
-      const rawData = res.data.users || res.data.data || [];
-      
-      // Normalize data for the table
-      if (Array.isArray(rawData)) {
-        students.value = rawData.map(s => {
-          const detail = s.user_detail || {};
-          return {
-            ...s,
-            // Map flattened keys to match columns
-            id_card: s.id_card || detail.id_card,
-            khmer_name: s.khmer_name || detail.khmer_name,
-            latin_name: s.latin_name || s.name || detail.latin_name,
-            date_of_birth: s.date_of_birth || detail.date_of_birth,
-            gender: s.gender || detail.gender,
-            department_id: detail.department?.department_name || departmentName.value, // Showing Name as Value for table
-            sub_department_id: detail.sub_department?.sub_department_name || 'N/A', // Showing Name as Value for table
-            profile_picture: s.profile_picture || detail.profile_picture,
-            is_active: s.is_active ?? detail.is_active ?? true
-          };
-        });
-      }
-    }
+    // Load Data
+    await fetchStudents();
+
   } catch (err) {
-    console.error("Error fetching students:", err);
-  } finally {
+    console.error("Error initializing HOD view:", err);
     loading.value = false;
   }
 });

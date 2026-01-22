@@ -174,6 +174,7 @@ import InfoCard from "@/components/profile/InfoCard.vue";
 import InfoRow from "@/components/profile/InfoRow.vue";
 import MiniStat from "@/components/profile/MiniStat.vue";
 import PageHeader from "@/components/features/PageHeader.vue";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 import {
   AlertTriangle,
@@ -208,7 +209,7 @@ const profile = reactive({
   roles: "",
 });
 
-const placeholderImg = "https://via.placeholder.com/150";
+const placeholderImg = defaultAvatar;
 
 const profileImage = computed(() => {
   const p = profile.photo;

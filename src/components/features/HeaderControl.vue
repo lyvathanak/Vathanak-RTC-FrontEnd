@@ -221,12 +221,15 @@ const viewProfile = () => {
     profileRoute = `/${locale.value}/student/student-profile`;
   } else if (authStore.userRole.toLowerCase() === "teacher") {
     profileRoute = `/${locale.value}/teacher/teacher-profile`;
-  } else if (authStore.userRole.toLowerCase() === "hod") {
-    profileRoute = `/${locale.value}/hod/profile`;
+  } else if (authStore.userRole.toLowerCase() === "head_department" || authStore.userRole.toLowerCase() === "hod") {
+    profileRoute = `/${locale.value}/hod/hod-profile`;
   } else if (authStore.userRole.toLowerCase() === "admin") {
     profileRoute = `/${locale.value}/admin/admin-profile`;
   }
-  router.push(profileRoute);
+  
+  if (profileRoute) {
+    router.push(profileRoute);
+  }
   isDropdownOpen.value = false;
 };
 
@@ -249,8 +252,8 @@ const changePassword = () => {
     changePasswordRoute = `/${currentLang}/student/change-password`;
   } else if (authStore.userRole.toLowerCase() === "teacher") {
     changePasswordRoute = `/${currentLang}/teacher/change-password`;
-  } else if (authStore.userRole.toLowerCase() === "hod") {
-    changePasswordRoute = `/${currentLang}/hod/change-password`;
+  } else if (authStore.userRole.toLowerCase() === "head_department" || authStore.userRole.toLowerCase() === "hod") {
+    changePasswordRoute = `/${currentLang}/hod/change-password`
   } else if (authStore.userRole.toLowerCase() === "admin") {
     changePasswordRoute = `/${currentLang}/admin/change-password`;
   }

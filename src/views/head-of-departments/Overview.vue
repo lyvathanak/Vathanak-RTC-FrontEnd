@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="max-w-9xl mx-auto">
-      <!-- Header -->
       <div class="mb-8 flex justify-between items-center">
         <div>
           <h1
@@ -16,13 +15,11 @@
               'text-gray-600 mt-2',
               locale === 'kh' ? 'khmer-text' : '',
             ]">
-            <!-- {{ t('welcome') }}, {{ authStore.user?.name }}! -->
             {{ t("welcome") }},{{ authStore.userRole.replace(/_/g, " ") }}!
           </p>
         </div>
       </div>
 
-      <!-- Department Head Info Card -->
       <div>
         <UserInfoCard
           :role="authStore.userRole"
@@ -30,39 +27,6 @@
           :locale="locale" />
       </div>
 
-      <!-- <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2
-          :class="[
-            'text-xl font-semibold mb-4',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          {{ t("department_head_information") }}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-500"
-              >{{ t("role") }}:</label
-            >
-            <p class="text-lg font-semibold text-purple-600 capitalize">
-              {{ authStore.userRole.replace(/_/g, " ") }}
-            </p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500"
-              >{{ t("email") }}:</label
-            >
-            <p class="text-lg">{{ authStore.user?.email }}</p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500"
-              >{{ t("department") }}:</label
-            >
-            <p class="text-lg">{{ authStore.user?.profile?.department }}</p>
-          </div>
-        </div>
-      </div> -->
-
-      <!-- Widgets -->
       <div>
         <OverviewWidgets
           :role="authStore.userRole"
@@ -71,7 +35,6 @@
           @send="onChatSend" />
       </div>
 
-      <!-- Permissions Head of Department -->
       <div class="mt-6">
         <RolePermissions
           :role="authStore.userRole"
@@ -79,7 +42,6 @@
           :locale="locale" />
       </div>
 
-      <!-- Department Management Actions  -->
       <div class="mt-6">
         <RoleQuickActions
           :role="authStore.userRole"
@@ -97,8 +59,8 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
 import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import { getSHODLeaveRequestsService } from "@/stores/HeadOfDepartment/LeaveRequestFrom";
-import { getAllStudents } from "@/stores/apis/StudentCRUD.js";
-import { getAllTeachers } from "@/stores/apis/TeacherCRUD.js";
+import api from "@/stores/apis/axios"; // Use direct API for department-specific endpoints
+
 import ChangeLanguage from "@/components/language/ChangLanguage.vue";
 import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
 import RolePermissions from "@/components/overview/RolePermissions.vue";
@@ -117,11 +79,6 @@ const handleLogout = () => {
 };
 
 const detailUser = ref(null);
-
-onMounted(async () => {
-  const data = await getHODProfile();
-  detailUser.value = data?.user ?? data;
-});
 
 /**
  * Line chart
@@ -214,11 +171,10 @@ async function fetchLeaveRequests(days) {
   leaveRequests.value = res?.requests || [];
 }
 
-onMounted(() => fetchLeaveRequests(lineRange.value));
 watch(lineRange, (v) => fetchLeaveRequests(v));
 
 /**
- * Bar chart
+ * Bar chart data
  */
 const totals = ref({
   students: 0,
@@ -226,40 +182,66 @@ const totals = ref({
 });
 
 async function fetchUserRoleTotals() {
-  // if backend supports pagination, ask for 1 item only (fast) and rely on usersData.total
-  const params = { page: 1, per_page: 1 };
+  if (!detailUser.value) return;
 
-  const [stuRes, teaRes] = await Promise.all([
-    getAllStudents(params),
-    getAllTeachers(params),
-  ]);
+  const user = detailUser.value;
+  const userDetail = user.user_detail || {};
+  
+  // Resolve department ID from profile data
+  const headDept = userDetail.head_department || user.head_department;
+  const directDept = userDetail.department || user.department;
+  
+  const departmentId = 
+    headDept?.id || 
+    directDept?.id || 
+    userDetail.department_id || 
+    user.department_id;
 
-  // ✅ Prefer backend pagination.total if your functions return it
-  totals.value.students =
-    stuRes?.pagination?.total ?? stuRes?.total ?? stuRes?.data?.length ?? 0;
+  if (!departmentId) {
+    console.warn('Could not determine department ID for HOD totals');
+    return;
+  }
 
-  totals.value.teachers =
-    teaRes?.pagination?.total ?? teaRes?.total ?? teaRes?.data?.length ?? 0;
+  try {
+    // Fetch Students and Teachers strictly for this department
+    // This avoids the 403 Forbidden error from "get_all_users"
+    const [stuRes, teaRes] = await Promise.all([
+      api.get(`/users_by_hod_department/${departmentId}`, { params: { role: 'student' } }),
+      api.get(`/users_by_hod_department/${departmentId}`, { params: { role: 'staff' } })
+    ]);
+
+    const stuData = stuRes.data?.users || stuRes.data?.data || [];
+    const teaData = teaRes.data?.users || teaRes.data?.data || [];
+
+    // Calculate totals
+    totals.value.students = Array.isArray(stuData) ? stuData.length : (stuData.total || 0);
+    totals.value.teachers = Array.isArray(teaData) ? teaData.length : (teaData.total || 0);
+    
+  } catch (error) {
+    console.error('Error fetching department totals:', error);
+  }
 }
 
-onMounted(() => {
-  fetchUserRoleTotals();
-});
+onMounted(async () => {
+  // 1. Fetch Profile First
+  const data = await getHODProfile();
+  detailUser.value = data?.user ?? data;
 
-const barLabels = computed(() => ["Students", "Teachers"]);
-const barValues = computed(() => [
-  totals.value.students,
-  totals.value.teachers,
-]);
+  // 2. Fetch Totals (requires profile to be loaded)
+  await fetchUserRoleTotals();
+
+  // 3. Fetch Leave Requests
+  await fetchLeaveRequests(lineRange.value);
+});
 
 const stats = computed(() => {
   const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
 
   return {
-    leaverequests: 7,
-    department_teachers: 12,
-    department_students: 285,
-    department_subjects: 18,
+    leaverequests: leaveRequests.value.length || 0,
+    department_teachers: totals.value.teachers,
+    department_students: totals.value.students,
+    department_subjects: 18, // Placeholder or fetch if needed
 
     // ✅ Line chart from API
     line_labels: leaveLine.line_labels,
@@ -267,8 +249,7 @@ const stats = computed(() => {
 
     // ✅ bar chart (use API totals)
     bar_labels: ["Students", "Teachers"],
-    // bar_values: [totals.value.students, totals.value.teachers],
-    bar_values: [20, 10],
+    bar_values: [totals.value.students, totals.value.teachers],
 
     // ✅ donut chart
     donut_labels: ["Light", "Medium", "Heavy"],
