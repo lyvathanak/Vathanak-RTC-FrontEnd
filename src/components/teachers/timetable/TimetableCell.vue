@@ -1,33 +1,41 @@
 <template>
-  <td class="border-t border-gray-200 px-2 py-3">
+  <td class="border-b border-r border-gray-100 p-2 align-top h-36">
     <div
       v-if="data"
-      class="relative h-32 rounded-md border bg-white px-3 py-2 shadow-sm flex flex-col justify-center">
+      class="relative w-full h-full rounded-lg border bg-white p-3 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:border-indigo-300 group">
       
-      <span
-        class="absolute top-1 right-2 text-xs bg-gray-100 px-2 py-0.5 font-semibold text-gray-700">
-        {{ data.type || 'Course' }}
-      </span>
-
-      <div class="text-center font-extrabold text-sm text-gray-900">
-        {{ data.subject?.subject_name || data.subject }}
+      <div class="flex justify-end">
+        <span class="text-[10px] uppercase tracking-wider bg-gray-100 px-2 py-0.5 rounded-full font-bold text-gray-600">
+          {{ data.type || 'Course' }}
+        </span>
       </div>
 
-      <div class="text-center text-sm text-gray-600 mt-1">
-        {{ data.group?.name || data.teacher || "—" }}
+      <div class="text-center">
+        <div class="font-bold text-sm text-gray-900 leading-tight line-clamp-2" :title="data.subject?.subject_name || data.subject">
+          {{ data.subject?.subject_name || data.subject }}
+        </div>
+        
+        <div class="text-xs text-gray-500 mt-1 font-medium truncate">
+          {{ data.group?.name || data.teacher || "—" }}
+        </div>
       </div>
 
-      <span
-        v-if="data.location || data.room"
-        class="absolute bottom-1 right-2 bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600 rounded">
-        {{ data.location?.name || data.room }}
-      </span>
+      <div class="flex justify-between items-end mt-2">
+         <span></span> 
+         
+         <span
+          v-if="data.location || data.room"
+          class="bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-600 rounded border border-red-100">
+          {{ data.location?.name || data.room }}
+        </span>
+      </div>
     </div>
 
     <div
       v-else
-      class="h-32 rounded-md border border-gray-100 bg-gray-50/50">
-      </div>
+      class="w-full h-full rounded-lg border border-dashed border-gray-200 bg-gray-50/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+       <span class="text-xs text-gray-300 font-medium">Free</span>
+    </div>
   </td>
 </template>
 

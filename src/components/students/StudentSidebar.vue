@@ -9,7 +9,6 @@ import {
   Book,
   CalendarDays,
   Gauge,
-  HomeIcon,
   User,
   Clock,
 } from "lucide-vue-next";
@@ -32,8 +31,6 @@ const handleNavClick = (item: any) => {
   if (item?.url) {
     router.push(item.url).catch((err) => {});
   }
-  if (props.collapsible === "offcanvas") {
-  }
 };
 
 const route = useRoute();
@@ -41,8 +38,8 @@ const route = useRoute();
 const data = computed(() => {
   const currentLang = route.params.lang || "en";
   const currentPath = route.path;
-
   const khmerClass = locale.value === "kh" ? "khmer-text" : "";
+  
   return {
     navMain: [
       {
@@ -58,6 +55,15 @@ const data = computed(() => {
         url: `/${currentLang}/student/academic-info`,
         icon: Book,
         isActive: currentPath.includes("/student/academic-info"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      // ✅ Added Time Table Link
+      {
+        title: t("time_table") || "Time Table",
+        url: `/${currentLang}/student/time-table`,
+        icon: CalendarDays,
+        isActive: currentPath.includes("/student/time-table"),
         class: khmerClass,
         action: handleNavClick,
       },
@@ -89,21 +95,12 @@ const data = computed(() => {
     variant="sidebar"
     class="min-w-0 shrink-0">
     <SidebarContent class="bg-[#235AA6]">
-      <!-- Sidebar Header -->
-      <div
-        class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">
+      <div class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">
         <SidebarTrigger class="text-white hover:bg-white/10" />
-        <!-- Show title when sidebar is expanded -->
-        <div
-          :class="[
-            'text-white text-1xl font-semibold',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
+        <div :class="['text-white text-1xl font-semibold', locale === 'kh' ? 'khmer-text' : '']">
           {{ t("student_portal") }}
         </div>
       </div>
-
-      <!-- Navigation -->
       <div class="flex-1 overflow-y-auto">
         <NavMain
           :items="data.navMain"

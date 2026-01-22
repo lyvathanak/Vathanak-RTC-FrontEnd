@@ -4,12 +4,10 @@ import { requireRole } from './guards.js';
 export const studentRoutes = [
   {
     path: '/:lang(en|fr|kh)/student',
-    // name: 'StudentLayout',
     meta: { requiresAuth: true, role: 'Student' },
     beforeEnter: requireRole('Student'),
     component: () => import('@/views/students/Dashboard.vue'),
     children: [
-      // Redirect student root to overview
       {
         path: '',
         redirect: to => `${to.path}/overview`
@@ -31,6 +29,13 @@ export const studentRoutes = [
         component: () => import('@/views/students/LeaveRequest.vue'),
         meta: { title: 'Leave Request' }
       },
+      // ✅ New Route
+      {
+        path: 'time-table',
+        name: 'StudentTimeTable',
+        component: () => import('@/views/students/TimeTable.vue'),
+        meta: { title: 'Time Table' }
+      },
       {
         path: 'student-profile',
         name: 'StudentProfile',
@@ -43,7 +48,6 @@ export const studentRoutes = [
         component: () => import('@/views/Authentication/ChangePassword.vue'),
         meta: { title: 'Change Password' }
       },
-      // Catch-all route for invalid student paths
       {
         path: ':pathMatch(.*)*',
         redirect: to => `/${to.params.lang}/student/overview`
@@ -51,5 +55,3 @@ export const studentRoutes = [
     ]
   }
 ];
-
-

@@ -33,13 +33,98 @@ class TimeTableAPI {
     }
 
     // ==========================================
+    //  NEW METHODS FOR HEAD OF DEPARTMENT (HOD)
+    // ==========================================
+
+    // {{base_url}}/departments/get_program_by_department/1
+    async fetchHODPrograms(deptId) {
+        try {
+            const res = await api.get(`/departments/get_program_by_department/${deptId}`);
+            // Check robustly for response structure
+            return res.data.programs || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD programs:", e);
+            return [];
+        }
+    }
+
+    // {{base_url}}/departments/get_sub_department_by_department/1
+    async fetchHODSubDepartments(deptId) {
+        try {
+            const res = await api.get(`/departments/get_sub_department_by_department/${deptId}`);
+            return res.data.sub_departments || res.data.sub_department || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD sub-departments:", e);
+            return [];
+        }
+    }
+
+    // {{base_url}}/departments/get_groups_by_program/1
+    async fetchHODGroups(programId) {
+        try {
+            const res = await api.get(`/departments/get_groups_by_program/${programId}`);
+            return res.data.groups || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD groups:", e);
+            return [];
+        }
+    }
+    async fetchHODGroupsBySemester(semesterId) {
+        try {
+            // Note: If this specific endpoint doesn't exist in your backend, 
+            // you might need to use `fetchHODGroups(programId)` and filter client-side.
+            // But usually, HODs have a get_groups_by_semester endpoint too.
+            const res = await api.get(`/departments/get_groups_by_semester/${semesterId}`);
+            return res.data.groups || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD groups by semester:", e);
+            // Fallback: If 404/403, try returning empty to prevent crash
+            return [];
+        }
+    }
+
+    // {{base_url}}/departments/get_semesters_by_program/1
+    async fetchHODSemesters(programId) {
+        try {
+            const res = await api.get(`/departments/get_semesters_by_program/${programId}`);
+            return res.data.semesters || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD semesters:", e);
+            return [];
+        }
+    }
+
+    // {{base_url}}/departments/get_academic_years_by_program/1
+    async fetchHODAcademicYears(programId) {
+        try {
+            const res = await api.get(`/departments/get_academic_years_by_program/${programId}`);
+            return res.data.academic_years || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD academic years:", e);
+            return [];
+        }
+    }
+
+    // {{base_url}}/time_table/get_time_slot_department?department_id=...
+    async fetchHODTimeSlots(params) {
+        try {
+            const res = await api.get('/time_table/get_time_slot_department', { 
+                params: { ...params, per_page: 10000 } 
+            });
+            return res.data.data || res.data || [];
+        } catch (e) {
+            console.error("Error fetching HOD time slots:", e);
+            return [];
+        }
+    }
+
+    // ==========================================
     //  EXISTING METHODS
     // ==========================================
 
     async fetchTimeTable(page) {
         try {
             const response = await api.get(`/time_table/get_all_time_table`);
-            console.log("Fetched time table:", response.data);
             const timeTables = response.data.time_tables?.data || response.data.time_tables || response.data;
             return timeTables;
         } catch (e) {
