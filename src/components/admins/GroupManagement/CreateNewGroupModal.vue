@@ -1,349 +1,413 @@
 <template>
-  <div
-    v-if="isOpen"
-    class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4"
-    @click.self="closeModal"
-  >
+  <transition name="fade">
     <div
-      class="bg-white rounded-xl shadow-2xl w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden"
-    >
-      <!-- Modal Header -->
+      v-if="isOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
+      @click.self="closeModal">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+
+      <!-- Dialog -->
       <div
-        class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200"
-      >
-        <h2 class="text-lg sm:text-xl font-semibold text-gray-900">
-          Create New Group
-        </h2>
-        <button
-          @click="closeModal"
-          class="text-gray-400 hover:text-gray-600 transition-colors p-1"
-        >
-          <X class="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="p-4 sm:p-6 overflow-y-auto max-h-[calc(95vh-140px)] sm:max-h-[calc(90vh-140px)]">
-        <!-- Group Information Form -->
-        <div class="space-y-4 sm:space-y-6">
-          <!-- Group Basic Info -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Group Name <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model="groupForm.name"
-                type="text"
-                placeholder="Enter group name"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                :class="{ 'border-red-500': errors.name }"
-              />
-              <p v-if="errors.name" class="text-red-500 text-xs mt-1">
-                {{ errors.name }}
-              </p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Group Department <span class="text-red-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="groupForm.department"
-                  @change="onDepartmentChange"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                  :class="{ 'border-red-500': errors.department }"
-                  :disabled="departmentsLoading"
-                >
-                  <option value="">{{ departmentsLoading ? 'Loading departments...' : 'Select Department' }}</option>
-                  <option 
-                    v-for="department in departmentOptions" 
-                    :key="department.id" 
-                    :value="department.name"
-                  >
-                    {{ department.name }}
-                  </option>
-                </select>
-                <ChevronDown class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-              </div>
-              <p v-if="errors.department" class="text-red-500 text-xs mt-1">
-                {{ errors.department }}
-              </p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Group Program <span class="text-red-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="groupForm.program"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                  :class="{ 'border-red-500': errors.program }"
-                  :disabled="programsLoading || !groupForm.department"
-                >
-                  <option value="">{{ programsLoading ? 'Loading programs...' : 'Select Program' }}</option>
-                  <option 
-                    v-for="program in filteredPrograms" 
-                    :key="program.id" 
-                    :value="program.program_name"
-                  >
-                    {{ program.program_name }}
-                  </option>
-                </select>
-                <ChevronDown class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-              </div>
-              <p v-if="errors.program" class="text-red-500 text-xs mt-1">
-                {{ errors.program }}
-              </p>
-              <p v-if="!groupForm.department" class="text-gray-500 text-xs mt-1">
-                Please select a department first
-              </p>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Group Section <span class="text-red-500">*</span>
-              </label>
-              <div class="relative">
-                <select
-                  v-model="groupForm.section"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                  :class="{ 'border-red-500': errors.section }"
-                  :disabled="sectionsLoading || !groupForm.department"
-                >
-                  <option value="">{{ sectionsLoading ? 'Loading sections...' : 'Select Section' }}</option>
-                  <option 
-                    v-for="section in filteredSections" 
-                    :key="section.id" 
-                    :value="section.name"
-                  >
-                    {{ section.name }}
-                  </option>
-                </select>
-                <ChevronDown class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-              </div>
-              <p v-if="errors.section" class="text-red-500 text-xs mt-1">
-                {{ errors.section }}
-              </p>
-              <p v-if="!groupForm.department" class="text-gray-500 text-xs mt-1">
-                Please select a department first
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Group Semester <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-              <select
-                v-model.number="groupForm.semester"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
-                :class="{ 'border-red-500': errors.semester }"
-                :disabled="loadingSemesters || !semesters.length"
-              >
-                <option value="">
-                  {{ loadingSemesters ? 'Loading semesters...' : (semesters.length ? 'Select Semester' : 'No semesters available') }}
-                </option>
-                <option
-                  v-for="s in semesters"
-                  :key="s.id"
-                  :value="s.id"
-                >
-                  Semester {{ s.semester_number }} - {{ s.start_date }}/{{ s.end_date }}
-                </option>
-              </select>
-              <ChevronDown class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none" />
-            </div>
-            <p v-if="errors.semester" class="text-red-500 text-xs mt-1">
-              {{ errors.semester }}
-            </p>
-          </div>
-
-          <!-- Description -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Group Description
-            </label>
-            <textarea
-              v-model="groupForm.description"
-              rows="3"
-              placeholder="Enter group description (optional)"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-            ></textarea>
-          </div>
-
-          <!-- Info Note -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-            <div class="flex items-start gap-2 sm:gap-3">
-              <div class="text-blue-600 mt-1">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="text-sm font-medium text-blue-800 mb-1">
-                  Creating Empty Group
+        class="relative w-full max-w-xs sm:max-w-md md:max-w-xl lg:max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        <!-- Header (sticky) -->
+        <div
+          class="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-200">
+          <div class="flex items-start justify-between gap-4 p-4 sm:p-6">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3
+                  id="promote-title"
+                  class="text-base sm:text-lg font-bold text-gray-900">
+                  CREATE NEW GROUPS
                 </h3>
-                <p class="text-xs sm:text-sm text-blue-700">
-                  This will create a new group without any students. You can add students to the group later through the Student Management interface.
+
+                <!-- Badge -->
+                <div
+                  class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-[#235AA6] bg-blue-50 border border-[#235AA6] ring-1 ring-gray-200"
+                  :class="[locale === 'kh' ? 'khmer-text' : '']">
+                  {{ t("add_group") }}
+                </div>
+              </div>
+              <p class="mt-1 text-xs sm:text-sm text-gray-500">
+                Create an empty group now and add students later.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              @click="closeModal"
+              class="shrink-0 inline-flex items-center justify-center rounded-xl p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-700 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-[#235AA6]/30"
+              aria-label="Close">
+              <X class="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="max-h-[75vh] sm:max-h-[70vh] overflow-y-auto p-4 sm:p-6">
+          <div class="space-y-5 sm:space-y-6">
+            <!-- Grid: Basic -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Group name -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700">
+                  Group Name <span class="text-red-500">*</span>
+                </label>
+
+                <input
+                  v-model="groupForm.name"
+                  type="text"
+                  placeholder="e.g., Medicine A - Morning"
+                  class="mt-2 h-11 w-full rounded-xl border bg-white px-4 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[#235AA6]/25 focus:border-[#235AA6] disabled:bg-gray-50 disabled:text-gray-400"
+                  :class="
+                    errors.name
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                      : 'border-gray-200'
+                  " />
+
+                <p v-if="errors.name" class="mt-1.5 text-xs text-red-600">
+                  {{ errors.name }}
                 </p>
+                <p v-else class="mt-1.5 text-xs text-gray-500">
+                  Use a clear name that helps identify this class group.
+                </p>
+              </div>
+
+              <!-- Department -->
+              <BaseSelect
+                v-model="groupForm.department_id"
+                label="Group Department"
+                placeholder="Select Department"
+                allLabel="All Departments"
+                :options="departmentSelectOptions"
+                :disabled="departmentsLoading"
+                hint="Department controls available programs and sections." />
+              <p
+                v-if="errors.department_id"
+                class="mt-1.5 text-xs text-red-600">
+                {{ errors.department_id }}
+              </p>
+            </div>
+
+            <!-- Grid: Program + Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Program -->
+              <BaseSelect
+                v-model="groupForm.program_id"
+                label="Group Program"
+                placeholder="Select Program"
+                allLabel="All Programs"
+                :options="programSelectOptions"
+                :disabled="programsLoading || !groupForm.department_id"
+                :hint="
+                  !groupForm.department_id
+                    ? 'Choose a department to unlock program options.'
+                    : 'Program is used to load available semesters.'
+                " />
+              <p v-if="errors.program_id" class="mt-1.5 text-xs text-red-600">
+                {{ errors.program_id }}
+              </p>
+              <!-- Section -->
+              <BaseSelect
+                v-model="groupForm.section_id"
+                label="Group Section"
+                placeholder="Select Section"
+                allLabel="All Sections"
+                :options="sectionSelectOptions"
+                :disabled="sectionsLoading || !groupForm.department_id"
+                :hint="
+                  !groupForm.department_id
+                    ? 'Choose a department to unlock section options.'
+                    : 'Section helps organize groups within the same program.'
+                " />
+              <p v-if="errors.section_id" class="mt-1.5 text-xs text-red-600">
+                {{ errors.section_id }}
+              </p>
+            </div>
+
+            <!-- Semester -->
+            <BaseSelect
+              v-model="groupForm.semester_id"
+              label="Group Semester"
+              placeholder="Select Semester"
+              allLabel="All Semesters"
+              :options="semesterSelectOptions"
+              :disabled="loadingSemesters || !semesters.length"
+              :hint="
+                semesters.length
+                  ? 'Semesters load automatically after you select a program.'
+                  : ''
+              " />
+            <p v-if="semestersError" class="mt-1.5 text-xs text-red-600">
+              {{ semestersError }}
+            </p>
+            <!-- Description -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700">
+                Group Description
+              </label>
+
+              <textarea
+                v-model="groupForm.description"
+                rows="3"
+                placeholder="Optional notes about this group..."
+                class="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:ring-2 focus:ring-[#235AA6]/25 focus:border-[#235AA6] resize-none" />
+              <p class="mt-1.5 text-xs text-gray-500">
+                This is for admins only (not shown to students).
+              </p>
+            </div>
+
+            <!-- Info Note -->
+            <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+              <div class="flex items-start gap-3">
+                <div class="mt-0.5 text-blue-700">
+                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="text-sm font-semibold text-blue-900">
+                    Creating an empty group
+                  </h3>
+                  <p class="mt-1 text-xs sm:text-sm text-blue-800">
+                    The group will be created without students. You can add
+                    students later from Student Management.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Modal Footer -->
-      <div
-        class="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50"
-      >
-        <button
-          @click="closeModal"
-          class="px-4 py-2 border border-gray-300 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-        >
-          Cancel
-        </button>
-        <button
-          @click="createGroup"
-          :disabled="!isFormValid || isCreating"
-          class="px-4 py-2 bg-[#235AA6] text-white rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium flex items-center justify-center gap-2"
-        >
-          <span v-if="isCreating">Creating Group...</span>
-          <span v-else>Create Group</span>
-        </button>
+        <!-- Footer (sticky) -->
+        <div
+          class="sticky bottom-0 border-t border-gray-200 bg-white/95 backdrop-blur">
+          <div class="flex items-center justify-end gap-3 p-4 sm:p-6">
+            <button
+              type="button"
+              @click="closeModal"
+              class="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-[#235AA6]/30">
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              @click="createGroup"
+              :disabled="!isFormValid || isCreating"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#235AA6] px-4 py-2 text-sm font-semibold text-white hover:opacity-95 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[#235AA6]/30">
+              <span v-if="isCreating" class="inline-flex items-center gap-2">
+                <span
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white"></span>
+                Creating...
+              </span>
+              <span v-else>Create Group</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
-import { X, ChevronDown } from "lucide-vue-next";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment, useSectionsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
-import { getSemestersByProgram } from "@/stores/global/SemesterByProgram.js";
+import { ref, computed, watch } from "vue";
+import { X } from "lucide-vue-next";
+import BaseSelect from "@/components/features/BaseSelect.vue";
 
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+  useSectionsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
+import { getSemestersByProgram } from "@/stores/global/SemesterByProgram.js";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 // Props
 const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false,
-  },
+  isOpen: { type: Boolean, default: false },
 });
 
 // Emits
 const emit = defineEmits(["close", "create-group"]);
 
-// Use FilterByDepartment composables
-// Get departments for the dropdown
-const { 
-  departments, 
+// ===================== Data sources =====================
+
+// Departments
+const {
+  departments,
   departmentOptions,
-  loading: departmentsLoading 
+  loading: departmentsLoading,
 } = useFilteredByDepartment({ immediate: true });
 
-// Get programs filtered by department
-const { 
-  selectedDepartmentId: selectedDepartmentIdForPrograms,
-  filtered: programsFiltered, 
+// Programs filtered by department
+const {
+  filtered: programsFiltered,
   rawList: allPrograms,
   loading: programsLoading,
-  setDepartment: setProgramsDepartment
+  setDepartment: setProgramsDepartment,
 } = useProgramsFilteredByDepartment({ immediate: true });
 
-// Get sections filtered by department  
-const { 
-  selectedDepartmentId: selectedDepartmentIdForSections,
-  filtered: sectionsFiltered, 
+// Sections filtered by department
+const {
+  filtered: sectionsFiltered,
   rawList: allSections,
   loading: sectionsLoading,
-  setDepartment: setSectionsDepartment
+  setDepartment: setSectionsDepartment,
 } = useSectionsFilteredByDepartment({ immediate: true });
 
-// State
+// ===================== Form state =====================
+
 const groupForm = ref({
   name: "",
-  program: "",
-  department: "",
-  section: "",
-  semester: "",
+  department_id: "",
+  program_id: "",
+  section_id: "",
+  semester_id: "",
   description: "",
 });
 
-const semesters = ref([])
-const loadingSemesters = ref(false)
-const semestersError = ref("")
-const isCreating = ref(false)
-
+const semesters = ref([]);
+const loadingSemesters = ref(false);
+const semestersError = ref("");
+const isCreating = ref(false);
 const errors = ref({});
 
-// Computed properties for filtered options
-const filteredPrograms = computed(() => {
-  if (!groupForm.value.department) return allPrograms.value;
-  return programsFiltered.value;
+// ===================== BaseSelect options =====================
+
+const departmentSelectOptions = computed(() => {
+  const list = departmentOptions.value?.length
+    ? departmentOptions.value
+    : departments.value;
+
+  return (list || []).map((d) => ({
+    label: d.department_name || d.name,
+    value: String(d.id),
+  }));
 });
 
-const filteredSections = computed(() => {
-  if (!groupForm.value.department) return allSections.value;
-  return sectionsFiltered.value;
+const programSelectOptions = computed(() => {
+  // show all if no dept selected, else show filtered
+  const list = groupForm.value.department_id
+    ? programsFiltered.value
+    : allPrograms.value;
+
+  return (list || []).map((p) => ({
+    label: p.program_name,
+    value: String(p.id),
+  }));
 });
+
+const sectionSelectOptions = computed(() => {
+  const list = groupForm.value.department_id
+    ? sectionsFiltered.value
+    : allSections.value;
+
+  return (list || []).map((s) => ({
+    label: s.name,
+    value: String(s.id),
+  }));
+});
+
+const semesterSelectOptions = computed(() => {
+  return (semesters.value || []).map((s) => ({
+    label: `Semester ${s.semester_number} • ${s.start_date} → ${s.end_date}`,
+    value: String(s.id),
+  }));
+});
+
+// ===================== Validation =====================
 
 const isFormValid = computed(() => {
   return (
-    groupForm.value.name &&
-    groupForm.value.program &&
-    groupForm.value.department &&
-    groupForm.value.section &&
-    groupForm.value.semester
+    groupForm.value.name?.trim() &&
+    groupForm.value.department_id &&
+    groupForm.value.program_id &&
+    groupForm.value.section_id &&
+    groupForm.value.semester_id
   );
 });
 
-// Watch for department changes to update filters
-const onDepartmentChange = () => {
-  if (!groupForm.value.department) return;
-  
-  // Find the selected department
-  const selectedDept = departments.value.find(d => d.department_name === groupForm.value.department);
-  if (!selectedDept) return;
-  
-  // Update filters for programs and sections
-  setProgramsDepartment(selectedDept.id);
-  setSectionsDepartment(selectedDept.id);
-  
-  // Reset dependent fields
-  groupForm.value.program = "";
-  groupForm.value.section = "";
-  groupForm.value.semester = "";
-  semesters.value = [];
+const validateForm = () => {
+  errors.value = {};
+
+  if (!groupForm.value.name?.trim())
+    errors.value.name = "Group name is required";
+  if (!groupForm.value.department_id)
+    errors.value.department_id = "Department is required";
+  if (!groupForm.value.program_id)
+    errors.value.program_id = "Program is required";
+  if (!groupForm.value.section_id)
+    errors.value.section_id = "Section is required";
+  if (!groupForm.value.semester_id)
+    errors.value.semester_id = "Semester is required";
+
+  return Object.keys(errors.value).length === 0;
 };
 
-// Watch for program changes to load semesters
-watch(() => groupForm.value.program, async (newProg) => {
-  groupForm.value.semester = ""
-  semesters.value = []
-  semestersError.value = ""
+// ===================== Watchers (ID-based) =====================
 
-  if (!newProg) return
-  const prog = allPrograms.value.find(p => p.program_name === newProg)
-  if (!prog?.id) return
+// Department changes => filter programs/sections + reset dependents
+watch(
+  () => groupForm.value.department_id,
+  (deptId) => {
+    // reset dependents
+    groupForm.value.program_id = "";
+    groupForm.value.section_id = "";
+    groupForm.value.semester_id = "";
+    semesters.value = [];
+    semestersError.value = "";
 
-  loadingSemesters.value = true
-  try {
-    const list = await getSemestersByProgram(prog.id)
-    semesters.value = Array.isArray(list) ? list : (list?.semesters || [])
-  } catch (e) {
-    semestersError.value = e?.message || "Failed to load semesters"
-  } finally {
-    loadingSemesters.value = false
+    // ✅ If empty => "All Departments" selected => show ALL programs/sections (no filtering)
+    if (!deptId) {
+      // OPTIONAL: if your composable supports it, clear the filter
+      // setProgramsDepartment(null);
+      // setSectionsDepartment(null);
+      return;
+    }
+
+    setProgramsDepartment(Number(deptId));
+    setSectionsDepartment(Number(deptId));
   }
-})
+);
 
-// Methods
+// Program changes => load semesters
+watch(
+  () => groupForm.value.program_id,
+  async (programId) => {
+    groupForm.value.semester_id = "";
+    semesters.value = [];
+    semestersError.value = "";
+
+    // ✅ If empty => "All Programs" => don't load semesters
+    if (!programId) return;
+
+    loadingSemesters.value = true;
+    try {
+      const list = await getSemestersByProgram(Number(programId));
+      semesters.value = Array.isArray(list) ? list : list?.semesters || [];
+    } catch (e) {
+      semestersError.value = e?.message || "Failed to load semesters";
+    } finally {
+      loadingSemesters.value = false;
+    }
+  }
+);
+
+// Close modal => reset
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) resetForm();
+  }
+);
+
+// ===================== Actions =====================
+
 const closeModal = () => {
   emit("close");
   resetForm();
@@ -352,99 +416,81 @@ const closeModal = () => {
 const resetForm = () => {
   groupForm.value = {
     name: "",
-    program: "",
-    department: "",
-    section: "",
-    semester: "",
+    department_id: "",
+    program_id: "",
+    section_id: "",
+    semester_id: "",
     description: "",
   };
-  
+
   semesters.value = [];
+  semestersError.value = "";
   errors.value = {};
   isCreating.value = false;
 };
 
-const validateForm = () => {
-  errors.value = {};
-
-  if (!groupForm.value.name) {
-    errors.value.name = "Group name is required";
-  }
-
-  if (!groupForm.value.program) {
-    errors.value.program = "Program is required";
-  }
-
-  if (!groupForm.value.department) {
-    errors.value.department = "Department is required";
-  }
-
-  if (!groupForm.value.section) {
-    errors.value.section = "Section is required";
-  }
-
-  if (!groupForm.value.semester) {
-    errors.value.semester = "Semester is required";
-  }
-
-  return Object.keys(errors.value).length === 0;
-};
-
 const createGroup = async () => {
-  if (!validateForm()) {
-    return;
-  }
+  if (!validateForm()) return;
 
   isCreating.value = true;
-
   try {
-    // Get the selected department, section, program and semester objects
-    const selectedDepartment = departments.value.find(d => d.department_name === groupForm.value.department);
-    const selectedSection = allSections.value.find(s => s.name === groupForm.value.section);
-    const selectedProgram = allPrograms.value.find(p => p.program_name === groupForm.value.program);
-    const selectedSemesterObj = semesters.value.find(
-      s => String(s.id) === String(groupForm.value.semester)
+    const selectedDepartment = departments.value?.find(
+      (d) => String(d.id) === String(groupForm.value.department_id)
+    );
+
+    const selectedProgram = allPrograms.value?.find(
+      (p) => String(p.id) === String(groupForm.value.program_id)
+    );
+
+    const selectedSection = allSections.value?.find(
+      (s) => String(s.id) === String(groupForm.value.section_id)
+    );
+
+    const selectedSemesterObj = semesters.value?.find(
+      (s) => String(s.id) === String(groupForm.value.semester_id)
     );
 
     const newGroup = {
-      ...groupForm.value,
-      // Add IDs for backend compatibility
-      department_id: selectedDepartment?.id,
-      section_id: selectedSection?.id,
-      program_id: selectedProgram?.id,
-      semester_id: selectedSemesterObj?.id ?? Number(groupForm.value.semester),
-      academic_year: selectedSemesterObj?.academic_year_label || (new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)),
+      name: groupForm.value.name,
+      description: groupForm.value.description,
+
+      department_id: groupForm.value.department_id
+        ? Number(groupForm.value.department_id)
+        : null,
+      program_id: groupForm.value.program_id
+        ? Number(groupForm.value.program_id)
+        : null,
+      section_id: groupForm.value.section_id
+        ? Number(groupForm.value.section_id)
+        : null,
+      semester_id: groupForm.value.semester_id
+        ? Number(groupForm.value.semester_id)
+        : null,
+
+      // optional readable fields
+      department:
+        selectedDepartment?.department_name || selectedDepartment?.name,
+      program: selectedProgram?.program_name,
+      section: selectedSection?.name,
+
+      academic_year:
+        selectedSemesterObj?.academic_year_label ||
+        `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
       academic_year_id: selectedSemesterObj?.academic_year_id,
+
+      semester_key: selectedSemesterObj?.semester_key,
+      semester_number: selectedSemesterObj?.semester_number,
+
       created_at: new Date().toISOString(),
       status: "Active",
     };
 
-    if (selectedSemesterObj) {
-      newGroup.semester_key = selectedSemesterObj.semester_key;
-      newGroup.semester_number = selectedSemesterObj.semester_number;
-    }
-
-    console.log('Creating group with data:', newGroup);
-    console.log('Selected department:', selectedDepartment);
-    console.log('Selected program:', selectedProgram);
-    console.log('Selected section:', selectedSection);
-
     emit("create-group", newGroup);
     closeModal();
   } catch (error) {
-    console.error('Error creating group:', error);
+    console.error("Error creating group:", error);
   } finally {
     isCreating.value = false;
   }
 };
-
-// Watch for modal open/close
-watch(
-  () => props.isOpen,
-  (newValue) => {
-    if (!newValue) {
-      resetForm();
-    }
-  }
-);
 </script>

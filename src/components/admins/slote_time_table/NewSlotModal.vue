@@ -18,6 +18,7 @@
           <label>Date <span class="required">*</span></label>
           <input 
             v-model="slot.time_slot_date" 
+            @change="onDateOrTimeChange"
             type="date" 
             required
             :min="semesterStartFormatted"
@@ -32,6 +33,7 @@
             <label>Start Time <span class="required">*</span></label>
             <input 
               v-model="slot.start_time" 
+              @change="onDateOrTimeChange"
               type="time" 
               required
               class="form-input"
@@ -41,6 +43,7 @@
             <label>End Time <span class="required">*</span></label>
             <input 
               v-model="slot.end_time" 
+              @change="onDateOrTimeChange"
               type="time" 
               required
               class="form-input"
@@ -48,49 +51,58 @@
           </div>
         </div>
 
-        <!-- Subject Selection -->
-        <div class="form-group">
-          <label>Subject</label>
-          <select v-model="slot.subject_id" class="form-input">
-            <option :value="null">Select Subject</option>
-            <option 
-              v-for="subject in subjects" 
-              :key="subject.id" 
-              :value="subject.id"
-            >
-              {{ subject.subject_name }}
-            </option>
-          </select>
-        </div>
-
         <!-- Teacher Selection -->
         <div class="form-group">
           <label>Teacher</label>
-          <select v-model="slot.teacher_id" class="form-input">
-            <option :value="null">Select Teacher</option>
+          <select v-model="slot.teacher_id" @change="onTeacherChange" class="form-input" :disabled="isLoadingTeachers">
+            <option :value="null">{{ isLoadingTeachers ? 'Loading teachers...' : 'Select Teacher' }}</option>
             <option 
-              v-for="teacher in teachers" 
+              v-for="teacher in filteredTeachers" 
               :key="teacher.id" 
               :value="teacher.id"
             >
               {{ teacher.name }}
             </option>
           </select>
+          <p v-if="slot.time_slot_date && slot.start_time && slot.end_time && filteredTeachers.length === 0 && !isLoadingTeachers" class="text-xs text-amber-600 mt-1">
+            No teachers available for this time slot. All teachers are busy.
+          </p>
+        </div>
+
+        <!-- Subject Selection -->
+        <div class="form-group">
+          <label>Subject</label>
+          <select v-model="slot.subject_id" class="form-input" :disabled="isLoadingSubjects">
+            <option :value="null">{{ isLoadingSubjects ? 'Loading subjects...' : 'Select Subject' }}</option>
+            <option 
+              v-for="subject in filteredSubjects" 
+              :key="subject.id" 
+              :value="subject.id"
+            >
+              {{ subject.subject_name }}
+            </option>
+          </select>
+          <p v-if="slot.teacher_id && filteredSubjects.length === 0 && !isLoadingSubjects" class="text-xs text-amber-600 mt-1">
+            This teacher doesn't teach any subjects
+          </p>
         </div>
 
         <!-- Location Selection -->
         <div class="form-group">
           <label>Location</label>
-          <select v-model="slot.location_id" class="form-input">
-            <option :value="null">Select Location</option>
+          <select v-model="slot.location_id" class="form-input" :disabled="isLoadingLocations">
+            <option :value="null">{{ isLoadingLocations ? 'Loading locations...' : 'Select Location' }}</option>
             <option 
-              v-for="location in locations" 
+              v-for="location in filteredLocations" 
               :key="location.id" 
               :value="location.id"
             >
               {{ location.name }} (Floor {{ location.floor }})
             </option>
           </select>
+          <p v-if="slot.time_slot_date && slot.start_time && slot.end_time && filteredLocations.length === 0 && !isLoadingLocations" class="text-xs text-amber-600 mt-1">
+            No locations available for this time slot. All rooms are booked.
+          </p>
         </div>
 
         <!-- Remark -->
@@ -186,7 +198,14 @@ export default {
         location_id: null,
         remark: ''
       },
+      allSubjects: [], // Store original full list of subjects
+      teacherSubjects: [], // Store subjects filtered by teacher
+      availableLocations: [], // Store available locations based on time
+      availableTeachers: [], // Store available teachers based on time
       isLoading: false,
+      isLoadingSubjects: false,
+      isLoadingLocations: false,
+      isLoadingTeachers: false,
       errorMessage: '',
       successMessage: ''
     };
@@ -197,6 +216,40 @@ export default {
     },
     semesterEndFormatted() {
       return this.convertToInputFormat(this.semesterEnd);
+    },
+    filteredSubjects() {
+      // If a teacher is selected and we have teacher-specific subjects, use those
+      if (this.slot.teacher_id && this.teacherSubjects.length > 0) {
+        return this.teacherSubjects;
+      }
+      // If a teacher is selected but no subjects found, return empty
+      if (this.slot.teacher_id && this.teacherSubjects.length === 0 && !this.isLoadingSubjects) {
+        return [];
+      }
+      // Otherwise, show all subjects from props
+      return this.subjects;
+    },
+    filteredLocations() {
+      // If date and time are selected, show filtered available locations
+      if (this.slot.time_slot_date && this.slot.start_time && this.slot.end_time) {
+        // If we've fetched locations or are loading, use availableLocations
+        if (this.isLoadingLocations || this.availableLocations.length > 0 || this.availableLocations.length === 0) {
+          return this.availableLocations;
+        }
+      }
+      // Otherwise, show all locations from props
+      return this.locations;
+    },
+    filteredTeachers() {
+      // If date and time are selected, show filtered available teachers
+      if (this.slot.time_slot_date && this.slot.start_time && this.slot.end_time) {
+        // If we've fetched teachers or are loading, use availableTeachers
+        if (this.isLoadingTeachers || this.availableTeachers.length > 0 || this.availableTeachers.length === 0) {
+          return this.availableTeachers;
+        }
+      }
+      // Otherwise, show all teachers from props
+      return this.teachers;
     }
   },
   mounted() {
@@ -204,6 +257,20 @@ export default {
     if (this.selectedDate) {
       this.slot.time_slot_date = this.selectedDate;
     }
+    // Store the original subjects list
+    this.allSubjects = [...this.subjects];
+    // Initialize with all locations
+    this.availableLocations = [...this.locations];
+    // Initialize with all teachers
+    this.availableTeachers = [...this.teachers];
+    
+    // Fetch available locations and teachers if we have default date and time
+    this.$nextTick(() => {
+      if (this.slot.time_slot_date && this.slot.start_time && this.slot.end_time) {
+        this.fetchAvailableLocations();
+        this.fetchAvailableTeachers();
+      }
+    });
   },
   methods: {
     convertToInputFormat(dateStr) {
@@ -217,6 +284,114 @@ export default {
     },
     closeModal() {
       this.$emit('close');
+    },
+    async onTeacherChange() {
+      // Reset subject selection when teacher changes
+      this.slot.subject_id = null;
+      this.teacherSubjects = [];
+      
+      if (!this.slot.teacher_id) {
+        // If no teacher selected, show all subjects
+        return;
+      }
+      
+      // Fetch subjects taught by this teacher
+      await this.fetchSubjectsByTeacher(this.slot.teacher_id);
+    },
+    async fetchSubjectsByTeacher(teacherId) {
+      this.isLoadingSubjects = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        const subjects = await TimeTableAPI.fetchSubjectsByTeacher(teacherId);
+        this.teacherSubjects = subjects || [];
+      } catch (error) {
+        console.error('Error fetching subjects by teacher:', error);
+        this.teacherSubjects = [];
+      } finally {
+        this.isLoadingSubjects = false;
+      }
+    },
+    async onDateOrTimeChange() {
+      // Reset location selection when date/time changes
+      const currentLocation = this.slot.location_id;
+      const currentTeacher = this.slot.teacher_id;
+      
+      if (!this.slot.time_slot_date || !this.slot.start_time || !this.slot.end_time) {
+        // If any field is missing, show all locations and teachers
+        this.availableLocations = [...this.locations];
+        this.availableTeachers = [...this.teachers];
+        return;
+      }
+      
+      // Fetch available locations and teachers for this date and time
+      await Promise.all([
+        this.fetchAvailableLocations(),
+        this.fetchAvailableTeachers()
+      ]);
+      
+      // If current location is not available anymore, reset it
+      if (currentLocation && !this.availableLocations.find(l => l.id === currentLocation)) {
+        this.slot.location_id = null;
+      }
+      
+      // If current teacher is not available anymore, reset it and subjects
+      if (currentTeacher && !this.availableTeachers.find(t => t.id === currentTeacher)) {
+        this.slot.teacher_id = null;
+        this.slot.subject_id = null;
+        this.teacherSubjects = [];
+      }
+    },
+    async fetchAvailableLocations() {
+      this.isLoadingLocations = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        
+        // Add ':00' to times if needed for backend format (HH:mm:ss)
+        const startTime = this.slot.start_time.includes(':') && this.slot.start_time.split(':').length === 2 
+          ? this.slot.start_time + ':00' 
+          : this.slot.start_time;
+        const endTime = this.slot.end_time.includes(':') && this.slot.end_time.split(':').length === 2 
+          ? this.slot.end_time + ':00' 
+          : this.slot.end_time;
+        
+        const locations = await TimeTableAPI.fetchAvailableLocations(
+          this.slot.time_slot_date,
+          startTime,
+          endTime
+        );
+        this.availableLocations = locations || [];
+      } catch (error) {
+        console.error('Error fetching available locations:', error);
+        this.availableLocations = [...this.locations]; // Fallback to all locations
+      } finally {
+        this.isLoadingLocations = false;
+      }
+    },
+    async fetchAvailableTeachers() {
+      this.isLoadingTeachers = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        
+        // Add ':00' to times if needed for backend format (HH:mm:ss)
+        const startTime = this.slot.start_time.includes(':') && this.slot.start_time.split(':').length === 2 
+          ? this.slot.start_time + ':00' 
+          : this.slot.start_time;
+        const endTime = this.slot.end_time.includes(':') && this.slot.end_time.split(':').length === 2 
+          ? this.slot.end_time + ':00' 
+          : this.slot.end_time;
+        
+        const teachers = await TimeTableAPI.fetchAvailableTeachers(
+          this.slot.time_slot_date,
+          startTime,
+          endTime
+        );
+        this.availableTeachers = teachers || [];
+      } catch (error) {
+        console.error('Error fetching available teachers:', error);
+        this.availableTeachers = [...this.teachers]; // Fallback to all teachers
+      } finally {
+        this.isLoadingTeachers = false;
+      }
     },
     async handleCreate() {
       this.errorMessage = '';
@@ -268,6 +443,17 @@ export default {
         this.errorMessage = error.message || 'Failed to create time slot. Please try again.';
       } finally {
         this.isLoading = false;
+      }
+    }
+  },
+  watch: {
+    selectedDate(newVal) {
+      if (newVal && newVal !== this.slot.time_slot_date) {
+        this.slot.time_slot_date = newVal;
+        // Trigger location and teacher fetch if time is already set
+        if (this.slot.start_time && this.slot.end_time) {
+          this.onDateOrTimeChange();
+        }
       }
     }
   }

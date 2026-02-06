@@ -1,41 +1,44 @@
 <template>
-  <div class="flex flex-col gap-4 py-3 sm:py-5">
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
     <!-- Top bar -->
-    <div class="px-3 sm:px-5 space-y-4">
-      <!-- Row 1: Title (left) + Actions (right) -->
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <!-- Title -->
-        <PageHeader
-          :title="t('hod_management')"
-          subtitle="Track and manage your HOD applications" />
+    <PageHeader
+      :title="t('hod_management')"
+      subtitle="Track and manage your HOD applications">
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <button
+          @click="openAdd"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#235AA6] text-white rounded-lg hover:bg-[#1e4a94] transition-colors text-sm font-medium">
+          <Plus class="w-4 h-4" />
+          Add HOD
+        </button>
 
-        <!-- Actions -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <!-- Add HOD -->
-          <button
-            @click="openAdd"
-            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#235AA6] text-white rounded-lg hover:bg-[#1e4a94] transition-colors text-sm font-medium">
-            <Plus class="w-4 h-4" />
-            Add HOD
-          </button>
-
-          <!-- Export -->
-          <ExcelForm :filtered-rows="filteredRows" :departments-map="deptMap" />
-        </div>
+        <!-- Export -->
+        <ExcelForm :filtered-rows="filteredRows" :departments-map="deptMap" />
       </div>
+    </PageHeader>
 
-      <!-- Row 2: Search (bottom) -->
-      <div class="relative w-full sm:max-w-md">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search HODs..."
-          class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <Search class="w-4 h-4" />
-        </span>
-      </div>
+    <div class="relative mb-3 w-full max-w-lg">
+      <Search
+        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search by name, ID, or email..."
+        :disabled="loading"
+        class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+      <button
+        v-if="search && search.trim().length"
+        type="button"
+        :disabled="loading"
+        @click="search = ''"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+        aria-label="Clear search">
+        ✕
+      </button>
     </div>
 
     <!-- Filters -->
@@ -44,7 +47,7 @@
       @clear-filters="handleClearFilters" />
 
     <!-- HOD Table -->
-    <div class="overflow-x-auto px-3 sm:px-5">
+    <div class="overflow-x-auto">
       <div class="min-w-full">
         <HODTable
           :hods="pagedRows"
@@ -63,7 +66,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <Pagination
         :current-page="page"
         :page-size="pageSize"
@@ -93,6 +96,9 @@
 <script setup>
 import { Plus, Search } from "lucide-vue-next";
 import { ref, computed, watch, onMounted } from "vue";
+import { showNotification } from "@/lib/notifications.js";
+import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import { useI18n } from "vue-i18n";
 import ExcelForm from "@/components/features/ExcelForm.vue";
 import AddHODModal from "@/components/admins/HeadOfDepartmentManagement/AddHODModal.vue";
 import EditHODModal from "@/components/admins/HeadOfDepartmentManagement/EditHODModal.vue";
@@ -101,10 +107,7 @@ import HODFilter from "@/components/admins/HeadOfDepartmentManagement/HODFilter.
 import HODTable from "@/components/admins/HeadOfDepartmentManagement/HODTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import HODCRUD from "@/stores/apis/HeadOfDepartmentCRUD.js";
-import { showNotification } from "@/lib/notifications.js";
-import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
 import PageHeader from "@/components/features/PageHeader.vue";
-import { useI18n } from "vue-i18n";
 
 const { t, locale } = useI18n();
 /** ------- Data ------- */
@@ -153,7 +156,7 @@ function normalizeRow(u) {
     u.department_id ??
       u.user_detail?.department_id ??
       u.hod_detail?.department_id ??
-      NaN
+      NaN,
   );
 
   const department_name =
@@ -399,7 +402,7 @@ const filteredRows = computed(() => {
         (r.phone_number || "").toLowerCase().includes(q) ||
         (r.department_name || "").toLowerCase().includes(q) ||
         (r.position || "").toLowerCase().includes(q) ||
-        (r.employee_id || r.id_card || "").toLowerCase().includes(q)
+        (r.employee_id || r.id_card || "").toLowerCase().includes(q),
     );
   }
 
@@ -408,7 +411,7 @@ const filteredRows = computed(() => {
     list = list.filter((r) => r.academic_year === filters.value.academic_year);
   if (filters.value.program_id)
     list = list.filter(
-      (r) => Number(r.program_id) === Number(filters.value.program_id)
+      (r) => Number(r.program_id) === Number(filters.value.program_id),
     );
   else if (filters.value.program !== "All")
     list = list.filter((r) => r.program === filters.value.program);
@@ -416,7 +419,7 @@ const filteredRows = computed(() => {
   // Department (prefer id filter; fallback to name)
   if (filters.value.department_id)
     list = list.filter(
-      (r) => Number(r.department_id) === Number(filters.value.department_id)
+      (r) => Number(r.department_id) === Number(filters.value.department_id),
     );
   else if (filters.value.department !== "All")
     list = list.filter((r) => r.department_name === filters.value.department);
@@ -437,7 +440,7 @@ const filteredRows = computed(() => {
 
 /** ------- Pagination ------- */
 const page = ref(1);
-const pageSize = ref(25);
+const pageSize = ref(10);
 
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;

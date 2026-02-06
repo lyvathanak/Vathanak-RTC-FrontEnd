@@ -23,46 +23,12 @@
       </div>
 
       <!-- Teacher Info Card -->
-      <div>
+      <div class="mb-6">
         <UserInfoCard
           :role="authStore.userRole"
           :user="detailUser"
           :locale="locale" />
       </div>
-
-      <!-- <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2
-          :class="[
-            'text-xl font-semibold mb-4',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          {{ t("teacher_information") }}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-500"
-              >{{ t("role") }}:</label
-            >
-            <p class="text-lg font-semibold text-green-600 capitalize">
-              {{ authStore.userRole }}
-            </p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500">{{
-              t("email")
-            }}</label>
-            <p class="text-lg">{{ authStore.user?.email }}</p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500"
-              >{{ t("department") }}:</label
-            >
-            <p class="text-lg">
-              {{ authStore.user?.profile?.department_name || "—" }}
-            </p>
-          </div>
-        </div>
-      </div> -->
 
       <!-- Widgets -->
       <div>
@@ -99,6 +65,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
 import { getTeacherProfile } from "@/stores/Teacher/TeacherProfile";
 import { getAllLeaveRequestsByTeacher } from "@/stores/Teacher/LeaveRequestFrom.js";
+import { getStudentLearnWithTeacher } from "@/stores/Teacher/studerntinformation";
 import ChangeLanguage from "@/components/language/ChangLanguage.vue";
 import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
 import RolePermissions from "@/components/overview/RolePermissions.vue";
@@ -110,26 +77,20 @@ const route = useRoute();
 const { t, locale } = useI18n();
 const authStore = useAuthStore();
 
+const detailUser = ref(null);
+
+/**
+ * Logout
+ */
 const handleLogout = () => {
   authStore.logout();
   const currentLang = route.params.lang || "en";
   router.push(`/${currentLang}/login`);
 };
 
-const detailUser = ref(null);
-
-onMounted(async () => {
-  const data = await getTeacherProfile();
-  detailUser.value = data?.user ?? data;
-});
-
 /**
- * Line chart
+ * Helpers
  */
-
-const lineRange = ref("7");
-const leaveRequests = ref([]);
-
 function toYMD(d) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -137,6 +98,9 @@ function toYMD(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+/**
+ * Line chart builder
+ */
 function buildLeaveLineChart(requests, range) {
   const normalizeStatus = (s) => {
     const v = String(s || "")
@@ -170,21 +134,21 @@ function buildLeaveLineChart(requests, range) {
     toISOFromDDMMYYYY(r?.submit_at) ||
     toISOFromDDMMYYYY(r?.created_at);
 
-  // ✅ 1) collect all dates from requests
+  // 1) collect all dates
   let allDates = (requests || []).map(getKey).filter(Boolean);
 
-  // unique + sort
-  allDates = Array.from(new Set(allDates)).sort(); // "YYYY-MM-DD" sorts correctly
+  // unique + sort (YYYY-MM-DD sorts correctly)
+  allDates = Array.from(new Set(allDates)).sort();
 
-  // ✅ 2) Optional: if range = 7/14/30, keep only last N dates (not last N days)
+  // 2) optional: keep only last N dates (not last N days)
   const n = Number(range || 0);
   const labels = n > 0 ? allDates.slice(-n) : allDates;
 
-  // ✅ 3) init counts
+  // 3) init counts for labels
   const counts = {};
   labels.forEach((d) => (counts[d] = { approved: 0, rejected: 0, pending: 0 }));
 
-  // ✅ 4) count requests
+  // 4) count requests that fall into labels
   for (const r of requests || []) {
     const key = getKey(r);
     if (!key || !counts[key]) continue;
@@ -201,6 +165,17 @@ function buildLeaveLineChart(requests, range) {
   };
 }
 
+/**
+ * API fetchers
+ */
+const lineRange = ref("7");
+const leaveRequests = ref([]);
+
+async function fetchTeacherProfile() {
+  const data = await getTeacherProfile();
+  detailUser.value = data?.user ?? data;
+}
+
 async function fetchLeaveRequests(days) {
   const n = Number(days || 7);
   const end = new Date();
@@ -215,27 +190,53 @@ async function fetchLeaveRequests(days) {
   leaveRequests.value = res?.requests || [];
 }
 
-onMounted(() => fetchLeaveRequests(lineRange.value));
+/**
+ * ✅ Single onMounted (clean)
+ */
+onMounted(async () => {
+  await Promise.all([
+    fetchTeacherProfile(),
+    fetchLeaveRequests(lineRange.value),
+    fetchMyStudents(),
+  ]);
+});
+
+/**
+ * Watchers
+ */
 watch(lineRange, (v) => fetchLeaveRequests(v));
 
+const myStudents = ref([]);
+const myStudentsTotal = ref(0);
+
+async function fetchMyStudents() {
+  const res = await getStudentLearnWithTeacher({ page: 1, per_page: 1 });
+
+  myStudentsTotal.value =
+    res?.meta?.total ??
+    res?.total ??
+    (Array.isArray(res?.data) ? res.data.length : 0);
+
+  myStudents.value = Array.isArray(res?.data) ? res.data : [];
+}
+
+/**
+ * Computed stats for widgets/charts
+ */
 const stats = computed(() => {
   const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
 
   return {
-    // KPI (keep yours or replace later with real data)
-    leaverequests: 15,
-    students: 124,
+    leaverequests: leaveRequests.value.length,
+    students: myStudentsTotal.value || myStudents.value.length,
     subjects: 8,
 
-    // ✅ Line chart from API
     line_labels: leaveLine.line_labels,
     line_datasets: leaveLine.line_datasets,
 
-    // ✅ bar chart (use API totals)
     bar_labels: ["Graded", "Pending", "Late"],
     bar_values: [10, 4, 1],
 
-    // ✅ donut chart
     donut_labels: ["Active", "Neutral", "Inactive"],
     donut_values: [60, 25, 15],
   };

@@ -8,9 +8,21 @@
       <div
         class="sticky top-0 z-10 flex items-center justify-between border-b bg-white/90 px-6 py-4 backdrop-blur">
         <div>
-          <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
-            View Leave Request
-          </h2>
+          <div class="flex items-center gap-3 min-w-0 flex-wrap">
+            <h3
+              :class="[
+                'text-base sm:text-lg font-bold text-gray-900 truncate',
+                locale === 'kh' ? 'khmer-text' : '',
+              ]">
+              {{ t("leave_requests") }}
+            </h3>
+
+            <span
+              class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#235AA6] ring-1 ring-inset ring-blue-200"
+              :class="[locale === 'kh' ? 'khmer-text' : '']">
+              {{ t("view_leave_request") }}
+            </span>
+          </div>
           <p class="text-sm text-gray-500">
             Submit your leave application for approval!
           </p>
@@ -137,7 +149,7 @@
                 <textarea
                   :value="leaveRequest.originalData?.reason"
                   readonly
-                  class="mt-2 min-h-[110px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+                  class="mt-2 min-h-27.5 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
               </div>
 
               <div>
@@ -150,7 +162,7 @@
                     'No handover details provided'
                   "
                   readonly
-                  class="mt-2 min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+                  class="mt-2 min-h-22.5 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
               </div>
 
               <div>
@@ -263,7 +275,7 @@
               <textarea
                 v-model="remark"
                 placeholder="Reason for Reject..."
-                class="mt-2 min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"></textarea>
+                class="mt-2 min-h-22.5 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800 shadow-sm outline-none focus:border-[#235AA6] focus:ring-4 focus:ring-[#235AA6]/15"></textarea>
             </div>
           </section>
 
@@ -277,7 +289,7 @@
             <textarea
               :value="existingRemark"
               readonly
-              class="min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+              class="min-h-22.5 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
           </section>
         </div>
       </div>
@@ -339,14 +351,18 @@ import {
 } from "@/stores/apis/LeaveRequestManagement.js";
 import { showNotification } from "@/lib/notifications.js";
 import UniversalFilePreview from "@/components/features/UniversalFilePreview.vue";
+import { useI18n } from "vue-i18n";
+
+const { t, locale: i18nLocale } = useI18n();
+
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
 
 // ---------- PUBLIC FILE URL BUILDER ----------
 const toPublicUrl = (docPath) => {
   if (!docPath) return null;
   if (/^https?:\/\//i.test(docPath)) return docPath; // already absolute
-  // -> https://api.rtc-bb.camai.kh/storage/<docPath>
   const cleanPath = docPath.startsWith("/") ? docPath.substring(1) : docPath;
-  return `https://api.rtc-bb.camai.kh/storage/${cleanPath}`;
+  return `${FILE_ORIGIN}/storage/${cleanPath}`;
 };
 
 // ---------- PROPS / EMITS ----------
@@ -397,14 +413,14 @@ const handleApprove = async () => {
     } else {
       showNotification(
         result.error || "Failed to approve leave request",
-        "error"
+        "error",
       );
     }
   } catch (error) {
     console.error("Error approving leave request:", error);
     showNotification(
       "Failed to approve leave request: " + (error?.message || "Unknown error"),
-      "error"
+      "error",
     );
   } finally {
     loading.value = false;
@@ -434,14 +450,14 @@ const handleReject = async () => {
     } else {
       showNotification(
         result.error || "Failed to reject leave request",
-        "error"
+        "error",
       );
     }
   } catch (error) {
     console.error("Error rejecting leave request:", error);
     showNotification(
       "Failed to reject leave request: " + (error?.message || "Unknown error"),
-      "error"
+      "error",
     );
   } finally {
     loading.value = false;
@@ -451,15 +467,15 @@ const handleReject = async () => {
 
 // ---------- FILE / PREVIEW ----------
 const currentReq = computed(
-  () => props.leaveRequest?.originalData || props.leaveRequest
+  () => props.leaveRequest?.originalData || props.leaveRequest,
 );
 const docPath = computed(() => currentReq.value?.document || null);
 const publicDocUrl = computed(() =>
-  docPath.value ? toPublicUrl(docPath.value) : null
+  docPath.value ? toPublicUrl(docPath.value) : null,
 );
 // console.log('📄 Document path:', publicDocUrl.value)
 const fileDisplayName = computed(() =>
-  docPath.value ? docPath.value.split("/").pop() : "Document"
+  docPath.value ? docPath.value.split("/").pop() : "Document",
 );
 
 const fileName = computed(() => fileDisplayName.value);

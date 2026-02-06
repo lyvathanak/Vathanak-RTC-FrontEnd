@@ -27,7 +27,7 @@
           :locale="locale" />
       </div>
 
-      <div>
+      <div class="mt-6">
         <OverviewWidgets
           :role="authStore.userRole"
           :stats="stats"

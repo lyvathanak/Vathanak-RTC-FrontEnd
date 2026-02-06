@@ -26,41 +26,50 @@
     <div class="modal-content" @click.stop>
       <h3>Edit Time Slot</h3>
       <form @submit.prevent="saveEvent">
-        <label>Subject:<span class="required">*</span></label>
-        <select v-model="formData.subject_id" required>
-          <option :value="null">Select Subject</option>
-          <option v-for="subject in subjects" :key="subject.id" :value="subject.id">
-            {{ subject.name || subject.subject_name }}
-          </option>
-        </select>
-
         <label>Teacher:<span class="required">*</span></label>
-        <select v-model="formData.teacher_id" required>
-          <option :value="null">Select Teacher</option>
-          <option v-for="teacher in teachers" :key="teacher.id" :value="teacher.id">
+        <select v-model="formData.teacher_id" @change="onTeacherChange" :disabled="isLoadingTeachers" required>
+          <option :value="null">{{ isLoadingTeachers ? 'Loading teachers...' : 'Select Teacher' }}</option>
+          <option v-for="teacher in filteredTeachers" :key="teacher.id" :value="teacher.id">
             {{ teacher.name || teacher.first_name + ' ' + teacher.last_name }}
           </option>
         </select>
+        <p v-if="formData.time_slot_date && formData.time_slot.start_time && formData.time_slot.end_time && filteredTeachers.length === 0 && !isLoadingTeachers" class="text-xs text-amber-600 mt-1">
+          No teachers available for this time slot. All teachers are busy.
+        </p>
+
+        <label>Subject:<span class="required">*</span></label>
+        <select v-model="formData.subject_id" :disabled="isLoadingSubjects" required>
+          <option :value="null">{{ isLoadingSubjects ? 'Loading subjects...' : 'Select Subject' }}</option>
+          <option v-for="subject in filteredSubjects" :key="subject.id" :value="subject.id">
+            {{ subject.name || subject.subject_name }}
+          </option>
+        </select>
+        <p v-if="formData.teacher_id && filteredSubjects.length === 0 && !isLoadingSubjects" class="text-xs text-amber-600 mt-1">
+          This teacher doesn't teach any subjects
+        </p>
 
         <label>Location:<span class="required">*</span></label>
-        <select v-model="formData.location_id" required>
-          <option :value="null">Select Location</option>
-          <option v-for="location in locations" :key="location.id" :value="location.id">
+        <select v-model="formData.location_id" :disabled="isLoadingLocations" required>
+          <option :value="null">{{ isLoadingLocations ? 'Loading locations...' : 'Select Location' }}</option>
+          <option v-for="location in filteredLocations" :key="location.id" :value="location.id">
             {{ location.name || location.location_name }}
           </option>
         </select>
+        <p v-if="formData.time_slot_date && formData.time_slot.start_time && formData.time_slot.end_time && filteredLocations.length === 0 && !isLoadingLocations" class="text-xs text-amber-600 mt-1">
+          No locations available for this time slot. All rooms are booked.
+        </p>
 
         <label>Remark:</label>
         <input :value="formData.remark" @input="formData.remark = $event.target.value" type="text" placeholder="Optional remark" />
 
         <label>Date:<span class="required">*</span></label>
-        <input :value="formData.time_slot_date" @input="formData.time_slot_date = $event.target.value" type="date" required />
+        <input :value="formData.time_slot_date" @input="formData.time_slot_date = $event.target.value" @change="onDateOrTimeChange" type="date" required />
 
         <label>Start Time:<span class="required">*</span></label>
-        <input ref="startTimeInput" :value="formData.time_slot.start_time" @input="formData.time_slot.start_time = $event.target.value" type="time" required />
+        <input ref="startTimeInput" :value="formData.time_slot.start_time" @input="formData.time_slot.start_time = $event.target.value" @change="onDateOrTimeChange" type="time" required />
 
         <label>End Time:<span class="required">*</span></label>
-        <input ref="endTimeInput" :value="formData.time_slot.end_time" @input="formData.time_slot.end_time = $event.target.value" type="time" required />
+        <input ref="endTimeInput" :value="formData.time_slot.end_time" @input="formData.time_slot.end_time = $event.target.value" @change="onDateOrTimeChange" type="time" required />
 
         <div class="buttons">
           <button type="submit" :disabled="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
@@ -111,20 +120,85 @@ export default {
           end_time: ''
         }
       },
+      teacherSubjects: [], // Store subjects filtered by teacher
+      availableLocations: [], // Store available locations based on time
+      availableTeachers: [], // Store available teachers based on time
+      isLoadingSubjects: false,
+      isLoadingLocations: false,
+      isLoadingTeachers: false,
       saving: false,
       deleting: false,
       errorMessage: '',
       showDeleteConfirm: false
     };
   },
+  computed: {
+    filteredSubjects() {
+      // If a teacher is selected and we have teacher-specific subjects, use those
+      if (this.formData.teacher_id && this.teacherSubjects.length > 0) {
+        return this.teacherSubjects;
+      }
+      // If a teacher is selected but no subjects found, return empty
+      if (this.formData.teacher_id && this.teacherSubjects.length === 0 && !this.isLoadingSubjects) {
+        return [];
+      }
+      // Otherwise, show all subjects from props
+      return this.subjects;
+    },
+    filteredLocations() {
+      // If date and time are selected, show filtered available locations
+      if (this.formData.time_slot_date && this.formData.time_slot.start_time && this.formData.time_slot.end_time) {
+        // If we've fetched locations or are loading, use availableLocations
+        if (this.isLoadingLocations || this.availableLocations.length > 0 || this.availableLocations.length === 0) {
+          return this.availableLocations;
+        }
+      }
+      // Otherwise, show all locations from props
+      return this.locations;
+    },
+    filteredTeachers() {
+      // If date and time are selected, show filtered available teachers
+      if (this.formData.time_slot_date && this.formData.time_slot.start_time && this.formData.time_slot.end_time) {
+        // If we've fetched teachers or are loading, use availableTeachers
+        if (this.isLoadingTeachers || this.availableTeachers.length > 0 || this.availableTeachers.length === 0) {
+          return this.availableTeachers;
+        }
+      }
+      // Otherwise, show all teachers from props
+      return this.teachers;
+    }
+  },
   mounted() {
     this.initializeFormData();
+    // Initialize with all locations and teachers
+    this.availableLocations = [...this.locations];
+    this.availableTeachers = [...this.teachers];
+    // Load teacher subjects if teacher is already selected
+    if (this.formData.teacher_id) {
+      this.fetchSubjectsByTeacher(this.formData.teacher_id);
+    }
+    // Load available locations and teachers if date and time are set
+    if (this.formData.time_slot_date && this.formData.time_slot.start_time && this.formData.time_slot.end_time) {
+      this.fetchAvailableLocations();
+      this.fetchAvailableTeachers();
+    }
   },
   watch: {
     eventData: {
       handler(newVal) {
         if (newVal) {
           this.initializeFormData();
+          // Load teacher subjects when event data changes
+          if (this.formData.teacher_id) {
+            this.fetchSubjectsByTeacher(this.formData.teacher_id);
+          }
+          // Fetch available locations and teachers when event data changes
+          this.$nextTick(() => {
+            if (this.formData.time_slot_date && this.formData.time_slot.start_time && this.formData.time_slot.end_time) {
+              this.fetchAvailableLocations();
+              this.fetchAvailableTeachers();
+            }
+          });
         }
       },
       deep: true
@@ -207,10 +281,167 @@ export default {
       });
     },
     
+    async onTeacherChange() {
+      // Reset subject selection when teacher changes
+      const currentSubject = this.formData.subject_id;
+      this.teacherSubjects = [];
+      
+      if (!this.formData.teacher_id) {
+        // If no teacher selected, show all subjects
+        return;
+      }
+      
+      // Fetch subjects taught by this teacher
+      await this.fetchSubjectsByTeacher(this.formData.teacher_id);
+      
+      // If current subject is not in the filtered list, reset it
+      if (currentSubject && !this.teacherSubjects.find(s => s.id === currentSubject)) {
+        this.formData.subject_id = null;
+      }
+    },
+    
+    async fetchSubjectsByTeacher(teacherId) {
+      this.isLoadingSubjects = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        const subjects = await TimeTableAPI.fetchSubjectsByTeacher(teacherId);
+        this.teacherSubjects = subjects || [];
+      } catch (error) {
+        console.error('Error fetching subjects by teacher:', error);
+        this.teacherSubjects = [];
+      } finally {
+        this.isLoadingSubjects = false;
+      }
+    },
+    
+    async onDateOrTimeChange() {
+      // Reset location and teacher selection when date/time changes
+      const currentLocation = this.formData.location_id;
+      const currentTeacher = this.formData.teacher_id;
+      
+      if (!this.formData.time_slot_date || !this.formData.time_slot.start_time || !this.formData.time_slot.end_time) {
+        // If any field is missing, show all locations and teachers
+        this.availableLocations = [...this.locations];
+        this.availableTeachers = [...this.teachers];
+        return;
+      }
+      
+      // Fetch available locations and teachers for this date and time
+      await Promise.all([
+        this.fetchAvailableLocations(),
+        this.fetchAvailableTeachers()
+      ]);
+      
+      // If current location is not available anymore, reset it
+      if (currentLocation && !this.availableLocations.find(l => l.id === currentLocation)) {
+        this.formData.location_id = null;
+      }
+      
+      // If current teacher is not available anymore, reset it and subjects
+      if (currentTeacher && !this.availableTeachers.find(t => t.id === currentTeacher)) {
+        this.formData.teacher_id = null;
+        this.formData.subject_id = null;
+        this.teacherSubjects = [];
+      }
+    },
+    
+    async fetchAvailableLocations() {
+      this.isLoadingLocations = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        
+        // Add ':00' to times if needed for backend format (HH:mm:ss)
+        const startTime = this.formData.time_slot.start_time.includes(':') && this.formData.time_slot.start_time.split(':').length === 2 
+          ? this.formData.time_slot.start_time + ':00' 
+          : this.formData.time_slot.start_time;
+        const endTime = this.formData.time_slot.end_time.includes(':') && this.formData.time_slot.end_time.split(':').length === 2 
+          ? this.formData.time_slot.end_time + ':00' 
+          : this.formData.time_slot.end_time;
+        
+        // Pass the current event ID to exclude it from conflict checking (for edit mode)
+        const eventId = this.eventData?.id || null;
+        
+        const locations = await TimeTableAPI.fetchAvailableLocations(
+          this.formData.time_slot_date,
+          startTime,
+          endTime,
+          eventId
+        );
+        this.availableLocations = locations || [];
+      } catch (error) {
+        console.error('Error fetching available locations:', error);
+        this.availableLocations = [...this.locations]; // Fallback to all locations
+      } finally {
+        this.isLoadingLocations = false;
+      }
+    },
+    
+    async fetchAvailableTeachers() {
+      this.isLoadingTeachers = true;
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        
+        // Add ':00' to times if needed for backend format (HH:mm:ss)
+        const startTime = this.formData.time_slot.start_time.includes(':') && this.formData.time_slot.start_time.split(':').length === 2 
+          ? this.formData.time_slot.start_time + ':00' 
+          : this.formData.time_slot.start_time;
+        const endTime = this.formData.time_slot.end_time.includes(':') && this.formData.time_slot.end_time.split(':').length === 2 
+          ? this.formData.time_slot.end_time + ':00' 
+          : this.formData.time_slot.end_time;
+        
+        // Pass the current event ID to exclude it from conflict checking (for edit mode)
+        const eventId = this.eventData?.id || null;
+        
+        const teachers = await TimeTableAPI.fetchAvailableTeachers(
+          this.formData.time_slot_date,
+          startTime,
+          endTime,
+          eventId
+        );
+        this.availableTeachers = teachers || [];
+      } catch (error) {
+        console.error('Error fetching available teachers:', error);
+        this.availableTeachers = [...this.teachers]; // Fallback to all teachers
+      } finally {
+        this.isLoadingTeachers = false;
+      }
+    },
+    
     async saveEvent() {
       if (!this.eventData || !this.eventData.id) {
         this.errorMessage = 'Error: Event data is not available. Please try again.';
         console.error('Error saving event: eventData is undefined or missing id', this.eventData);
+        return;
+      }
+      
+      // Validate required fields
+      if (!this.formData.teacher_id) {
+        this.errorMessage = 'Please select a teacher.';
+        return;
+      }
+      
+      if (!this.formData.subject_id) {
+        this.errorMessage = 'Please select a subject.';
+        return;
+      }
+      
+      if (!this.formData.location_id) {
+        this.errorMessage = 'Please select a location.';
+        return;
+      }
+      
+      if (!this.formData.time_slot_date) {
+        this.errorMessage = 'Please select a date.';
+        return;
+      }
+      
+      if (!this.formData.time_slot.start_time || !this.formData.time_slot.end_time) {
+        this.errorMessage = 'Please select start and end times.';
+        return;
+      }
+      
+      if (this.formData.time_slot.end_time <= this.formData.time_slot.start_time) {
+        this.errorMessage = 'End time must be after start time.';
         return;
       }
       

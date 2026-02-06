@@ -1,9 +1,9 @@
-import { ref, computed } from 'vue'
-import { defineStore } from 'pinia'
-import api from '@/stores/apis/axios.js'
-import { getUserDetail } from './GetUserDetail.js'
+import { ref, computed } from "vue";
+import { defineStore } from "pinia";
+import api from "@/stores/apis/axios.js";
+import { getUserDetail } from "./GetUserDetail.js";
 
-export const useAuthStore = defineStore('auth', () => {
+export const useAuthStore = defineStore("auth", () => {
   // Cookie utilities for cross-subdomain authentication (defined first)
   const setCookie = (name, value, days = 7) => {
     const expires = new Date();
@@ -14,10 +14,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getCookie = (name) => {
     const nameEQ = name + "=";
-    const cookies = document.cookie.split(';');
+    const cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
       let c = cookies[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      while (c.charAt(0) === " ") c = c.substring(1, c.length);
       if (c.indexOf(nameEQ) === 0) {
         const value = c.substring(nameEQ.length, c.length);
         return value;
@@ -33,362 +33,404 @@ export const useAuthStore = defineStore('auth', () => {
   // Helper function to get token from storage (now includes cookies)
   function getStoredToken() {
     // Priority 1: Check cookie (cross-subdomain)
-    let storedToken = getCookie('auth_token');
+    let storedToken = getCookie("auth_token");
     if (storedToken) {
       return storedToken;
     }
-    
+
     // Priority 2: Check localStorage (remember me)
-    storedToken = localStorage.getItem('auth_token')
+    storedToken = localStorage.getItem("auth_token");
     if (storedToken) {
       // Migrate to cookie for cross-subdomain support
-      setCookie('auth_token', storedToken, 30);
+      setCookie("auth_token", storedToken, 30);
       return storedToken;
     }
-    
+
     // Priority 3: Check sessionStorage (session only)
-    storedToken = sessionStorage.getItem('auth_token')
+    storedToken = sessionStorage.getItem("auth_token");
     if (storedToken) {
       // Set as session cookie (expires when browser closes)
-      setCookie('auth_token', storedToken, 0.04); // ~1 hour
+      setCookie("auth_token", storedToken, 0.04); // ~1 hour
       return storedToken;
     }
-    
-    return null
+
+    return null;
   }
 
   // State
-  const user = ref(null)
-  const token = ref(getStoredToken())
-  const isLoading = ref(false)
-  const error = ref(null)
-  const lastTokenCheck = ref(Date.now())
-  const syncInterval = ref(null)
+  const user = ref(null);
+  const token = ref(getStoredToken());
+  const isLoading = ref(false);
+  const error = ref(null);
+  const lastTokenCheck = ref(Date.now());
+  const syncInterval = ref(null);
 
   // User roles enum - Updated to match API response
   const USER_ROLES = {
-    ADMIN: 'Admin',
-    HEAD_OF_DEPARTMENT: 'Head_Department',  // Updated to match API response
-    TEACHER: 'Teacher',
-    STUDENT: 'Student'
-  }
+    ADMIN: "Admin",
+    HEAD_OF_DEPARTMENT: "Head_Department", // Updated to match API response
+    TEACHER: "Teacher",
+    STUDENT: "Student",
+  };
 
   // Permissions for each role
   const ROLE_PERMISSIONS = {
     [USER_ROLES.ADMIN]: [
-      'manage_users',
-      'manage_courses',
-      'view_reports',
-      'manage_system',
-      'edit_content',
-      'delete_content',
-      'view_all_data',
-      'manage_departments',
-      'approve_budgets'
+      "manage_users",
+      "manage_courses",
+      "view_reports",
+      "manage_system",
+      "edit_content",
+      "delete_content",
+      "view_all_data",
+      "manage_departments",
+      "approve_budgets",
     ],
     [USER_ROLES.HEAD_OF_DEPARTMENT]: [
-      'manage_department_courses',
-      'manage_department_teachers',
-      'view_department_reports',
-      'edit_department_content',
-      'approve_department_requests',
-      'view_department_data',
-      'schedule_classes'
+      "manage_department_courses",
+      "manage_department_teachers",
+      "view_department_reports",
+      "edit_department_content",
+      "approve_department_requests",
+      "view_department_data",
+      "schedule_classes",
     ],
     [USER_ROLES.TEACHER]: [
-      'manage_courses',
-      'edit_content',
-      'view_students',
-      'grade_assignments',
-      'create_assignments'
+      "manage_courses",
+      "edit_content",
+      "view_students",
+      "grade_assignments",
+      "create_assignments",
     ],
     [USER_ROLES.STUDENT]: [
-      'view_courses',
-      'submit_assignments',
-      'view_grades',
-      'view_profile'
-    ]
-  }
+      "view_courses",
+      "submit_assignments",
+      "view_grades",
+      "view_profile",
+    ],
+  };
 
   // Computed properties
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
-  
-  const userRole = computed(() => user.value?.role || USER_ROLES.STUDENT)
-  
-  const userPermissions = computed(() => ROLE_PERMISSIONS[userRole.value] || [])
-  
-  const isAdmin = computed(() => userRole.value === USER_ROLES.ADMIN)
-  
-  const isHeadOfDepartment = computed(() => userRole.value === USER_ROLES.HEAD_OF_DEPARTMENT)
-  
-  const isTeacher = computed(() => userRole.value === USER_ROLES.TEACHER)
-  
-  const isStudent = computed(() => userRole.value === USER_ROLES.STUDENT)
+  const isAuthenticated = computed(() => !!token.value && !!user.value);
+
+  const userRole = computed(() => user.value?.role || USER_ROLES.STUDENT);
+
+  const userPermissions = computed(
+    () => ROLE_PERMISSIONS[userRole.value] || [],
+  );
+
+  const isAdmin = computed(() => userRole.value === USER_ROLES.ADMIN);
+
+  const isHeadOfDepartment = computed(
+    () => userRole.value === USER_ROLES.HEAD_OF_DEPARTMENT,
+  );
+
+  const isTeacher = computed(() => userRole.value === USER_ROLES.TEACHER);
+
+  const isStudent = computed(() => userRole.value === USER_ROLES.STUDENT);
 
   // Actions
   const login = async (credentials, rememberMe = false) => {
     try {
-      isLoading.value = true
-      error.value = null
+      isLoading.value = true;
+      error.value = null;
 
       // Call real API
-      const response = await loginAPI(credentials)
-      
+      const response = await loginAPI(credentials);
+
       if (response.success) {
         // Better role handling - handle different possible role formats
-        let userRole = USER_ROLES.STUDENT // Default to student
-        
+        let userRole = USER_ROLES.STUDENT; // Default to student
+
         if (response.roles && response.roles.length > 0) {
-          const apiRole = response.roles[0] // Get the exact role from API
-          
+          const apiRole = response.roles[0]; // Get the exact role from API
+
           // Map API roles to our internal roles (exact match first)
-          if (apiRole === 'Admin') userRole = USER_ROLES.ADMIN
-          else if (apiRole === 'Teacher') userRole = USER_ROLES.TEACHER
-          else if (apiRole === 'Head_Department') userRole = USER_ROLES.HEAD_OF_DEPARTMENT
-          else if (apiRole === 'Student') userRole = USER_ROLES.STUDENT
+          if (apiRole === "Admin") userRole = USER_ROLES.ADMIN;
+          else if (apiRole === "Teacher") userRole = USER_ROLES.TEACHER;
+          else if (apiRole === "Head_Department")
+            userRole = USER_ROLES.HEAD_OF_DEPARTMENT;
+          else if (apiRole === "Student") userRole = USER_ROLES.STUDENT;
           else {
             // Fallback for case-insensitive and variation matching
-            const lowerApiRole = apiRole.toLowerCase().trim()
-            
-            if (lowerApiRole === 'admin' || lowerApiRole === 'administrator') userRole = USER_ROLES.ADMIN
-            else if (lowerApiRole === 'teacher' || lowerApiRole === 'teachers' || lowerApiRole === 'instructor') userRole = USER_ROLES.TEACHER
-            else if (lowerApiRole.includes('head') || lowerApiRole.includes('department') || lowerApiRole === 'hod') userRole = USER_ROLES.HEAD_OF_DEPARTMENT
-            else if (lowerApiRole === 'student' || lowerApiRole === 'students' || lowerApiRole === 'learner') userRole = USER_ROLES.STUDENT
+            const lowerApiRole = apiRole.toLowerCase().trim();
+
+            if (lowerApiRole === "admin" || lowerApiRole === "administrator")
+              userRole = USER_ROLES.ADMIN;
+            else if (
+              lowerApiRole === "teacher" ||
+              lowerApiRole === "teachers" ||
+              lowerApiRole === "instructor"
+            )
+              userRole = USER_ROLES.TEACHER;
+            else if (
+              lowerApiRole.includes("head") ||
+              lowerApiRole.includes("department") ||
+              lowerApiRole === "hod"
+            )
+              userRole = USER_ROLES.HEAD_OF_DEPARTMENT;
+            else if (
+              lowerApiRole === "student" ||
+              lowerApiRole === "students" ||
+              lowerApiRole === "learner"
+            )
+              userRole = USER_ROLES.STUDENT;
             else {
               // Force teacher role if email contains teacher and role doesn't match
-              if (credentials.email.includes('teacher')) {
-                userRole = USER_ROLES.TEACHER
+              if (credentials.email.includes("teacher")) {
+                userRole = USER_ROLES.TEACHER;
               }
             }
           }
         }
-        
+
         // Set token first so getUserDetail can use it
-        token.value = response.token
-        
+        token.value = response.token;
+
         // Store token in cookie for cross-subdomain access + localStorage/sessionStorage as backup
         if (rememberMe) {
-          setCookie('auth_token', response.token, 30);
-          localStorage.setItem('auth_token', response.token)
+          setCookie("auth_token", response.token, 30);
+          localStorage.setItem("auth_token", response.token);
         } else {
-          setCookie('auth_token', response.token, 0.04);
-          sessionStorage.setItem('auth_token', response.token)
+          setCookie("auth_token", response.token, 0.04);
+          sessionStorage.setItem("auth_token", response.token);
         }
-        
+
         // Fetch complete user details from API
-        const userDetailResponse = await getUserDetail()
-        
+        const userDetailResponse = await getUserDetail();
+
         // Set user data with real data from API
         user.value = {
           id: userDetailResponse.user?.id || userDetailResponse.id,
-          email: userDetailResponse.user?.email || userDetailResponse.email || credentials.email,
-          name: userDetailResponse.user?.name || userDetailResponse.name || 'User',
+          email:
+            userDetailResponse.user?.email ||
+            userDetailResponse.email ||
+            credentials.email,
+          name:
+            userDetailResponse.user?.name || userDetailResponse.name || "User",
           role: userRole,
           permissions: ROLE_PERMISSIONS[userRole] || [],
-          rawRoles: response.roles // Keep original roles for debugging
-        }
-        
+          rawRoles: response.roles, // Keep original roles for debugging
+        };
+
         // identify user
-        console.log('👤 User Data with ID:', user.value)
-        
+        console.log("👤 User Data with ID:", user.value);
+
         // Additional teacher verification
-        if (credentials.email.includes('teacher')) {
+        if (credentials.email.includes("teacher")) {
           // Force role to teacher if email indicates teacher
           if (userRole !== USER_ROLES.TEACHER) {
-            user.value.role = USER_ROLES.TEACHER
-            userRole = USER_ROLES.TEACHER
+            user.value.role = USER_ROLES.TEACHER;
+            userRole = USER_ROLES.TEACHER;
           }
         }
-        
+
         // Store additional auth data and preferences
         if (rememberMe) {
-          localStorage.setItem('remember_me', 'true')
-          localStorage.setItem('remember_me_preference', 'true')
-          localStorage.setItem('user_data', JSON.stringify(user.value))
-          localStorage.setItem('saved_email', credentials.email)
-          localStorage.setItem('saved_password', credentials.password)
+          localStorage.setItem("remember_me", "true");
+          localStorage.setItem("remember_me_preference", "true");
+          localStorage.setItem("user_data", JSON.stringify(user.value));
+          localStorage.setItem("saved_email", credentials.email);
+          localStorage.setItem("saved_password", credentials.password);
         } else {
-          sessionStorage.setItem('user_data', JSON.stringify(user.value))
-          localStorage.removeItem('remember_me')
+          sessionStorage.setItem("user_data", JSON.stringify(user.value));
+          localStorage.removeItem("remember_me");
         }
-        
+
         // Broadcast login to all tabs/windows including cross-domain
-        broadcastAuthChange('login', user.value);
-        
+        broadcastAuthChange("login", user.value);
+
         // Start token sync interval
         startTokenSync();
-        
-        return { success: true, user: user.value }
+
+        return { success: true, user: user.value };
       } else {
-        throw new Error(response.message || 'Login failed')
+        throw new Error(response.message || "Login failed");
       }
     } catch (err) {
-      console.error('Login error:', err)
-      error.value = err.message
-      return { success: false, error: err.message }
+      console.error("Login error:", err);
+      error.value = err.message;
+      return { success: false, error: err.message };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   const logout = () => {
-    user.value = null
-    token.value = null
-    error.value = null
-    
+    user.value = null;
+    token.value = null;
+    error.value = null;
+
     // Clear auth tokens from all storage locations (including cookie)
-    deleteCookie('auth_token');
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('remember_me')
-    localStorage.removeItem('user_data')
-    sessionStorage.removeItem('auth_token')
-    sessionStorage.removeItem('user_data')
-    
+    deleteCookie("auth_token");
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("remember_me");
+    localStorage.removeItem("user_data");
+    sessionStorage.removeItem("auth_token");
+    sessionStorage.removeItem("user_data");
+
     // Broadcast logout to all tabs/windows including cross-domain
-    broadcastAuthChange('logout');
-    
+    broadcastAuthChange("logout");
+
     // Stop sync interval
     if (syncInterval.value) {
       clearInterval(syncInterval.value);
       syncInterval.value = null;
     }
-    
+
     // Note: We keep 'remember_me_preference' and 'saved_email' in localStorage so they persist after logout
-  }
+  };
 
   const checkAuth = async () => {
     if (!token.value) {
-      return false
+      return false;
     }
 
     try {
-      isLoading.value = true
+      isLoading.value = true;
       // Call real API to verify token
-      const response = await verifyTokenAPI(token.value)
-      
+      const response = await verifyTokenAPI(token.value);
+
       if (response.success) {
-        user.value = response.user
-        return true
+        user.value = response.user;
+        return true;
       } else {
-        logout()
-        return false
+        logout();
+        return false;
       }
     } catch (err) {
-      logout()
-      return false
+      logout();
+      return false;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   const hasPermission = (permission) => {
-    return userPermissions.value.includes(permission)
-  }
+    return userPermissions.value.includes(permission);
+  };
 
   const hasAnyPermission = (permissions) => {
-    return permissions.some(permission => userPermissions.value.includes(permission))
-  }
+    return permissions.some((permission) =>
+      userPermissions.value.includes(permission),
+    );
+  };
 
   const hasAllPermissions = (permissions) => {
-    return permissions.every(permission => userPermissions.value.includes(permission))
-  }
+    return permissions.every((permission) =>
+      userPermissions.value.includes(permission),
+    );
+  };
 
   const canAccess = (requiredRole) => {
     const roleHierarchy = {
       [USER_ROLES.STUDENT]: 1,
       [USER_ROLES.TEACHER]: 2,
       [USER_ROLES.HEAD_OF_DEPARTMENT]: 3,
-      [USER_ROLES.ADMIN]: 4
-    }
-    
-    return roleHierarchy[userRole.value] >= roleHierarchy[requiredRole]
-  }
+      [USER_ROLES.ADMIN]: 4,
+    };
+
+    return roleHierarchy[userRole.value] >= roleHierarchy[requiredRole];
+  };
 
   const updateUserProfile = (profileData) => {
     if (user.value) {
-      user.value.profile = { ...user.value.profile, ...profileData }
-      
+      user.value.profile = { ...user.value.profile, ...profileData };
+
       // Update user data in storage based on remember me preference
       if (isRememberMeEnabled()) {
-        localStorage.setItem('user_data', JSON.stringify(user.value))
+        localStorage.setItem("user_data", JSON.stringify(user.value));
       } else {
-        sessionStorage.setItem('user_data', JSON.stringify(user.value))
+        sessionStorage.setItem("user_data", JSON.stringify(user.value));
       }
     }
-  }
+  };
 
   // Load user data from localStorage or sessionStorage
   const loadUserFromStorage = () => {
     // Try localStorage first (remember me)
-    let userData = localStorage.getItem('user_data')
+    let userData = localStorage.getItem("user_data");
     if (userData) {
       try {
-        user.value = JSON.parse(userData)
-        return true
+        user.value = JSON.parse(userData);
+        return true;
       } catch (err) {
-        console.error('Error parsing user data from localStorage:', err)
+        console.error("Error parsing user data from localStorage:", err);
       }
     }
-    
+
     // Try sessionStorage
-    userData = sessionStorage.getItem('user_data')
+    userData = sessionStorage.getItem("user_data");
     if (userData) {
       try {
-        user.value = JSON.parse(userData)
-        return true
+        user.value = JSON.parse(userData);
+        return true;
       } catch (err) {
-        console.error('Error parsing user data from sessionStorage:', err)
+        console.error("Error parsing user data from sessionStorage:", err);
       }
     }
-    
-    return false
-  }
+
+    return false;
+  };
 
   // Helper function to check if remember me is enabled
   const isRememberMeEnabled = () => {
     // Check localStorage preference (more reliable than cookies in development)
-    const localPreference = localStorage.getItem('remember_me_preference')
-    if (localPreference === 'true') return true
-    
+    const localPreference = localStorage.getItem("remember_me_preference");
+    if (localPreference === "true") return true;
+
     // Fallback to current session remember state
-    return localStorage.getItem('remember_me') === 'true'
-  }
+    return localStorage.getItem("remember_me") === "true";
+  };
 
   // Helper function to clear remember me preference
   const clearRememberMePreference = () => {
-    localStorage.removeItem('remember_me')
-    localStorage.removeItem('remember_me_preference')
-    localStorage.removeItem('saved_email')
-    localStorage.removeItem('saved_password')
-  }
+    localStorage.removeItem("remember_me");
+    localStorage.removeItem("remember_me_preference");
+    localStorage.removeItem("saved_email");
+    localStorage.removeItem("saved_password");
+  };
 
   // Helper function to get saved email
   const getSavedEmail = () => {
-    return localStorage.getItem('saved_email') || ''
-  }
+    return localStorage.getItem("saved_email") || "";
+  };
 
   // Helper function to get saved password
   const getSavedPassword = () => {
-    return localStorage.getItem('saved_password') || ''
-  }
+    return localStorage.getItem("saved_password") || "";
+  };
 
   // Helper function to redirect to library with token
   const redirectToLibrary = () => {
     if (token.value) {
       // URL encode the token to handle special characters
-      const encodedToken = encodeURIComponent(token.value)
-      const libraryUrl = `https://library.rtc-bb.camai.kh/index.php?token=${encodedToken}`
+      const encodedToken = encodeURIComponent(token.value);
+      const libraryUrl = `https://library.rtc-bb.camai.kh/index.php?token=${encodedToken}`;
       // Open in new tab instead of replacing current tab
-      window.open(libraryUrl, '_blank')
+      window.open(libraryUrl, "_blank");
     } else {
-      console.error('❌ No token available for library access')
-      throw new Error('No authentication token available. Please login first.')
+      console.error("❌ No token available for library access");
+      throw new Error("No authentication token available. Please login first.");
     }
-  }
+  };
+
+  // Helper function to redirect to Moodle with token
+  // Helper function to redirect to Moodle with token
+  const redirectToMoodle = () => {
+    if (token.value) {
+      const encodedToken = encodeURIComponent(token.value);
+      const moodleUrl = `https://moodle.rtc-bb.camai.kh/?token=${encodedToken}`;
+      window.open(moodleUrl, "_blank");
+    } else {
+      console.error("❌ No token available for Moodle access");
+      throw new Error("No authentication token available. Please login first.");
+    }
+  };
 
   // Initialize user data from storage on store creation
   if (token.value && !user.value) {
-    loadUserFromStorage()
+    loadUserFromStorage();
   }
 
   // Cross-domain authentication synchronization
@@ -399,61 +441,61 @@ export const useAuthStore = defineStore('auth', () => {
         action,
         userData,
         timestamp: Date.now(),
-        source: window.location.hostname
+        source: window.location.hostname,
       };
-      
+
       // Store in localStorage to trigger storage event in other tabs
-      localStorage.setItem('auth_sync', JSON.stringify(authState));
-      
+      localStorage.setItem("auth_sync", JSON.stringify(authState));
+
       // Remove immediately to allow repeated events
       setTimeout(() => {
-        localStorage.removeItem('auth_sync');
+        localStorage.removeItem("auth_sync");
       }, 100);
     } catch (err) {
-      console.error('Error broadcasting auth change:', err);
+      console.error("Error broadcasting auth change:", err);
     }
   };
 
   // Listen for auth changes from other tabs/windows
   const setupAuthSync = () => {
     // Listen for storage events (cross-tab communication)
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'auth_sync' && event.newValue) {
+    window.addEventListener("storage", (event) => {
+      if (event.key === "auth_sync" && event.newValue) {
         try {
           const authState = JSON.parse(event.newValue);
-          
+
           // Don't process our own events
           if (authState.source === window.location.hostname) {
             return;
           }
-          
-          if (authState.action === 'logout') {
+
+          if (authState.action === "logout") {
             // Perform local logout without broadcasting again
             user.value = null;
             token.value = null;
             error.value = null;
-            
+
             // Stop sync interval
             if (syncInterval.value) {
               clearInterval(syncInterval.value);
               syncInterval.value = null;
             }
-            
+
             // Redirect to login page
-            window.location.href = '/login';
-          } else if (authState.action === 'login' && authState.userData) {
+            window.location.href = "/login";
+          } else if (authState.action === "login" && authState.userData) {
             // Update local user data
             user.value = authState.userData;
             token.value = getStoredToken();
-            
+
             // Start token sync
             startTokenSync();
-            
+
             // Reload page to update UI
             window.location.reload();
           }
         } catch (err) {
-          console.error('Error processing auth sync:', err);
+          console.error("Error processing auth sync:", err);
         }
       }
     });
@@ -465,11 +507,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (syncInterval.value) {
       clearInterval(syncInterval.value);
     }
-    
+
     // Check every 5 seconds
     syncInterval.value = setInterval(() => {
       const currentToken = getStoredToken();
-      
+
       // If token changed (different or removed)
       if (currentToken !== token.value) {
         if (!currentToken) {
@@ -477,18 +519,18 @@ export const useAuthStore = defineStore('auth', () => {
           user.value = null;
           token.value = null;
           error.value = null;
-          
+
           if (syncInterval.value) {
             clearInterval(syncInterval.value);
             syncInterval.value = null;
           }
-          
+
           // Redirect to login
-          window.location.href = '/login';
+          window.location.href = "/login";
         } else {
           // Token changed (account switched)
           token.value = currentToken;
-          
+
           // Reload user data from storage or verify with API
           if (!loadUserFromStorage()) {
             // If no user data in storage, verify token with API
@@ -509,7 +551,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize sync on store creation
   setupAuthSync();
-  
+
   // Start token sync if already authenticated
   if (token.value && user.value) {
     startTokenSync();
@@ -519,12 +561,12 @@ export const useAuthStore = defineStore('auth', () => {
   const loginAPI = async (credentials) => {
     try {
       // Use axios instead of fetch
-      const response = await api.post('/auth/login', {
+      const response = await api.post("/auth/login", {
         email: credentials.email,
         password: credentials.password,
-      })
+      });
 
-      const data = response.data
+      const data = response.data;
 
       if (response.status === 200 && data.message === "Login successful") {
         return {
@@ -532,62 +574,62 @@ export const useAuthStore = defineStore('auth', () => {
           user: data.user || {},
           token: data.token,
           roles: data.roles || [],
-          message: data.message
-        }
+          message: data.message,
+        };
       } else {
         return {
           success: false,
-          message: data.message || 'Login failed'
-        }
+          message: data.message || "Login failed",
+        };
       }
     } catch (error) {
-      console.error('🔥 Login API error:', error)
-      
+      console.error("🔥 Login API error:", error);
+
       // Handle axios error response
       if (error.response) {
         return {
           success: false,
-          message: error.response.data?.message || 'Login failed'
-        }
+          message: error.response.data?.message || "Login failed",
+        };
       }
-      
+
       return {
         success: false,
-        message: 'Network error. Please check your connection and try again.'
-      }
+        message: "Network error. Please check your connection and try again.",
+      };
     }
-  }
+  };
 
   const verifyTokenAPI = async (token) => {
     try {
       // Use axios instead of fetch
-      const response = await api.get('/auth/me', {
+      const response = await api.get("/auth/me", {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const data = response.data
+      const data = response.data;
 
       if (response.status === 200) {
         return {
           success: true,
-          user: data.user || data.data?.user
-        }
+          user: data.user || data.data?.user,
+        };
       } else {
         return {
           success: false,
-          message: data.message || 'Token verification failed'
-        }
+          message: data.message || "Token verification failed",
+        };
       }
     } catch (error) {
-      console.error('Token verification error:', error)
+      console.error("Token verification error:", error);
       return {
         success: false,
-        message: 'Network error during token verification'
-      }
+        message: "Network error during token verification",
+      };
     }
-  }
+  };
 
   return {
     // State
@@ -597,7 +639,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     USER_ROLES,
     ROLE_PERMISSIONS,
-    
+
     // Computed
     isAuthenticated,
     userRole,
@@ -606,10 +648,10 @@ export const useAuthStore = defineStore('auth', () => {
     isHeadOfDepartment,
     isTeacher,
     isStudent,
-    
+
     // Constants
     USER_ROLES,
-    
+
     // Actions
     login,
     logout,
@@ -625,9 +667,10 @@ export const useAuthStore = defineStore('auth', () => {
     getSavedPassword,
     loadUserFromStorage,
     redirectToLibrary,
-    
+    redirectToMoodle,
+
     // Sync functions
     startTokenSync,
-    broadcastAuthChange
-  }
-})
+    broadcastAuthChange,
+  };
+});

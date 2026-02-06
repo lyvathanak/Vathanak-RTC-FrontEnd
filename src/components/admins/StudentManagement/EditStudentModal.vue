@@ -87,7 +87,7 @@
                     <!-- Photo -->
                     <div class="flex flex-col items-center">
                       <div
-                        class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
+                        class="w-30 h-38 mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
                         <img
                           v-if="previewSrc"
                           :src="previewSrc"
@@ -748,21 +748,12 @@
 
           <!-- Footer -->
           <div
-            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-grey-50 flex items-center justify-between">
-            <button
-              class="px-3 sm:px-4 py-2 text-sm rounded-lg border bg-red-600 hover:bg-red-500 text-white transition-colors"
-              @click="close">
-              {{ $t("cancel") }}
-            </button>
-
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-grey-50 flex items-center justify-end">
             <div class="flex gap-2 sm:gap-3">
               <button
-                class="px-3 sm:px-4 py-2 text-sm rounded-lg bg-[#FF7700] hover:bg-[#e66600] text-white transition-colors"
-                @click="emitPromote">
-                <span class="hidden sm:inline">{{
-                  $t("promote_student")
-                }}</span>
-                <span class="sm:hidden">Promote</span>
+                class="px-3 sm:px-4 py-2 text-sm rounded-lg border bg-red-600 hover:bg-red-500 text-white transition-colors"
+                @click="close">
+                {{ $t("cancel") }}
               </button>
               <button
                 class="px-3 sm:px-4 py-2 text-sm rounded-lg bg-[#235AA6] hover:bg-[#1e4a91] text-white transition-colors"
@@ -792,6 +783,9 @@ import { showNotification } from "@/lib/notifications.js";
 import { useI18n } from "vue-i18n";
 
 const { t, locale } = useI18n();
+
+// File origin for backend storage URLs
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
 
 /** Props / Emits */
 const props = defineProps({
@@ -924,20 +918,16 @@ const previewSrc = computed(() => {
     return form.value.profile_picture;
   }
 
-  // 3. Otherwise, construct the backend URL like ViewStudentModal does
-  const imageFile =
-    form.value.profile_picture ||
-    props.student?.profile_picture ||
-    props.student?.photo_url ||
-    props.student?.user_detail?.profile_picture;
+  // 3. Otherwise, construct the backend URL
+  const imageFile = form.value.profile_picture || form.value.user_detail?.profile_picture;
 
   if (imageFile) {
     // If it's already a full URL, return as is
     if (imageFile.startsWith("http")) {
       return imageFile;
     }
-    // Otherwise, construct the full URL exactly like ViewStudentModal
-    return `https://api.rtc-bb.camai.kh/storage/${imageFile}`;
+    // Otherwise, construct the full URL using FILE_ORIGIN
+    return `${FILE_ORIGIN}/storage/${imageFile}`;
   }
 
   return "";

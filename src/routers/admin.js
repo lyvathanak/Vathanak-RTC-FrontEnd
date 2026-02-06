@@ -2,7 +2,6 @@ import { requireRole } from './guards.js';
 export const adminRoutes = [
   {
     path: '/:lang(en|fr|kh)/admin',
-    // name: 'AdminLayout',
     meta: { requiresAuth: true, role: 'Admin' },
     beforeEnter: requireRole('Admin'),
     component: () => import('@/views/admins/Dashboard.vue'),
@@ -47,11 +46,11 @@ export const adminRoutes = [
         name: 'AdminDepartmentManagement',
         component: () => import('@/views/admins/DepartmentManagement.vue'),
       },
-       {
+      {
         path: 'departments/:deptId',
         name: 'AdminDepartmentDetails',
         component: () => import('@/views/admins/DepartmentManagement.vue'),
-        props: true, // exposes route.params.deptId to the page if you want
+        props: true,
       },
       {
         path: 'subjects',
@@ -88,6 +87,19 @@ export const adminRoutes = [
         name: 'AdminLeaveRequestManagement',
         component: () => import('@/views/admins/LeaveRequestManagement.vue'),
       },
+      // ADD MISSION RECORD ROUTE HERE (after leave-requests, before CV management)
+      {
+        path: 'mission-records',
+        name: 'AdminMissionRecordManagement',
+        component: () => import('@/views/admins/MissionRecordManagement.vue'),
+        meta: { requiresAuth: true, role: 'Admin' }
+      },
+      {
+        path: 'cv-management',
+        name: 'CVManagement', 
+        component: () => import('@/views/admins/CVManagement.vue'),
+        meta: { requiresAuth: true, role: 'admin' }
+      },
       {
         path: 'feedback',
         name: 'AdminFeedbackManagement',
@@ -113,6 +125,18 @@ export const adminRoutes = [
         name: 'AdminSetting',
         component: () => import('@/views/admins/Setting.vue'),
       },
+      {
+        path: 'certificate-workshop',
+        name: 'AdminWorkshopCertificateManagement',
+        component: () => import('@/views/admins/WorkshopCertificateDashboard.vue'),
+      },
+      {
+        path: 'overtime-class',
+        name: 'AdminOvertimeClass',
+        component: () => import('@/views/admins/OvertimeClass.vue'),
+      },
+
+
       // Catch-all route for invalid admin paths
       {
         path: ':pathMatch(.*)*',

@@ -4,11 +4,11 @@
   >
     <!-- Left -->
     <div>
-      <div class="text-3xl font-bold" :class="color">
-        {{ value }}
-      </div>
       <div class="text-gray-500 text-sm font-medium mt-1">
         {{ label }}
+      </div>
+      <div class="text-3xl font-bold" :class="color">
+        {{ value }}
       </div>
     </div>
 

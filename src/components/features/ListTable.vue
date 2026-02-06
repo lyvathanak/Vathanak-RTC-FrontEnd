@@ -1,63 +1,137 @@
 <template>
-  <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="overflow-x-auto">
+  <div
+    class="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <!-- Scroll container -->
+    <div
+      ref="scrollRef"
+      class="overflow-x-auto"
+      :class="[compact ? 'text-[13px]' : 'text-sm', 'relative']">
       <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr class="text-xs uppercase text-gray-500">
-            <th v-if="showSelection" class="w-10 px-3 py-3">
+        <!-- Header -->
+        <thead
+          class="bg-gray-50 sticky top-0 z-10"
+          :class="scrolled ? 'shadow-sm' : ''">
+          <tr class="text-[11px] uppercase tracking-wide text-gray-500">
+            <!-- Select all -->
+            <th v-if="showSelection" class="w-12 px-3 py-3">
               <input
+                ref="selectAllRef"
                 type="checkbox"
                 :checked="isAllSelected"
                 @change="handleSelectAll"
-                :indeterminate="isIndeterminate" />
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30" />
             </th>
+
+            <!-- columns -->
             <th
               v-for="column in visibleColumns"
               :key="column.key"
-              class="px-3 py-3 text-left font-medium"
-              :class="column.sortable ? 'cursor-pointer hover:bg-gray-100' : ''"
+              class="px-3 py-3 text-left font-semibold text-gray-600"
+              :class="column.sortable ? 'cursor-pointer select-none' : ''"
               @click="column.sortable ? handleSort(column.key) : null">
-              <div class="flex items-center gap-1">
-                <span>{{ column.label }}</span>
+              <div
+                class="flex items-center gap-1.5 rounded-lg px-2 py-1 -mx-2 transition"
+                :class="
+                  column.sortable
+                    ? 'hover:bg-gray-100 active:bg-gray-200/60'
+                    : ''
+                ">
+                <span class="truncate">{{ column.label }}</span>
+
                 <span
-                  v-if="column.sortable && sortField === column.key"
-                  class="text-gray-400">
-                  {{ sortDirection === "asc" ? "↑" : "↓" }}
+                  v-if="column.sortable"
+                  class="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                  <span v-if="sortField === column.key">
+                    {{ sortDirection === "asc" ? "↑" : "↓" }}
+                  </span>
+                  <span v-else class="opacity-0 group-hover:opacity-100"
+                    >↕</span
+                  >
                 </span>
               </div>
             </th>
-            <th v-if="showActions" class="px-3 py-3 text-left font-medium">
+
+            <th
+              v-if="showActions"
+              class="px-3 py-3 text-left font-semibold text-gray-600">
               Action
             </th>
           </tr>
         </thead>
 
-        <tbody class="divide-y divide-gray-100 text-sm">
+        <tbody class="divide-y divide-gray-100">
+          <!-- Loading State -->
+          <tr v-if="loading">
+            <td :colspan="totalColumns" class="px-3 py-14 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <div
+                  class="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-blue-600" />
+                <div class="text-sm text-gray-500">{{ loadingMessage }}</div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Empty State -->
+          <tr v-else-if="data.length === 0">
+            <td :colspan="totalColumns" class="px-3 py-16 text-center">
+              <div class="mx-auto max-w-md flex flex-col items-center gap-2">
+                <div
+                  class="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-500">
+                  <!-- simple empty icon -->
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    class="h-6 w-6"
+                    stroke="currentColor"
+                    stroke-width="2">
+                    <path d="M4 7h16M4 12h10M4 17h16" />
+                  </svg>
+                </div>
+
+                <div class="text-sm font-semibold text-gray-800">
+                  {{ emptyStateTitle }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ emptyStateMessage }}
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Rows -->
           <tr
+            v-else
             v-for="(row, index) in data"
             :key="getRowKey(row, index)"
-            class="hover:bg-gray-50 transition-colors"
-            :class="{ 'bg-blue-50': selectedIds.includes(getRowId(row)) }">
-            <td v-if="showSelection" class="px-3 py-3">
+            class="transition-colors"
+            :class="[
+              zebra && index % 2 === 1 ? 'bg-gray-50/40' : '',
+              selectedIds.includes(getRowId(row))
+                ? 'bg-blue-50/70'
+                : 'hover:bg-gray-50',
+            ]">
+            <!-- selection checkbox -->
+            <td v-if="showSelection" class="px-3 py-3 align-middle">
               <input
                 type="checkbox"
                 :value="getRowId(row)"
                 :checked="selectedIds.includes(getRowId(row))"
-                @change="handleRowSelect(getRowId(row))" />
+                @change="handleRowSelect(getRowId(row))"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500/30" />
             </td>
 
             <!-- Dynamic Columns -->
             <td
               v-for="column in visibleColumns"
               :key="column.key"
-              class="px-3 py-3 text-gray-700">
+              class="px-3 py-3 text-gray-700 align-middle"
+              :class="compact ? 'py-2.5' : 'py-3'">
               <slot
                 :name="`column-${column.key}`"
                 :row="row"
                 :value="getValue(row, column.key)"
                 :column="column"
                 :index="index">
-                <!-- Default column rendering -->
                 <span
                   v-if="column.type === 'badge'"
                   :class="
@@ -65,87 +139,110 @@
                   ">
                   {{ formatValue(getValue(row, column.key), column) }}
                 </span>
-                <span v-else>
+
+                <span v-else class="truncate block">
                   {{ formatValue(getValue(row, column.key), column) }}
                 </span>
               </slot>
             </td>
 
-            <!-- Actions Column -->
-            <td v-if="showActions" class="px-3 py-3 text-gray-700">
-              <div class="flex items-center gap-2 action-buttons">
+            <!-- Actions -->
+            <td v-if="showActions" class="px-3 py-3 align-middle">
+              <div class="flex items-center gap-2">
                 <button
                   v-if="showViewAction"
-                  class="inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 px-2.5 py-1.5 transition-colors"
+                  type="button"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
                   :title="viewActionTitle"
                   @click="$emit('view', row)">
                   <Eye class="size-4" />
                 </button>
+
                 <button
                   v-if="showEditAction"
-                  class="inline-flex items-center justify-center rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 transition-colors"
+                  type="button"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-blue-200 text-blue-700 hover:bg-blue-50 active:bg-blue-100/60 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
                   :title="editActionTitle"
                   @click="$emit('edit', row)">
                   <Pencil class="size-4" />
                 </button>
+
                 <button
                   v-if="showCloneAction"
-                  class="inline-flex items-center justify-center rounded-md border border-green-200 text-green-600 hover:bg-green-50 px-2.5 py-1.5 transition-colors"
+                  type="button"
+                  class="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-green-200 text-green-700 hover:bg-green-50 active:bg-green-100/60 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
                   :title="cloneActionTitle"
                   @click="$emit('clone', row)">
                   <Copy class="size-4" />
                 </button>
+
+                <!-- Delete dialog -->
                 <AlertDialog>
                   <AlertDialogTrigger as-child>
                     <button
                       v-if="showDeleteAction"
-                      class="inline-flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 px-2.5 py-1.5 transition-colors"
+                      type="button"
+                      class="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 active:bg-red-100/60 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition"
                       :title="deleteActionTitle">
                       <Trash2 class="size-4" />
                     </button>
                   </AlertDialogTrigger>
+
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle :class="isKhmer ? 'khmer-text' : ''">{{
-                        $t("delete_item")
-                      }}</AlertDialogTitle>
+                      <AlertDialogTitle :class="isKhmer ? 'khmer-text' : ''">
+                        {{ $t("delete_item") }}
+                      </AlertDialogTitle>
                       <AlertDialogDescription
                         :class="isKhmer ? 'khmer-text' : ''">
                         {{ $t("delete_item_confirm") }}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+
                     <AlertDialogFooter>
-                      <AlertDialogCancel :class="isKhmer ? 'khmer-text' : ''">{{
-                        $t("cancel")
-                      }}</AlertDialogCancel>
+                      <AlertDialogCancel :class="isKhmer ? 'khmer-text' : ''">
+                        {{ $t("cancel") }}
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         class="bg-red-600 hover:bg-red-700 text-white"
                         :class="isKhmer ? 'khmer-text' : ''"
-                        @click="$emit('delete', row)"
-                        >{{ $t("delete") }}</AlertDialogAction
-                      >
+                        @click="$emit('delete', row)">
+                        {{ $t("delete") }}
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
 
-                <!-- Custom Actions Slot -->
-                <slot name="actions" :row="row" :index="index"></slot>
-              </div>
-            </td>
-          </tr>
-
-          <!-- Loading State -->
-          <tr v-if="loading">
-            <td :colspan="totalColumns" class="px-3 py-12 text-center">
-              <div class="flex flex-col items-center gap-2">
-                <div
-                  class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <div class="text-sm text-gray-500">{{ loadingMessage }}</div>
+                <slot name="actions" :row="row" :index="index" />
               </div>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Optional footer: shows selection count (auto-hides if no selection feature) -->
+    <div
+      v-if="showSelection"
+      class="border-t bg-white px-4 py-3 text-xs text-gray-600 flex items-center justify-between">
+      <span>
+        Selected:
+        <span class="font-semibold text-gray-800">{{
+          selectedIds.length
+        }}</span>
+        /
+        <span class="font-semibold text-gray-800">{{ data.length }}</span>
+      </span>
+
+      <span class="text-gray-400">
+        {{
+          isIndeterminate
+            ? "Partial selection"
+            : isAllSelected
+              ? "All selected"
+              : ""
+        }}
+      </span>
     </div>
   </div>
 </template>
@@ -162,120 +259,67 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { computed, defineProps, defineEmits } from "vue";
+
+import { computed, defineProps, defineEmits, ref, watch, onMounted } from "vue";
 import { Eye, Pencil, Trash2, Copy } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
 
 const { locale } = useI18n();
 const isKhmer = computed(() => locale.value === "kh");
 
-// Props
 const props = defineProps({
-  // Data props
-  data: {
-    type: Array,
-    default: () => [],
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
+  data: { type: Array, default: () => [] },
+  loading: { type: Boolean, default: false },
 
-  // Row identification
-  rowKey: {
-    type: [String, Function],
-    default: "id_card",
-  },
+  rowKey: { type: [String, Function], default: "id_card" },
 
-  // Selection props
-  showSelection: {
-    type: Boolean,
-    default: false,
-  },
-  selectedIds: {
-    type: Array,
-    default: () => [],
-  },
+  showSelection: { type: Boolean, default: false },
+  selectedIds: { type: Array, default: () => [] },
 
-  // Column configuration
-  columns: {
-    type: Array,
-    required: true,
-  },
+  columns: { type: Array, required: true },
 
-  // Sorting props
-  sortField: {
-    type: String,
-    default: "",
-  },
+  sortField: { type: String, default: "" },
   sortDirection: {
     type: String,
     default: "asc",
-    validator: (value) => ["asc", "desc"].includes(value),
+    validator: (v) => ["asc", "desc"].includes(v),
   },
 
-  // Action props
-  showActions: {
-    type: Boolean,
-    default: true,
-  },
-  showViewAction: {
-    type: Boolean,
-    default: true,
-  },
-  showEditAction: {
-    type: Boolean,
-    default: true,
-  },
-  showCloneAction: {
-    type: Boolean,
-    default: false,
-  },
-  showDeleteAction: {
-    type: Boolean,
-    default: true,
-  },
+  showActions: { type: Boolean, default: true },
+  showViewAction: { type: Boolean, default: true },
+  showEditAction: { type: Boolean, default: true },
+  showCloneAction: { type: Boolean, default: false },
+  showDeleteAction: { type: Boolean, default: true },
 
-  // Action titles (for accessibility)
-  viewActionTitle: {
-    type: String,
-    default: "View details",
-  },
-  editActionTitle: {
-    type: String,
-    default: "Edit item",
-  },
-  cloneActionTitle: {
-    type: String,
-    default: "Clone item",
-  },
-  deleteActionTitle: {
-    type: String,
-    default: "Delete item",
-  },
+  viewActionTitle: { type: String, default: "View details" },
+  editActionTitle: { type: String, default: "Edit item" },
+  cloneActionTitle: { type: String, default: "Clone item" },
+  deleteActionTitle: { type: String, default: "Delete item" },
 
-  // Empty state customization
-  emptyStateTitle: {
-    type: String,
-    default: "No data found",
-  },
-  emptyStateMessage: {
-    type: String,
-    default: "There is no data to display.",
-  },
+  emptyStateTitle: { type: String, default: "No data found" },
+  emptyStateMessage: { type: String, default: "There is no data to display." },
 
-  // Loading message
-  loadingMessage: {
-    type: String,
-    default: "Loading...",
-  },
+  loadingMessage: { type: String, default: "Loading..." },
+
+  // ✅ UI toggles (optional; safe defaults)
+  zebra: { type: Boolean, default: true },
+  compact: { type: Boolean, default: false },
 });
 
-// Emits
-const emit = defineEmits(["view","edit","clone","delete","select","selectAll","sort"]);
+const emit = defineEmits([
+  "view",
+  "edit",
+  "clone",
+  "delete",
+  "select",
+  "selectAll",
+  "sort",
+]);
 
-// Computed properties
-const visibleColumns = computed(() => props.columns.filter(c => c.visible !== false));
+const visibleColumns = computed(() =>
+  props.columns.filter((c) => c.visible !== false),
+);
+
 const totalColumns = computed(() => {
   let count = visibleColumns.value.length;
   if (props.showSelection) count++;
@@ -283,40 +327,45 @@ const totalColumns = computed(() => {
   return count;
 });
 
-const isAllSelected = computed(() => {
-  return (
-    props.data.length > 0 && props.selectedIds.length === props.data.length
-  );
+const isAllSelected = computed(
+  () => props.data.length > 0 && props.selectedIds.length === props.data.length,
+);
+
+const isIndeterminate = computed(
+  () =>
+    props.selectedIds.length > 0 &&
+    props.selectedIds.length < props.data.length,
+);
+
+/** ✅ Fix indeterminate (Vue requires setting DOM property) */
+const selectAllRef = ref(null);
+watch(isIndeterminate, (val) => {
+  if (selectAllRef.value) selectAllRef.value.indeterminate = val;
 });
 
-const isIndeterminate = computed(() => {
-  return (
-    props.selectedIds.length > 0 && props.selectedIds.length < props.data.length
-  );
+/** ✅ Sticky header shadow on scroll */
+const scrollRef = ref(null);
+const scrolled = ref(false);
+onMounted(() => {
+  const el = scrollRef.value;
+  if (!el) return;
+  const onScroll = () => (scrolled.value = el.scrollTop > 0);
+  el.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 });
 
-// Helper methods
-const getRowKey = (row, index) => {
-  if (typeof props.rowKey === "function") {
-    return props.rowKey(row, index);
-  }
-  return row[props.rowKey] || index;
-};
+const getRowKey = (row, index) =>
+  typeof props.rowKey === "function"
+    ? props.rowKey(row, index)
+    : row[props.rowKey] || index;
 
-const getRowId = (row) => {
-  if (typeof props.rowKey === "function") {
-    return props.rowKey(row);
-  }
-  return row[props.rowKey];
-};
+const getRowId = (row) =>
+  typeof props.rowKey === "function" ? props.rowKey(row) : row[props.rowKey];
 
-const getValue = (row, key) => {
-  return key.split(".").reduce((obj, k) => obj?.[k], row);
-};
+const getValue = (row, key) => key.split(".").reduce((obj, k) => obj?.[k], row);
 
 const formatValue = (value, column) => {
   if (value === null || value === undefined) return "N/A";
-
   switch (column.type) {
     case "date":
       return formatDate(value);
@@ -333,7 +382,7 @@ const formatDate = (dateString) => {
   if (!dateString) return "N/A";
   try {
     return new Date(dateString).toLocaleDateString();
-  } catch (error) {
+  } catch {
     return dateString;
   }
 };
@@ -352,131 +401,53 @@ const formatNumber = (number) => {
 };
 
 const getBadgeClass = (value, badgeConfig = {}) => {
-  const baseClasses =
+  const base =
     "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
-
-  if (badgeConfig.classes && badgeConfig.classes[value]) {
-    return `${baseClasses} ${badgeConfig.classes[value]}`;
-  }
-
-  return `${baseClasses} bg-gray-100 text-gray-800`;
+  if (badgeConfig.classes && badgeConfig.classes[value])
+    return `${base} ${badgeConfig.classes[value]}`;
+  return `${base} bg-gray-100 text-gray-800`;
 };
 
-// Event handlers
-const handleSelectAll = () => emit("selectAll", isAllSelected.value ? [] : props.data.map(getRowId));
+const handleSelectAll = () =>
+  emit("selectAll", isAllSelected.value ? [] : props.data.map(getRowId));
 const handleRowSelect = (id) => emit("select", id);
+
 const handleSort = (field) => {
-  const column = props.columns.find(c => c.key === field);
-  if(!column || !column.sortable) return;
-  let dir = props.sortField === field && props.sortDirection === 'asc' ? 'desc' : 'asc';
-  emit("sort",{field,direction: dir});
+  const column = props.columns.find((c) => c.key === field);
+  if (!column || !column.sortable) return;
+  const dir =
+    props.sortField === field && props.sortDirection === "asc" ? "desc" : "asc";
+  emit("sort", { field, direction: dir });
 };
 
-// Expose methods
-defineExpose({getValue, formatValue, formatDate, formatCurrency, formatNumber, getBadgeClass});
+defineExpose({
+  getValue,
+  formatValue,
+  formatDate,
+  formatCurrency,
+  formatNumber,
+  getBadgeClass,
+});
 </script>
 
 <style scoped>
-/* Custom checkbox indeterminate state */
-input[type="checkbox"]:indeterminate {
-  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M4 8h8'/%3e%3c/svg%3e");
-  background-color: #3b82f6;
-  border-color: #3b82f6;
-}
-
-/* Loading animation */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-/* Table responsive styles */
-@media (max-width: 768px) {
-  table {
-    font-size: 12px;
-  }
-
-  .px-3 {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-
-  .py-3 {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-}
-
-/* Enhanced responsive styles for horizontal scroll */
+/* Scrollbar */
 .overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e0 #f7fafc;
 }
-
 .overflow-x-auto::-webkit-scrollbar {
   height: 8px;
 }
-
 .overflow-x-auto::-webkit-scrollbar-track {
   background: #f7fafc;
   border-radius: 4px;
 }
-
 .overflow-x-auto::-webkit-scrollbar-thumb {
   background: #cbd5e0;
   border-radius: 4px;
 }
-
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: #a0aec0;
-}
-
-/* Ensure minimum width for table on mobile */
-@media (max-width: 640px) {
-  table {
-    min-width: 600px; /* Ensures horizontal scroll on very small screens */
-  }
-
-  /* Compact action buttons on mobile */
-  .action-buttons button {
-    padding: 0.375rem 0.5rem;
-  }
-
-  .action-buttons .size-4 {
-    width: 1rem;
-    height: 1rem;
-  }
-}
-
-/* Hover effects */
-tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-/* Selection highlight */
-tbody tr.bg-blue-50:hover {
-  background-color: #dbeafe;
-}
-
-/* Focus styles for accessibility */
-button:focus,
-input:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Button transitions */
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Badge styles */
-.inline-flex {
-  white-space: nowrap;
 }
 </style>

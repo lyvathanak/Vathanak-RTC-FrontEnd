@@ -47,6 +47,7 @@
 
   <!-- New Time Table -->
   <button
+    v-if="!hasExistingTimeTable"
     type="button"
     @click="createNewTimeTable"
     class="
@@ -312,10 +313,28 @@
       hide-view-selector
       @ready="onCalendarReady"
       @view-change="onViewChange"
+      @event-duration-change="onEventDurationChange"
       @event-drop="onEventDrop"
+      @event-resize="onEventResize"
       @event-dblclick="onEventDoubleClick"
       @cell-click="onCellClick"
     />
+    
+    <!-- Time Preview Overlay (shown during drag/resize) -->
+    <div v-if="showTimePreview" class="time-preview-overlay">
+      <div class="time-preview-card">
+        <div class="preview-title">Preview Time</div>
+        <div class="preview-time-row">
+          <span class="preview-label">Start:</span>
+          <span class="preview-value">{{ previewStartTime }}</span>
+        </div>
+        <div class="preview-time-row">
+          <span class="preview-label">End:</span>
+          <span class="preview-value">{{ previewEndTime }}</span>
+        </div>
+        <div class="preview-date">{{ previewDate }}</div>
+      </div>
+    </div>
     
     <!-- Edit Event Modal -->
     <EditSaveSlots
@@ -401,6 +420,15 @@
         </div>
       </div>
     </div>
+
+    <!-- Error Modal -->
+    <ErrorModal
+      v-if="showErrorModal"
+      :title="errorModalTitle"
+      :message="errorModalMessage"
+      :details="errorModalDetails"
+      @close="showErrorModal = false"
+    />
   </div>
 </template>
 
@@ -415,6 +443,7 @@ import NewSlotModal from "@/components/admins/slote_time_table/NewSlotModal.vue"
 import CreateTimeTableModal from "@/components/admins/slote_time_table/CreateTimeTableModal.vue";
 import DeleteTimeTableModal from "@/components/admins/slote_time_table/DeleteTimeTableModal.vue";
 import NoTimetableModal from "@/components/admins/slote_time_table/NoTimetableModal.vue";
+import ErrorModal from "@/components/admins/slote_time_table/ErrorModal.vue";
 </script>
 
 <script>
@@ -426,6 +455,7 @@ export default {
     NewSlotModal,
     CreateTimeTableModal,
     DeleteTimeTableModal,
+    ErrorModal,
   },
 
   data() {
@@ -481,6 +511,20 @@ export default {
       showCloneResultModal: false,
       cloneResultMessage: '',
       cloneResultType: 'success',
+      
+      // Error modal
+      showErrorModal: false,
+      errorModalTitle: 'Error',
+      errorModalMessage: '',
+      errorModalDetails: '',
+      
+      // Drag/Resize time preview
+      showTimePreview: false,
+      previewStartTime: '',
+      previewEndTime: '',
+      previewDate: '',
+      resizeTimeout: null,
+      lastResizedEvent: null,
       
       // Time table ID for the current group
       timeTableId: null,
@@ -551,6 +595,10 @@ export default {
         this.maxDate !== null
       );
     },
+    // Check if timetable exists for current group
+    hasExistingTimeTable() {
+      return this.timeTableId !== null && this.timeTableId !== undefined;
+    },
     // Get selected semester details
     selectedSemester() {
       return this.semesters.find(s => s.id === this.selectedSemesterId) || null;
@@ -566,6 +614,9 @@ export default {
 
   async mounted() {
     this.updateTitle();
+    
+    // Add global mouseup listener to close time preview
+    document.addEventListener('mouseup', this.hideTimePreview);
 
     // Fetch departments first
     await this.fetchDepartments();
@@ -586,8 +637,34 @@ export default {
     // Note: Don't call fetchSemestersAndAcademicYears here
     // The program watcher will handle organizing semesters when program is selected
   },
+  
+  beforeUnmount() {
+    // Clean up event listener
+    document.removeEventListener('mouseup', this.hideTimePreview);
+    
+    // Clean up timeout
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+  },
 
   methods: {
+    hideTimePreview() {
+      // Hide the time preview when mouse is released
+      if (this.showTimePreview) {
+        this.showTimePreview = false;
+      }
+    },
+    
+    snapToInterval(date, intervalMinutes = 15) {
+      // Snap time to nearest interval (default 15 minutes)
+      const d = new Date(date);
+      const minutes = d.getHours() * 60 + d.getMinutes();
+      const snappedMinutes = Math.round(minutes / intervalMinutes) * intervalMinutes;
+      
+      d.setHours(Math.floor(snappedMinutes / 60), snappedMinutes % 60, 0, 0);
+      return d;
+    },
     parseDate(dateStr) {
       const [day, month, year] = dateStr.split('-');
       return new Date(year, month - 1, day);
@@ -1231,20 +1308,314 @@ export default {
       }
     },
 
+    onEventDurationChange(event) {
+      // Show and update time preview during drag or resize
+      console.log('Duration change event:', event);
+      // Access event.event for the actual event object
+      const eventObj = event.event || event;
+      if (eventObj && eventObj.start && eventObj.end) {
+        // Snap times to 15-minute intervals for user-friendly display
+        const snappedStart = this.snapToInterval(eventObj.start, 15);
+        const snappedEnd = this.snapToInterval(eventObj.end, 15);
+        
+        console.log('Original times:', { start: eventObj.start, end: eventObj.end });
+        console.log('Snapped times:', { start: snappedStart, end: snappedEnd });
+        
+        // Update the actual event object with snapped times
+        // This makes Vue Cal display the snapped position immediately
+        eventObj.start = snappedStart;
+        eventObj.end = snappedEnd;
+        eventObj.startTimeMinutes = snappedStart.getHours() * 60 + snappedStart.getMinutes();
+        eventObj.endTimeMinutes = snappedEnd.getHours() * 60 + snappedEnd.getMinutes();
+        
+        // Force Vue Cal to update the display
+        this.$nextTick(() => {
+          if (this.$refs.vuecal) {
+            this.$refs.vuecal.$forceUpdate();
+          }
+        });
+        
+        // Update preview with snapped times
+        this.updateTimePreview(eventObj);
+        this.showTimePreview = true;
+        
+        // Store the event with snapped times for later update
+        this.lastResizedEvent = eventObj;
+        
+        // Clear any existing timeout
+        if (this.resizeTimeout) {
+          clearTimeout(this.resizeTimeout);
+        }
+        
+        // Set a new timeout to trigger update after user stops resizing (300ms)
+        this.resizeTimeout = setTimeout(() => {
+          console.log(' Resize stopped, triggering update...');
+          this.handleResizeComplete(this.lastResizedEvent);
+        }, 300);
+      }
+    },
+    
+    handleResizeComplete(event) {
+      console.log('Handling resize complete:', event);
+      // Hide the preview
+      this.showTimePreview = false;
+      
+      // Call the same logic as onEventResize
+      const startTime = new Date(event.start);
+      const endTime = new Date(event.end);
+      const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+      const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+      
+      console.log('Resize complete times:', { startMinutes, endMinutes, start: event.start, end: event.end });
+      
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 18 * 60; // 6:00 PM
+
+      // Auto-snap to boundaries if slightly out of range
+      if (startMinutes < minTime && startMinutes >= (minTime - 60)) {
+        // If resized to start between 6:00-6:59, snap to 7:00
+        console.log("Snapping resize start time from", startMinutes, "to 7:00 AM");
+        const newStartMinutes = minTime;
+        
+        // Update the event start time
+        const newStartTime = new Date(event.start);
+        newStartTime.setHours(Math.floor(newStartMinutes / 60), newStartMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.start = newStartTime;
+        event.startTimeMinutes = newStartMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event resized and snapped to valid range:", event);
+        this.updateDraggedEvent(event);
+        return;
+      }
+      
+      if (endMinutes > maxTime && endMinutes <= (maxTime + 60)) {
+        // If resized to end between 18:01-19:00, snap end to 18:00
+        console.log("Snapping resize end time from", endMinutes, "to 6:00 PM");
+        const newEndMinutes = maxTime;
+        
+        // Update the event end time
+        const newEndTime = new Date(event.end);
+        newEndTime.setHours(Math.floor(newEndMinutes / 60), newEndMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.end = newEndTime;
+        event.endTimeMinutes = newEndMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event resized and snapped to valid range:", event);
+        this.updateDraggedEvent(event);
+        return;
+      }
+
+      if (startMinutes < minTime || endMinutes > maxTime) {
+        // Completely out of range - revert and show edit modal
+        console.log("Event resized out of range, reverting and opening edit modal:", event);
+        
+        // Revert the event to its original position by refreshing
+        this.fetchTimeSloteBYGroupId(this.selectedGroupId).then(() => {
+          // After refreshing, set the selected event for editing
+          const originalEvent = this.events.find(e => e.id === event.id);
+          this.selectedEvent = originalEvent || event;
+          this.showEditModal = true;
+        });
+      } else {
+        // Within range, update the event via API
+        console.log("Event resized within range, updating:", event);
+        this.updateDraggedEvent(event);
+      }
+    },
+
+    updateTimePreview(event) {
+      const formatTime = (date) => {
+        if (!date) return '--:--';
+        const d = new Date(date);
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+      
+      const formatDate = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        return d.toLocaleDateString('en-US', options);
+      };
+      
+      this.previewStartTime = formatTime(event.start);
+      this.previewEndTime = formatTime(event.end);
+      this.previewDate = formatDate(event.start);
+    },
+
     onEventDrop(event) {
+      // Hide time preview
+      this.showTimePreview = false;
+      
+      // First, snap to 15-minute intervals
+      const snappedStart = this.snapToInterval(event.event.start, 15);
+      const snappedEnd = this.snapToInterval(event.event.end, 15);
+      
+      // Update event with snapped times
+      event.event.start = snappedStart;
+      event.event.end = snappedEnd;
+      event.event.startTimeMinutes = snappedStart.getHours() * 60 + snappedStart.getMinutes();
+      event.event.endTimeMinutes = snappedEnd.getHours() * 60 + snappedEnd.getMinutes();
+      
+      const startMinutes = event.event.startTimeMinutes;
+      const endMinutes = event.event.endTimeMinutes;
+      
+      console.log('Event dropped with snapped times:', { startMinutes, endMinutes });
+      
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 18 * 60; // 6:00 PM
+
+      // Check if out of range after snapping
+      if (startMinutes < minTime && startMinutes >= (minTime - 60)) {
+        // If dropped between 6:00-6:59, snap to 7:00
+        console.log("Snapping start time from", startMinutes, "to 7:00 AM");
+        const duration = endMinutes - startMinutes;
+        const newStartMinutes = minTime;
+        const newEndMinutes = newStartMinutes + duration;
+        
+        // Update the event times
+        const newStartTime = new Date(event.event.start);
+        newStartTime.setHours(Math.floor(newStartMinutes / 60), newStartMinutes % 60, 0, 0);
+        
+        const newEndTime = new Date(event.event.start);
+        newEndTime.setHours(Math.floor(newEndMinutes / 60), newEndMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.event.start = newStartTime;
+        event.event.end = newEndTime;
+        event.event.startTimeMinutes = newStartMinutes;
+        event.event.endTimeMinutes = newEndMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event snapped to valid range:", event);
+        this.updateDraggedEvent(event.event);
+        return;
+      }
+      
+      if (endMinutes > maxTime && endMinutes <= (maxTime + 60)) {
+        // If dropped between 18:01-19:00, snap end to 18:00
+        console.log("Snapping end time from", endMinutes, "to 6:00 PM");
+        const duration = endMinutes - startMinutes;
+        const newEndMinutes = maxTime;
+        const newStartMinutes = newEndMinutes - duration;
+        
+        // Update the event times
+        const newStartTime = new Date(event.event.start);
+        newStartTime.setHours(Math.floor(newStartMinutes / 60), newStartMinutes % 60, 0, 0);
+        
+        const newEndTime = new Date(event.event.start);
+        newEndTime.setHours(Math.floor(newEndMinutes / 60), newEndMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.event.start = newStartTime;
+        event.event.end = newEndTime;
+        event.event.startTimeMinutes = newStartMinutes;
+        event.event.endTimeMinutes = newEndMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event snapped to valid range:", event);
+        this.updateDraggedEvent(event.event);
+        return;
+      }
+
+      if (startMinutes < minTime || endMinutes > maxTime) {
+        // Completely out of range - revert and show edit modal
+        console.log("Event dropped out of range, reverting and opening edit modal:", event);
+        
+        // Revert the event to its original position by refreshing
+        this.fetchTimeSloteBYGroupId(this.selectedGroupId).then(() => {
+          // After refreshing, set the selected event for editing
+          // Find the event in the refreshed list by ID
+          const originalEvent = this.events.find(e => e.id === event.event.id);
+          this.selectedEvent = originalEvent || event.event;
+          this.showEditModal = true;
+        });
+      } else {
+        // Within range, update the event via API
+        console.log("Event dropped within range:", event);
+        this.updateDraggedEvent(event.event);
+      }
+    },
+
+    onEventResize(event) {
+      console.log(' Event resize triggered:', event);
+      console.log(' Preview status before hide:', this.showTimePreview);
+      
+      // Force hide time preview immediately
+      this.showTimePreview = false;
+      this.$nextTick(() => {
+        console.log(' Preview status after hide:', this.showTimePreview);
+      });
+      
       const startTime = new Date(event.event.start);
       const endTime = new Date(event.event.end);
       const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
       const endMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+      
+      console.log('Resize times:', { startMinutes, endMinutes, start: event.event.start, end: event.event.end });
+      
+      const minTime = 7 * 60; // 7:00 AM
+      const maxTime = 18 * 60; // 6:00 PM
 
-      if (startMinutes < 7 * 60 || endMinutes > 18 * 60) {
-        // Out of range, show edit modal
-        this.selectedEvent = event.event;
-        this.showEditModal = true;
-        console.log("Event dropped out of range, opening edit modal:", event);
+      // Auto-snap to boundaries if slightly out of range
+      if (startMinutes < minTime && startMinutes >= (minTime - 60)) {
+        // If resized to start between 6:00-6:59, snap to 7:00
+        console.log("Snapping resize start time from", startMinutes, "to 7:00 AM");
+        const newStartMinutes = minTime;
+        
+        // Update the event start time
+        const newStartTime = new Date(event.event.start);
+        newStartTime.setHours(Math.floor(newStartMinutes / 60), newStartMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.event.start = newStartTime;
+        event.event.startTimeMinutes = newStartMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event resized and snapped to valid range:", event);
+        this.updateDraggedEvent(event.event);
+        return;
+      }
+      
+      if (endMinutes > maxTime && endMinutes <= (maxTime + 60)) {
+        // If resized to end between 18:01-19:00, snap end to 18:00
+        console.log("Snapping resize end time from", endMinutes, "to 6:00 PM");
+        const newEndMinutes = maxTime;
+        
+        // Update the event end time
+        const newEndTime = new Date(event.event.end);
+        newEndTime.setHours(Math.floor(newEndMinutes / 60), newEndMinutes % 60, 0, 0);
+        
+        // Update the event object
+        event.event.end = newEndTime;
+        event.event.endTimeMinutes = newEndMinutes;
+        
+        // Update via API with snapped time
+        console.log("Event resized and snapped to valid range:", event);
+        this.updateDraggedEvent(event.event);
+        return;
+      }
+
+      if (startMinutes < minTime || endMinutes > maxTime) {
+        // Completely out of range - revert and show edit modal
+        console.log("Event resized out of range, reverting and opening edit modal:", event);
+        
+        // Revert the event to its original position by refreshing
+        this.fetchTimeSloteBYGroupId(this.selectedGroupId).then(() => {
+          // After refreshing, set the selected event for editing
+          const originalEvent = this.events.find(e => e.id === event.event.id);
+          this.selectedEvent = originalEvent || event.event;
+          this.showEditModal = true;
+        });
       } else {
         // Within range, update the event via API
-        console.log("Event dropped within range:", event);
+        console.log("Event resized within range:", event);
         this.updateDraggedEvent(event.event);
       }
     },
@@ -1307,7 +1678,11 @@ export default {
       }
     },    async updateDraggedEvent(draggedEvent) {
       try {
-        console.log('Updating dragged time slot:', draggedEvent);
+        console.log(' Updating dragged time slot:', draggedEvent);
+        console.log(' Event ID:', draggedEvent.id);
+        console.log(' Start:', draggedEvent.start);
+        console.log(' End:', draggedEvent.end);
+        
         const originalSlot = draggedEvent.originalSlot;
 
         // Helper to format Date to 'YYYY-MM-DD HH:mm'
@@ -1343,15 +1718,55 @@ export default {
             end_time: newEndTime + ":00"
           }
         };
+        
+        console.log(' Payload being sent to API:', JSON.stringify(payload, null, 2));
 
-        const result = await TimeTableAPI.updateTimeSlotById(draggedEvent.id, payload);
-        console.log('Drag update result:', result);
+        // Update API in background without waiting for full refresh
+        TimeTableAPI.updateTimeSlotById(draggedEvent.id, payload)
+          .then(result => {
+            console.log(' Drag/Resize update SUCCESS:', result);
+            console.log(' Updated time slot ID:', draggedEvent.id);
+            
+            // Update the local events array to reflect the changes
+            const eventIndex = this.events.findIndex(e => e.id === draggedEvent.id);
+            if (eventIndex !== -1) {
+              // Update the event in the array with the new times
+              this.events[eventIndex] = {
+                ...this.events[eventIndex],
+                start: draggedEvent.start,
+                end: draggedEvent.end,
+                startTimeMinutes: draggedEvent.startTimeMinutes,
+                endTimeMinutes: draggedEvent.endTimeMinutes
+              };
+              
+              console.log(' Local events array updated');
+            }
+          })
+          .catch(error => {
+            console.error(' Error updating dragged time slot:', error);
+            console.error(' Error details:', error.response?.data);
+            
+            // Show error modal on failure
+            this.errorModalTitle = 'Update Failed';
+            this.errorModalMessage = error.message || 'Failed to update time slot. Please try again.';
+            this.errorModalDetails = 'The time slot could not be updated. The calendar will be refreshed.';
+            this.showErrorModal = true;
+            
+            // Refresh to revert on error
+            this.fetchTimeSloteBYGroupId(this.selectedGroupId);
+          });
 
-        // Refresh the events
-        await this.fetchTimeSloteBYGroupId(this.selectedGroupId);
       } catch (error) {
         console.error('Error updating dragged time slot:', error);
-        alert('Failed to update time slot. Please try again.');
+        
+        // Show error modal with detailed message
+        this.errorModalTitle = 'Time Slot Conflict';
+        this.errorModalMessage = error.message || 'Failed to update time slot. Please try again.';
+        this.errorModalDetails = 'The time slot could not be moved to the selected time. Please check for conflicts and try again.';
+        this.showErrorModal = true;
+        
+        // Refresh to revert the drag
+        await this.fetchTimeSloteBYGroupId(this.selectedGroupId);
       }
     },
 
@@ -1700,3 +2115,74 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.time-preview-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.time-preview-card {
+  background: rgba(59, 130, 246, 0.95);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.preview-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.preview-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.preview-label {
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.preview-value {
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+}
+
+.preview-date {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.8;
+}
+</style>

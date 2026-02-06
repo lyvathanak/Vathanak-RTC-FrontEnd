@@ -23,38 +23,12 @@
       </div>
 
       <!-- User Info Card -->
-      <div>
+      <div class="mb-6">
         <UserInfoCard
           :role="authStore.userRole"
           :user="detailUser"
           :locale="locale" />
       </div>
-
-      <!-- <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2
-          :class="[
-            'text-xl font-semibold mb-4',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          User Information
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label class="text-sm font-medium text-gray-500">Role:</label>
-            <p class="text-lg font-semibold text-blue-600 capitalize">
-              {{ authStore.userRole }}
-            </p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500">Email:</label>
-            <p class="text-lg">{{ authStore.user?.email }}</p>
-          </div>
-          <div>
-            <label class="text-sm font-medium text-gray-500">Department:</label>
-            <p class="text-lg">{{ authStore.user?.profile?.department }}</p>
-          </div>
-        </div>
-      </div> -->
 
       <!-- Widgets -->
       <div>
@@ -97,6 +71,8 @@ import { getAllTeachers } from "@/stores/apis/TeacherCRUD.js";
 import { getAllHODs } from "@/stores/apis/HeadOfDepartmentCRUD.js";
 import { useDepartment } from "@/stores/global/useDepartment.js";
 import { useProgram } from "@/stores/global/useProgram.js";
+import { useSubject } from "@/stores/global/useSubject.js";
+import { getAllGroups } from "@/stores/apis/GroupCRUD.js";
 import OverviewWidgets from "@/components/overview/OverviewWidgets.vue";
 import RolePermissions from "@/components/overview/RolePermissions.vue";
 import RoleQuickActions from "@/components/overview/RoleQuickActions.vue";
@@ -122,6 +98,7 @@ onMounted(async () => {
 
   // Departments (donut)
   await getAllDepartments();
+  totals.value.departments = departments.value?.length ?? 0;
 
   // Leave requests (line)
   await fetchLeaveRequests(lineRange.value);
@@ -132,13 +109,18 @@ onMounted(async () => {
   // Programs KPI
   await getAllPrograms();
   totals.value.programs = programs.value?.length ?? 0;
+
+  await fetchSubjects(1);
+  totals.value.subjects = subjectMeta.value?.total ?? 0;
+
+  await fetchGroupsTotal();
 });
 
 /**
  * Doughnut chart
  */
 const donutDeptLabels = computed(() =>
-  (departments.value || []).map((d) => d.department_name).filter(Boolean)
+  (departments.value || []).map((d) => d.department_name).filter(Boolean),
 );
 
 const donutDeptValues = computed(() => donutDeptLabels.value.map(() => 1));
@@ -237,22 +219,42 @@ async function fetchLeaveRequests(days) {
 
 const { getAllDepartments, departments } = useDepartment();
 const { getAllPrograms, programs } = useProgram();
+const { fetchSubjects, meta: subjectMeta } = useSubject();
 
 watch(lineRange, (v) => fetchLeaveRequests(v));
 
 /**
- * Bar chart
+ * Bar chart and cards
  */
 const totals = ref({
   students: 0,
   teachers: 0,
   hods: 0,
   programs: 0,
+  subjects: 0,
+  departments: 0,
+  groups: 0,
 });
 
-async function fetchUserRoleTotals() {
-  // if backend supports pagination, ask for 1 item only (fast) and rely on usersData.total
+async function fetchSubjectsTotal() {
   const params = { page: 1, per_page: 1 };
+
+  const subRes = await getAllSubjects(params);
+
+  totals.value.subjects =
+    subRes?.pagination?.total ?? subRes?.total ?? subRes?.data?.length ?? 0;
+}
+
+async function fetchGroupsTotal() {
+  const params = { page: 1, per_page: 1 }; // fast total only
+  const res = await getAllGroups(params);
+
+  totals.value.groups =
+    res?.total ?? res?.pagination?.total ?? res?.data?.length ?? 0;
+}
+
+async function fetchUserRoleTotals() {
+  const params = { page: 1, per_page: 9999 };
 
   const [stuRes, teaRes, hodRes] = await Promise.all([
     getAllStudents(params),
@@ -260,15 +262,9 @@ async function fetchUserRoleTotals() {
     getAllHODs(params),
   ]);
 
-  // ✅ Prefer backend pagination.total if your functions return it
-  totals.value.students =
-    stuRes?.pagination?.total ?? stuRes?.total ?? stuRes?.data?.length ?? 0;
-
-  totals.value.teachers =
-    teaRes?.pagination?.total ?? teaRes?.total ?? teaRes?.data?.length ?? 0;
-
-  totals.value.hods =
-    hodRes?.pagination?.total ?? hodRes?.total ?? hodRes?.data?.length ?? 0;
+  totals.value.students = stuRes?.data?.length ?? 0;
+  totals.value.teachers = teaRes?.data?.length ?? 0;
+  totals.value.hods = hodRes?.data?.length ?? 0;
 }
 
 const barLabels = computed(() => ["Students", "Teachers", "HOD"]);
@@ -281,26 +277,27 @@ const barValues = computed(() => [
 const stats = computed(() => {
   const leaveLine = buildLeaveLineChart(leaveRequests.value, lineRange.value);
 
-  return {
-    total_users:
-      totals.value.students + totals.value.teachers + totals.value.hods, // example
-    teachers: totals.value.teachers,
-    students: totals.value.students,
-    programs: totals.value.programs,
+  const students = Number(totals.value.students) || 0;
+  const teachers = Number(totals.value.teachers) || 0;
+  const hods = Number(totals.value.hods) || 0;
 
-    // ✅ Line chart from API
+  return {
+    total_users: students + teachers + hods,
+    teachers,
+    students,
+    hods,
+
+    programs: Number(totals.value.programs) || 0,
+    subjects: Number(totals.value.subjects) || 0,
+    departments: departments.value?.length ?? 0,
+    groups: Number(totals.value.groups) || 0,
+
     line_labels: leaveLine.line_labels,
     line_datasets: leaveLine.line_datasets,
 
-    // ✅ bar chart (use API totals)
     bar_labels: ["Students", "Teachers", "HOD"],
-    bar_values: [
-      totals.value.students,
-      totals.value.teachers,
-      totals.value.hods,
-    ],
+    bar_values: [students, teachers, hods],
 
-    // ✅ donut chart
     donut_labels: donutDeptLabels.value,
     donut_values: donutDeptValues.value,
   };

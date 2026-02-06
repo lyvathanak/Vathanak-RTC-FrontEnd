@@ -1,29 +1,33 @@
 <template>
-  <div
-    class="w-full flex justify-between items-center bg-[#235AA6] px-3 sm:px-6 md:px-8 lg:px-12 py-[0.6rem]">
-    <div class="flex items-center gap-2">
+  <header
+    class="w-full flex items-center justify-between bg-[#235AA6] px-3 sm:px-6 md:px-8 lg:px-12 py-2 sm:py-3">
+    <!-- Left -->
+    <div class="flex items-center gap-2 min-w-0">
       <button
         @click="toggleSidebar"
-        class="md:hidden p-2 text-white hover:bg-white/10 rounded"
+        class="md:hidden inline-flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-lg transition"
         aria-label="Toggle sidebar">
-        <Menu class="w-5 h-5" />
+        <Menu class="w-5 h-5" aria-hidden="true" />
       </button>
+
       <h1
         :class="[
-          'text-sm sm:text-lg md:text-xl text-white font-bold truncate max-w-[150px] sm:max-w-none',
+          'text-sm sm:text-lg md:text-xl text-white font-bold truncate',
           khmerTextClass,
         ]">
-        {{ roleDisplay }}
+        <!-- {{ roleDisplay }} {{ t("dashboard") }} -->
       </h1>
     </div>
-    <!-- Right side - Controls -->
+
+    <!-- Right -->
     <div class="flex items-center gap-2 sm:gap-3 md:gap-4">
       <NotificationBell />
-      <!-- <Bell class="w-4 h-4 sm:w-5 sm:h-5 text-white shrink-0" /> -->
+
       <div class="hidden sm:block">
         <ChangeLanguage class="text-white" />
       </div>
-      <!-- User Profile Dropdown -->
+
+      <!-- Profile Dropdown -->
       <div
         ref="dropdownRef"
         class="relative"
@@ -31,121 +35,151 @@
         @mouseleave="hideDropdown">
         <button
           @click="toggleDropdown"
-          class="flex items-center gap-1 sm:gap-2 px-1 sm:px-2 py-1 rounded"
-          aria-label="Toggle user profile dropdown"
+          class="flex items-center gap-2 px-1 sm:px-2 py-1 rounded-lg hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-white/40"
+          aria-label="User menu"
+          aria-haspopup="menu"
           :aria-expanded="isDropdownOpen">
           <img
-            :src="
-              profile.photo
-                ? `https://api.rtc-bb.camai.kh/storage/${profile.photo}`
-                : image
-            "
+            :src="profileImageSrc"
             alt="Profile photo"
-            class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-cover rounded-full shrink-0" />
+            class="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 object-cover rounded-full ring-2 ring-white/20 shrink-0" />
 
-          <p
-            class="text-white text-xs sm:text-sm md:text-base truncate max-w-20 sm:max-w-[120px] md:max-w-none">
-            {{ profile.name }}
-          </p>
+          <span
+            class="text-white text-xs sm:text-sm md:text-base truncate max-w-22.5 sm:max-w-35 md:max-w-55">
+            {{ profile.name || "—" }}
+          </span>
         </button>
-        <!-- Dropdown Menu -->
-        <div
-          v-if="isDropdownOpen"
-          class="absolute right-0 top-full mt-2 w-64 sm:w-52 md:w-56 bg-white rounded-lg shadow-lg border overflow-hidden z-50 min-w-[250px] sm:min-w-0"
-          @mouseenter="showDropdown"
-          @mouseleave="hideDropdown">
-          <!-- Language selector for mobile -->
-          <div class="block sm:hidden border-b border-gray-200 p-3">
-            <div class="flex items-center gap-2 text-gray-700">
-              <span class="text-sm font-medium">Language:</span>
-              <ChangeLanguage class="text-gray-700" />
-            </div>
-          </div>
 
-          <!-- Menu Items -->
-          <div class="py-1">
+        <!-- Dropdown -->
+        <transition name="fade">
+          <div
+            v-if="isDropdownOpen"
+            class="absolute right-0 top-full mt-2 w-65 sm:w-56 md:w-60 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50"
+            role="menu"
+            @mouseenter="showDropdown"
+            @mouseleave="hideDropdown">
+            <!-- Mobile language -->
+            <div class="block sm:hidden border-b border-gray-200 p-3">
+              <div
+                class="flex items-center justify-between gap-2 text-gray-700">
+                <span class="text-sm font-medium">Language</span>
+                <ChangeLanguage class="text-gray-700" />
+              </div>
+            </div>
+
+            <!-- Profile item -->
             <button
               @click="viewProfile"
-              class="flex items-center gap-3 w-full px-4 py-3 text-gray-900 hover:bg-gray-50 transition-colors text-left">
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition"
+              role="menuitem">
               <img
-                :src="
-                  profile.photo
-                    ? `https://api.rtc-bb.camai.kh/storage/${profile.photo}`
-                    : image
-                "
+                :src="profileImageSrc"
                 alt="Profile Photo"
-                class="w-10 h-10 object-cover rounded-full shrink-0" />
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-gray-900 truncate">
-                  <template v-if="authStore.userRole === 'student'"
-                    >Student Profile</template
-                  >
-                  <template v-else-if="authStore.userRole === 'teacher'"
-                    >Teacher Profile</template
-                  >
-                  <template v-else-if="authStore.userRole === 'hod'"
-                    >Head of Department Profile</template
-                  >
-                  <template v-else-if="authStore.userRole === 'admin'"
-                    >Admin Profile</template
-                  >
+                class="w-10 h-10 object-cover rounded-full shrink-0 ring-1 ring-gray-200" />
+
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-semibold text-gray-900 truncate">
+                  <template v-if="authStore.userRole === 'student'">
+                    Student Profile
+                  </template>
+                  <template v-else-if="authStore.userRole === 'teacher'">
+                    Teacher Profile
+                  </template>
+                  <template v-else-if="authStore.userRole === 'hod'">
+                    Head of Department Profile
+                  </template>
+                  <template v-else-if="authStore.userRole === 'admin'">
+                    Admin Profile
+                  </template>
                   <template v-else>Profile</template>
                 </div>
+
                 <div class="text-xs text-gray-500 truncate">
                   {{ profile.name }}
                 </div>
               </div>
             </button>
 
-            <div class="border-t border-gray-200 my-1"></div>
+            <div class="h-px bg-gray-200" />
 
+            <!-- Library -->
             <button
               @click="goToLibrary"
-              class="flex items-center gap-3 w-full px-4 py-3 text-gray-900 hover:bg-blue-50 transition-colors text-left">
-              <BookOpen class="w-4 h-4 shrink-0" />
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 transition"
+              role="menuitem">
+              <BookOpen
+                class="w-4 h-4 text-gray-700 shrink-0"
+                aria-hidden="true" />
               <span
                 :class="[
-                  'text-sm font-medium',
+                  'text-sm font-medium text-gray-900',
                   locale === 'kh' ? 'khmer-text' : '',
-                ]"
-                >Library</span
-              >
+                ]">
+                Library
+              </span>
             </button>
 
-            <div class="border-t border-gray-200 my-1"></div>
+            <div class="h-px bg-gray-200" />
 
+            <!-- Moodle -->
+            <button
+              @click="goToMoodle"
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 transition"
+              role="menuitem">
+              <GraduationCap
+                class="w-4 h-4 text-gray-700 shrink-0"
+                aria-hidden="true" />
+              <span
+                :class="[
+                  'text-sm font-medium text-gray-900',
+                  locale === 'kh' ? 'khmer-text' : '',
+                ]">
+                Moodle
+              </span>
+            </button>
+
+            <div class="h-px bg-gray-200" />
+
+            <!-- Change Password -->
             <button
               @click="changePassword"
-              class="flex items-center gap-3 w-full px-4 py-3 text-gray-900 hover:bg-yellow-50 transition-colors text-left">
-              <KeyRound class="w-4 h-4 shrink-0" />
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-yellow-50 transition"
+              role="menuitem">
+              <KeyRound
+                class="w-4 h-4 text-gray-700 shrink-0"
+                aria-hidden="true" />
               <span
                 :class="[
-                  'text-sm font-medium',
+                  'text-sm font-medium text-gray-900',
                   locale === 'kh' ? 'khmer-text' : '',
-                ]"
-                >Change Password</span
-              >
+                ]">
+                Change Password
+              </span>
             </button>
 
-            <div class="border-t border-gray-200 my-1"></div>
+            <div class="h-px bg-gray-200" />
 
+            <!-- Logout -->
             <button
               @click="logout"
-              class="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 transition-colors text-left">
-              <LogOut class="w-4 h-4 shrink-0" />
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 transition"
+              role="menuitem">
+              <LogOut
+                class="w-4 h-4 text-red-600 shrink-0"
+                aria-hidden="true" />
               <span
                 :class="[
-                  'text-sm font-medium',
+                  'text-sm font-medium text-red-600',
                   locale === 'kh' ? 'khmer-text' : '',
-                ]"
-                >{{ t("logout") }}</span
-              >
+                ]">
+                {{ t("logout") }}
+              </span>
             </button>
           </div>
-        </div>
+        </transition>
       </div>
     </div>
-  </div>
+  </header>
 </template>
 
 <script setup>
@@ -153,59 +187,63 @@ import { ref, reactive, computed, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/Authentication/authStore.js";
-import ChangeLanguage from "@/components/language/ChangLanguage.vue";
-import { Bell, LogOut, BookOpen, KeyRound, Menu } from "lucide-vue-next";
+import {
+  LogOut,
+  BookOpen,
+  KeyRound,
+  Menu,
+  GraduationCap,
+} from "lucide-vue-next";
 import { getStudentProfile } from "@/stores/Student/StudentProfile";
 import { useSidebar } from "@/components/ui/sidebar";
 import { showNotification } from "@/lib/notifications";
-// import { getTeacherProfile } from '@/stores/Teacher/TeacherProfile';
-// import { getHodProfile } from '@/stores/Hod/HodProfile';
 import image from "@/assets/default-avatar.png";
+import ChangeLanguage from "@/components/language/ChangLanguage.vue";
 import NotificationBell from "@/components/features/NotificationBell.vue";
 
 const { t, locale } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN || "http://localhost:8000";
+
 const dropdownRef = ref(null);
 const isDropdownOpen = ref(false);
 const hoverTimeout = ref(null);
+
 const error = ref(null);
 const loading = ref(false);
 
-// Get sidebar context - this might be undefined if outside SidebarProvider
+// Sidebar context (optional)
 const sidebar = useSidebar();
-
 const emit = defineEmits(["toggleSidebar"]);
 
 const toggleSidebar = () => {
-  // If sidebar context is available, use it
-  if (sidebar && sidebar.toggleSidebar) {
-    sidebar.toggleSidebar();
-  } else {
-    // Fallback to emit
-    emit("toggleSidebar");
-  }
+  if (sidebar && sidebar.toggleSidebar) sidebar.toggleSidebar();
+  else emit("toggleSidebar");
 };
 
-const profile = reactive({
-  name: "",
-  photo: "",
-});
+const profile = reactive({ name: "", photo: "" });
 
 const khmerTextClass = computed(() =>
-  locale.value === "kh" ? "khmer-text" : ""
+  locale.value === "kh" ? "khmer-text" : "",
 );
 const roleDisplay = computed(() => t(authStore.userRole) || authStore.userRole);
+
+const profileImageSrc = computed(() => {
+  if (profile.photo) {
+    return `${FILE_ORIGIN}/storage/${profile.photo}`;
+  }
+  return image;
+});
 
 const toggleDropdown = () => {
   isDropdownOpen.value = !isDropdownOpen.value;
 };
 
 const showDropdown = () => {
-  if (hoverTimeout.value) {
-    clearTimeout(hoverTimeout.value);
-  }
+  if (hoverTimeout.value) clearTimeout(hoverTimeout.value);
   isDropdownOpen.value = true;
 };
 
@@ -217,30 +255,41 @@ const hideDropdown = () => {
 
 const viewProfile = () => {
   let profileRoute;
+
   if (authStore.userRole.toLowerCase() === "student") {
     profileRoute = `/${locale.value}/student/student-profile`;
   } else if (authStore.userRole.toLowerCase() === "teacher") {
     profileRoute = `/${locale.value}/teacher/teacher-profile`;
-  } else if (authStore.userRole.toLowerCase() === "head_department" || authStore.userRole.toLowerCase() === "hod") {
+  } else if (
+    authStore.userRole.toLowerCase() === "head_department" ||
+    authStore.userRole.toLowerCase() === "hod"
+  ) {
     profileRoute = `/${locale.value}/hod/hod-profile`;
   } else if (authStore.userRole.toLowerCase() === "admin") {
     profileRoute = `/${locale.value}/admin/admin-profile`;
   }
-  
-  if (profileRoute) {
-    router.push(profileRoute);
-  }
+
+  if (profileRoute) router.push(profileRoute);
   isDropdownOpen.value = false;
 };
 
 const goToLibrary = () => {
-  console.log("📚 Library button clicked!");
   try {
     authStore.redirectToLibrary();
     isDropdownOpen.value = false;
-  } catch (error) {
-    console.error("❌ Error redirecting to library:", error);
+  } catch (err) {
+    console.error("❌ Error redirecting to library:", err);
     alert("Please login first to access the library");
+  }
+};
+
+const goToMoodle = () => {
+  try {
+    authStore.redirectToMoodle();
+    isDropdownOpen.value = false;
+  } catch (err) {
+    console.error("❌ Error redirecting to Moodle:", err);
+    alert("Please login first to access Moodle");
   }
 };
 
@@ -252,14 +301,16 @@ const changePassword = () => {
     changePasswordRoute = `/${currentLang}/student/change-password`;
   } else if (authStore.userRole.toLowerCase() === "teacher") {
     changePasswordRoute = `/${currentLang}/teacher/change-password`;
-  } else if (authStore.userRole.toLowerCase() === "head_department" || authStore.userRole.toLowerCase() === "hod") {
-    changePasswordRoute = `/${currentLang}/hod/change-password`
+  } else if (
+    authStore.userRole.toLowerCase() === "head_department" ||
+    authStore.userRole.toLowerCase() === "hod"
+  ) {
+    changePasswordRoute = `/${currentLang}/hod/change-password`;
   } else if (authStore.userRole.toLowerCase() === "admin") {
     changePasswordRoute = `/${currentLang}/admin/change-password`;
   }
 
-  console.log("🔑 Redirecting to:", changePasswordRoute);
-  router.push(changePasswordRoute);
+  if (changePasswordRoute) router.push(changePasswordRoute);
   isDropdownOpen.value = false;
 };
 
@@ -279,14 +330,15 @@ const handleClickOutside = (event) => {
 
 onMounted(async () => {
   document.addEventListener("click", handleClickOutside);
+
   try {
     loading.value = true;
-    const data = await getStudentProfile(); // Replace with role-based fetching if needed
+    const data = await getStudentProfile();
     profile.name = data?.user?.name || "";
-    profile.photo = data.user.user_detail?.profile_picture || "";
+    profile.photo = data?.user?.user_detail?.profile_picture || "";
   } catch (err) {
     console.error("❌ Failed to fetch profile:", err);
-    error.value = err.message || "Unknown error";
+    error.value = err?.message || "Unknown error";
   } finally {
     loading.value = false;
   }
@@ -294,8 +346,17 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
-  if (hoverTimeout.value) {
-    clearTimeout(hoverTimeout.value);
-  }
+  if (hoverTimeout.value) clearTimeout(hoverTimeout.value);
 });
 </script>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.12s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

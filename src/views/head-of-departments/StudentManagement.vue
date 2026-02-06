@@ -1,366 +1,459 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-9xl mx-auto space-y-6">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 :class="['text-3xl font-bold text-gray-900', isKhmer ? 'khmer-text' : '']">
-            {{ $t('students_management') || 'Student Management' }}
-          </h1>
-          <p class="text-gray-600 mt-2">
-            Department: <span class="font-semibold text-purple-600">{{ departmentName }}</span>
-          </p>
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
+    <!-- Top bar (Admin-style) -->
+    <div class="flex flex-col gap-4">
+      <div
+        class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <!-- Title -->
+        <PageHeader
+          :title="t('students_management') || 'Student Management'"
+          :subtitle="`Department: ${departmentName || '-'}`" />
+
+        <!-- Actions (HOD version) -->
+        <div class="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+          <div
+            v-if="showSelection && selectedIds.length > 0"
+            class="text-sm text-gray-600 font-medium">
+            {{ selectedIds.length }} {{ t("student") || "student" }}
+            <span v-if="selectedIds.length > 1">s</span>
+            {{ t("selected") || "selected" }}
+          </div>
+
+          <!-- Buttons (HOD: Back + Export only, no Add/Group) -->
+          <div
+            class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+            <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
+          </div>
         </div>
-        <button 
-          @click="router.back()" 
-          class="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white rounded-lg shadow hover:bg-gray-50 transition-colors"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          {{ $t('back') || 'Back' }}
+      </div>
+
+      <!-- Row: Search (Admin-style) -->
+
+      <div class="relative mb-3 w-full max-w-lg">
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Search by name, ID, or email..."
+          :disabled="loading"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+        <button
+          v-if="search && search.trim().length"
+          type="button"
+          :disabled="loading"
+          @click="search = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          aria-label="Clear search">
+          ✕
         </button>
       </div>
+    </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between border border-gray-100">
-          <div>
-            <p class="text-sm font-medium text-gray-500">Total Students</p>
-            <p class="text-3xl font-bold text-purple-600 mt-1">{{ totalStudents }}</p>
-          </div>
-          <div class="p-3 bg-purple-100 rounded-full">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-          </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between border border-gray-100">
-          <div>
-            <p class="text-sm font-medium text-gray-500">Active Now</p>
-            <p class="text-3xl font-bold text-green-600 mt-1">{{ activeStudents }}</p>
-          </div>
-          <div class="p-3 bg-green-100 rounded-full">
-            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-          </div>
-        </div>
-         <div class="bg-white rounded-xl shadow-sm p-6 flex items-center justify-between border border-gray-100">
-          <div>
-            <p class="text-sm font-medium text-gray-500">Females</p>
-            <p class="text-3xl font-bold text-pink-600 mt-1">{{ femaleStudents }}</p>
-          </div>
-          <div class="p-3 bg-pink-100 rounded-full">
-            <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <div class="flex items-center gap-3">
-          <h2 :class="['text-xl font-semibold text-gray-800', isKhmer ? 'khmer-text' : '']">Student List</h2>
-          
-          <div class="relative">
-            <!-- <select 
-              v-model="filterType"
-              @change="fetchStudents"
-              class="appearance-none bg-purple-50 border border-purple-200 text-purple-700 py-1.5 pl-3 pr-8 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
-            >
-              <option value="department">All Department</option>
-              <option value="my_students">My Students</option>
-            </select> -->
-            <svg class="w-4 h-4 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </div>
-        </div>
-
-        <div class="w-full sm:w-auto relative">
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            :placeholder="isKhmer ? 'ស្វែងរក...' : 'Search ID or Name...'"
-            class="w-full sm:w-80 border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          >
-          <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        </div>
-      </div>
-
-      <ListTable
-        :data="filteredStudents"
+    <!-- Table (Admin-style wrapper) -->
+    <div class="overflow-x-auto">
+      <StudentTable
+        :students="pagedRows"
+        :selected-ids="selectedIds"
+        :sort-field="currentSortField"
+        :sort-direction="currentSortDirection"
+        :columns="tableColumns"
         :loading="loading"
-        :columns="columns"
-        :row-key="'id'"
-        :show-selection="false"
+        :show-selection="showSelection"
         :show-actions="true"
         :show-view-action="true"
         :show-edit-action="false"
         :show-delete-action="false"
-        :sort-field="sortField"
-        :sort-direction="sortDirection"
-        :empty-state-title="$t('no_students_found') || 'No Students Found'"
-        :empty-state-message="getEmptyMessage"
-        @sort="handleSort"
-        @view="handleViewStudent"
-      >
-        <template #column-id_card="{ row }">
-          <span class="font-mono text-sm font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded">
-            {{ row.id_card || 'N/A' }}
-          </span>
-        </template>
-
-        <template #column-latin_name="{ row }">
-          <div class="flex items-center gap-3">
-            <div class="shrink-0">
-               <img 
-                v-if="row.profile_picture" 
-                :src="row.profile_picture.startsWith('http') ? row.profile_picture : `https://api.rtc-bb.camai.kh/${row.profile_picture}`" 
-                :alt="row.latin_name" 
-                class="w-10 h-10 rounded-full object-cover border border-gray-200"
-                @error="(e) => e.target.style.display = 'none'"
-              >
-              <div 
-                v-else 
-                class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center text-purple-700 font-bold text-sm"
-              >
-                {{ getInitials(row.latin_name) }}
-              </div>
-            </div>
-            <div class="font-medium text-gray-900">{{ row.latin_name || '-' }}</div>
-          </div>
-        </template>
-        
-        <template #column-khmer_name="{ row }">
-          <span class="font-khmer text-gray-700">{{ row.khmer_name || '-' }}</span>
-        </template>
-
-        <template #column-gender="{ value }">
-           <span :class="[
-            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-            (value || '').toLowerCase() === 'female' || (value || '').toLowerCase() === 'f'
-              ? 'bg-pink-50 text-pink-700 border border-pink-100' 
-              : 'bg-blue-50 text-blue-700 border border-blue-100'
-          ]">
-            {{ value || '-' }}
-          </span>
-        </template>
-
-        <template #column-status="{ row }">
-          <span :class="[
-            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-            isActive(row) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          ]">
-            <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="isActive(row) ? 'bg-green-600' : 'bg-red-600'"></span>
-            {{ isActive(row) ? 'Active' : 'Inactive' }}
-          </span>
-        </template>
-      </ListTable>
-
-      <ViewStudentModal
-        v-if="showViewModal"
-        v-model="showViewModal"
-        :student="selectedStudent"
-      />
+        @view="view"
+        @select="handleRowSelect"
+        @selectAll="handleSelectAll"
+        @sort="handleSort" />
     </div>
+
+    <!-- Pagination (Admin-style) -->
+    <div>
+      <Pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total-items="filteredRows.length"
+        :page-size-options="[5, 10, 25, 50, 100]"
+        :item-label="t('students') || 'students'" />
+    </div>
+
+    <!-- View Student Modal (optional reuse) -->
+    <ViewStudentModal v-model="showViewModal" :student="viewStudent" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { Search } from "lucide-vue-next";
+
+import PageHeader from "@/components/features/PageHeader.vue";
+import Pagination from "@/components/features/Pagination.vue";
+import StudentTable from "@/components/head-of-departments/studentinformation/StudentTable.vue";
+import ViewStudentModal from "@/components/head-of-departments/studentinformation/ViewStudentModal.vue";
+import ExcelForm from "@/components/features/ExcelForm.vue";
+
 import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
-import { useDepartment } from "@/stores/global/useDepartment";
-import ListTable from "@/components/features/ListTable.vue";
-import ViewStudentModal from "@/components/head-of-departments/ViewStudentModal.vue";
 
 const router = useRouter();
 const { t, locale } = useI18n();
-const { getAllDepartments, getDepartmentById } = useDepartment();
-
 const isKhmer = computed(() => locale.value === "kh");
 
-// State
+/** UI feature toggles (HOD) */
+const showSelection = ref(true);
+const showFilters = ref(false);
+const allPrograms = ref([]);
+/** Data */
 const loading = ref(false);
-const students = ref([]);
-const searchQuery = ref("");
+const rows = ref([]);
 const departmentName = ref("");
 const departmentId = ref(null);
-const filterType = ref("department"); // 'department' | 'my_students'
-const sortField = ref("latin_name");
-const sortDirection = ref("asc");
-const currentUser = ref(null);
+const allSections = ref([]); // Store sections separately
 
-// Modal State
-const showViewModal = ref(false);
-const selectedStudent = ref(null);
+/** Search + Filters */
+const search = ref("");
+const selectedIds = ref([]);
 
-// Table Columns
-const columns = ref([
+/** Table Columns */
+const tableColumns = ref([
   { key: "id_card", label: "ID", visible: true, sortable: true },
   { key: "khmer_name", label: "Khmer Fullname", visible: true, sortable: true },
   { key: "latin_name", label: "Latin Fullname", visible: true, sortable: true },
-  { key: "date_of_birth", label: "Date of Birth", visible: true, sortable: true },
+  {
+    key: "date_of_birth",
+    label: "Date of Birth",
+    visible: true,
+    sortable: true,
+  },
   { key: "gender", label: "Gender", visible: true, sortable: false },
-  { key: "department_id", label: "Department", visible: true, sortable: true },
-  { key: "sub_department_id", label: "Section", visible: true, sortable: true },
+
+  {
+    key: "department_name",
+    label: "Department",
+    visible: true,
+    sortable: true,
+  },
+  { key: "program_name", label: "Program", visible: true, sortable: true },
+  { key: "section_name", label: "Section", visible: true, sortable: true },
 ]);
 
-// Computed Stats
-const totalStudents = computed(() => students.value.length);
-const activeStudents = computed(() => students.value.filter(s => isActive(s)).length);
-const femaleStudents = computed(() => students.value.filter(s => {
-  const gender = s.gender || '';
-  return gender.toLowerCase() === 'female' || gender.toLowerCase() === 'f';
-}).length);
+/** Sorting */
+const currentSortField = ref("latin_name");
+const currentSortDirection = ref("asc");
 
-const filteredStudents = computed(() => {
-  let result = [...students.value];
+const handleSort = ({ field, direction }) => {
+  currentSortField.value = field;
+  currentSortDirection.value = direction;
 
-  // Search Filter
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase();
-    result = result.filter(s => 
-      (s.latin_name || '').toLowerCase().includes(q) ||
-      (s.khmer_name || '').toLowerCase().includes(q) ||
-      (s.id_card || '').toLowerCase().includes(q)
-    );
-  }
+  rows.value.sort((a, b) => {
+    let aVal = a[field] || "";
+    let bVal = b[field] || "";
 
-  // Sorting
-  if (sortField.value) {
-    result.sort((a, b) => {
-      let aVal = a[sortField.value];
-      let bVal = b[sortField.value];
-      
-      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+    if (typeof aVal === "string") aVal = aVal.toLowerCase();
+    if (typeof bVal === "string") bVal = bVal.toLowerCase();
 
-      if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortDirection.value === 'asc' ? 1 : -1;
-      return 0;
+    if (aVal < bVal) return direction === "asc" ? -1 : 1;
+    if (aVal > bVal) return direction === "asc" ? 1 : -1;
+    return 0;
+  });
+};
+
+/** Filtering */
+const filteredRows = computed(() => {
+  let list = rows.value;
+  const q = search.value.trim().toLowerCase();
+
+  if (q) {
+    list = list.filter((r) => {
+      return (
+        String(r.id_card ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(r.khmer_name ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(r.latin_name ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(r.department_name ?? "")
+          .toLowerCase()
+          .includes(q) ||
+        String(r.program_name ?? "")
+          .toLowerCase()
+          .includes(q) || // ✅ add
+        String(r.section_name ?? "")
+          .toLowerCase()
+          .includes(q)
+      );
     });
   }
 
-  return result;
+  return list;
+});
+/** Pagination */
+const page = ref(1);
+const pageSize = ref(25);
+
+const pagedRows = computed(() => {
+  const start = (page.value - 1) * pageSize.value;
+  return filteredRows.value.slice(start, start + pageSize.value);
 });
 
-const getEmptyMessage = computed(() => {
-  if (filterType.value === 'my_students') {
-    return "You do not have any students assigned to your classes yet (or system data is missing).";
-  }
-  return "There are no students in this department matching your criteria.";
+watch([filteredRows, pageSize], () => {
+  page.value = 1;
 });
 
-const isActive = (row) => {
-  if (row.is_active !== undefined) return row.is_active;
-  return false;
-};
+/** View modal */
+const showViewModal = ref(false);
+const viewStudent = ref(null);
 
-const getInitials = (name) => {
-  if (!name) return 'ST';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-};
-
-// Actions
-const handleSort = ({ field, direction }) => {
-  sortField.value = field;
-  sortDirection.value = direction;
-};
-
-const handleViewStudent = (student) => {
-  selectedStudent.value = student;
+function view(row) {
+  viewStudent.value = { ...row };
   showViewModal.value = true;
+}
+
+/** Selection handlers */
+const handleRowSelect = (payload) => {
+  const id =
+    typeof payload === "object" ? payload.id || payload.user_id : payload;
+
+  if (!id) return;
+
+  const index = selectedIds.value.indexOf(id);
+  if (index > -1) {
+    selectedIds.value.splice(index, 1);
+  } else {
+    selectedIds.value.push(id);
+  }
 };
 
-// Data Fetching
-const fetchStudents = async () => {
-  if (!departmentId.value) return;
+const handleSelectAll = (payload) => {
+  if (Array.isArray(payload)) {
+    selectedIds.value = payload
+      .map((item) =>
+        typeof item === "object" ? item.id || item.user_id : item,
+      )
+      .filter((id) => id != null);
+  }
+};
 
+/** Main function to load HOD students */
+onMounted(async () => {
+  await loadHodStudents();
+});
+
+async function loadHodStudents() {
   loading.value = true;
-  students.value = []; // Clear list during load
 
   try {
-    // 1. Fetch ALL Department Students (Allowed Endpoint)
-    // We do NOT use /users/by_teacher because it returns 403 Forbidden for HODs
-    const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
-      params: { role: 'student' } 
+    // 1. Get HOD profile to get department
+    const profileData = await getHODProfile();
+    const userDetail = profileData.user?.user_detail || {};
+
+    const headDept =
+      userDetail.head_department || profileData.user?.head_department;
+    const directDept = userDetail.department || profileData.user?.department;
+
+    departmentId.value =
+      headDept?.id || directDept?.id || userDetail.department_id || null;
+    departmentName.value =
+      headDept?.department_name || directDept?.department_name || "";
+
+    if (!departmentId.value) {
+      rows.value = [];
+      loading.value = false;
+      return;
+    }
+
+    // 4. Fetch students for this department
+    const res = await api.get(
+      `/users_by_hod_department/${departmentId.value}`,
+      {
+        params: { role: "student" },
+      },
+    );
+
+    const rawData = res.data.users || res.data.data || [];
+
+    if (!Array.isArray(rawData)) {
+      rows.value = [];
+      loading.value = false;
+      return;
+    }
+
+    console.log(`Found ${rawData.length} students`);
+
+    // 5. Process students with section lookup
+    rows.value = rawData.map((student) => {
+      const detail = student.user_detail || student.userDetail || {};
+
+      // -------------------------
+      // SECTION (sub_department)
+      // -------------------------
+      const sectionObj =
+        detail.sub_department ||
+        detail.section ||
+        student.sub_department ||
+        student.section ||
+        student.subDepartment ||
+        student.user_detail?.sub_department ||
+        null;
+
+      const sectionId =
+        detail.sub_department_id ||
+        student.sub_department_id ||
+        detail.section_id ||
+        student.section_id ||
+        sectionObj?.id ||
+        null;
+
+      let sectionName =
+        sectionObj?.sub_department_name ||
+        sectionObj?.name ||
+        detail.sub_department_name ||
+        student.sub_department_name ||
+        detail.section_name ||
+        student.section_name ||
+        "N/A";
+
+      // lookup section by id from loaded sections list
+      if (sectionId && (sectionName === "N/A" || !sectionName)) {
+        const found = (allSections.value || []).find(
+          (s) => String(s?.id) === String(sectionId),
+        );
+        if (found)
+          sectionName = found.sub_department_name || found.name || "N/A";
+      }
+
+      // fallback: group
+      if (sectionName === "N/A") {
+        const groups = student.groups || detail.groups || [];
+        const g = groups?.[0];
+        if (g) sectionName = g.sub_department_name || g.name || "N/A";
+      }
+
+      // -------------------------
+      // PROGRAM
+      // -------------------------
+      const programObj =
+        detail.program ||
+        student.program ||
+        student.user_program?.program ||
+        student.userProgram?.program ||
+        student.user_programs?.[0]?.program ||
+        student.userPrograms?.[0]?.program ||
+        null;
+
+      const programId =
+        detail.program_id ||
+        student.program_id ||
+        programObj?.id ||
+        student.user_program?.program_id ||
+        student.userProgram?.program_id ||
+        student.user_programs?.[0]?.program_id ||
+        student.userPrograms?.[0]?.program_id ||
+        null;
+
+      let programName =
+        programObj?.program_name ||
+        programObj?.name ||
+        detail.program_name ||
+        student.program_name ||
+        "N/A";
+
+      // lookup program by id from loaded programs list
+      if (programId && (programName === "N/A" || !programName)) {
+        const found = (allPrograms.value || []).find(
+          (p) => String(p?.id) === String(programId),
+        );
+        if (found) programName = found.program_name || found.name || "N/A";
+      }
+
+      // -------------------------
+      // DEPARTMENT
+      // -------------------------
+      const depObj =
+        detail.department ||
+        student.department ||
+        programObj?.department ||
+        null;
+
+      const departmentIdResolved =
+        detail.department_id ||
+        student.department_id ||
+        depObj?.id ||
+        departmentId.value ||
+        null;
+
+      const departmentNameResolved =
+        depObj?.department_name ||
+        depObj?.name ||
+        detail.department_name ||
+        student.department_name ||
+        departmentName.value ||
+        "N/A";
+
+      return {
+        ...student,
+
+        id: student.id || student.user_id || null,
+        user_id: student.user_id || student.id,
+
+        // Department
+        department_id: departmentIdResolved,
+        department_name: departmentNameResolved,
+
+        // Program ✅
+        program_id: programId,
+        program_name: programName,
+
+        // Section ✅
+        section_id: sectionId,
+        section_name: sectionName,
+        sub_department_id: sectionId,
+        sub_department_name: sectionName,
+
+        // Personal info
+        id_card:
+          student.id_card || detail.id_card || student.student_id || "N/A",
+        khmer_name: student.khmer_name || detail.khmer_name || "-",
+        latin_name:
+          student.latin_name || student.name || detail.latin_name || "-",
+        date_of_birth: student.date_of_birth || detail.date_of_birth || "-",
+        gender: student.gender || detail.gender || "N/A",
+        phone_number: student.phone_number || detail.phone_number || "N/A",
+        email: student.email || detail.email || "N/A",
+      };
     });
-    
-    let rawData = res.data.users || res.data.data || [];
 
-    // 2. Client-Side Filtering for "My Students"
-    if (filterType.value === 'my_students') {
-       // Get HOD's assigned groups
-       const hodGroups = currentUser.value?.groups || [];
-       const hodGroupIds = hodGroups.map(g => g.id);
+    console.log("Processed students:", rows.value);
 
-       if (hodGroupIds.length > 0) {
-          // Filter students who are in at least one of the HOD's groups
-          rawData = rawData.filter(student => {
-             // Students might have 'groups' array directly or nested
-             const sGroups = student.groups || student.user_programs?.[0]?.groups || [];
-             return sGroups.some(g => hodGroupIds.includes(g.id));
-          });
-       } else {
-          // If HOD has no groups, they have no students
-          rawData = [];
-       }
-    }
-
-    // 3. Normalize Data for Table
-    if (Array.isArray(rawData)) {
-      students.value = rawData.map(s => {
-        const detail = s.user_detail || {};
-        return {
-          ...s,
-          id_card: s.id_card || detail.id_card,
-          khmer_name: s.khmer_name || detail.khmer_name,
-          latin_name: s.latin_name || s.name || detail.latin_name,
-          date_of_birth: s.date_of_birth || detail.date_of_birth,
-          gender: s.gender || detail.gender,
-          department_id: detail.department?.department_name || departmentName.value,
-          sub_department_id: detail.sub_department?.sub_department_name || 'N/A',
-          profile_picture: s.profile_picture || detail.profile_picture,
-          user_detail: detail,
-          is_active: s.is_active ?? detail.is_active ?? true,
-          groups: s.groups || [], // Ensure groups are preserved for future debugging
-          current_program: s.current_program || (s.user_programs?.[0] || null)
-        };
-      });
-    }
+    // Log section summary
+    const sectionSummary = {};
+    rows.value.forEach((student) => {
+      const section = student.section_name;
+      sectionSummary[section] = (sectionSummary[section] || 0) + 1;
+    });
+    console.log("Section summary:", sectionSummary);
   } catch (err) {
-    console.error("Error fetching students:", err);
+    console.error("Error fetching HOD students:", err);
+    rows.value = [];
   } finally {
     loading.value = false;
   }
-};
-
-onMounted(async () => {
-  try {
-    loading.value = true;
-    
-    // Load HOD Profile
-    const profileData = await getHODProfile();
-    currentUser.value = profileData.user || profileData; // Handle both response structures
-
-    const userDetail = currentUser.value?.user_detail || {};
-    const headDept = userDetail.head_department || currentUser.value?.head_department;
-    
-    departmentId.value = headDept?.id || userDetail.department_id;
-    departmentName.value = headDept?.department_name || "";
-
-    // Fallback if name missing
-    if (!departmentName.value && departmentId.value) {
-      await getAllDepartments();
-      const dept = getDepartmentById(departmentId.value);
-      if (dept) departmentName.value = dept.department_name;
-    }
-
-    // Load Data
-    await fetchStudents();
-
-  } catch (err) {
-    console.error("Error initializing HOD view:", err);
-    loading.value = false;
-  }
-});
+}
 </script>
 
 <style scoped>
 .font-khmer {
-  font-family: 'Battambang', 'Noto Sans Khmer', sans-serif;
+  font-family: "Battambang", "Noto Sans Khmer", sans-serif;
 }
 </style>

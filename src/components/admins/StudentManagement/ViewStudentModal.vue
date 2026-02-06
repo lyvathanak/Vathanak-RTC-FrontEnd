@@ -50,13 +50,11 @@
                 <div
                   class="flex lg:block items-center justify-center lg:justify-start gap-4">
                   <div
-                    class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center"
+                    class="w-30 h-38 mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center"
                     @click="openImagePreview">
                     <img
                       v-if="
-                        student?.profile_picture ||
-                        student?.photo_url ||
-                        student?.user_detail?.profile_picture
+                        student?.profile_picture
                       "
                       :src="imageSrc"
                       class="w-full h-full object-cover"
@@ -456,7 +454,7 @@
   <transition name="fade">
     <div
       v-if="showImagePreview"
-      class="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+      class="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4"
       @click.self="closeImagePreview">
       <div class="relative max-w-[90vw] max-h-[90vh]" @click.stop>
         <button
@@ -504,11 +502,13 @@ const {
   loading: sectionLoading,
 } = useSection();
 
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
+
 // Fetch all required data
 onMounted(async () => {
   try {
     console.log(
-      "ViewStudentModal: Loading departments, programs, and sections..."
+      "ViewStudentModal: Loading departments, programs, and sections...",
     );
 
     // Load data with individual error handling
@@ -542,11 +542,10 @@ onMounted(async () => {
 const showImagePreview = ref(false);
 
 const imageSrc = computed(() => {
-  return student.value?.profile_picture
-    ? `https://api.rtc-bb.camai.kh/storage/${student.value.profile_picture}`
-    : student.value?.photo_url ||
-        student.value?.user_detail?.profile_picture ||
-        "";
+  if (student.value?.profile_picture) {
+    return `${FILE_ORIGIN}/storage/${student.value.profile_picture}`;
+  }
+  return (student.value?.user_detail?.profile_picture || "");
 });
 
 const openImagePreview = () => {
@@ -628,7 +627,7 @@ watch(
   (newStudent) => {
     console.log("ViewStudentModal: Student data received:", newStudent);
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -640,21 +639,21 @@ watch(
         "👀 ViewStudent DOB raw:",
         props.student.date_of_birth,
         "→ shown as:",
-        fmtDate(props.student.date_of_birth)
+        fmtDate(props.student.date_of_birth),
       );
     }
   },
-  { immediate: false }
+  { immediate: false },
 );
 
 /* Academic history */
 const history = computed(() => student.value.academic_history || {});
 const years = computed(() =>
-  Object.keys(history.value).sort((a, b) => a.localeCompare(b))
+  Object.keys(history.value).sort((a, b) => a.localeCompare(b)),
 );
 const activeYear = ref(""); // when empty, shows tiles
 const yearData = computed(() =>
-  activeYear.value ? history.value[activeYear.value] : null
+  activeYear.value ? history.value[activeYear.value] : null,
 );
 const openYear = (y) => (activeYear.value = y);
 
@@ -662,7 +661,7 @@ watch(
   () => student.value,
   () => {
     activeYear.value = "";
-  }
+  },
 );
 
 /* Utilities */

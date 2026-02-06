@@ -3,7 +3,7 @@
     <!-- Modal Overlay -->
     <div
       v-if="props.show"
-      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto"
       @click.self="closeModal"
     >
       <!-- Modal Content -->
@@ -32,8 +32,44 @@
 
         <!-- Modal Body -->
         <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          <!-- Step 1: File Upload -->
-          <div class="space-y-3">
+          <!-- Loading State -->
+          <div v-if="isFetchingFile" class="flex flex-col items-center justify-center py-12 space-y-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#235AA6]"></div>
+            <p class="text-sm text-gray-600">Checking for existing file...</p>
+          </div>
+
+          <!-- Existing File Info (if file exists) -->
+          <div v-else-if="fileExists && !uploadedFile" class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-sm font-semibold">
+                  ✓
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Using Existing File</h3>
+              </div>
+              <button
+                @click="fileExists = false"
+                class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Upload Different File
+              </button>
+            </div>
+            
+            <div class="border-2 border-green-500 bg-green-50 rounded-lg p-6 sm:p-8">
+              <div class="flex items-center justify-center flex-col space-y-2">
+                <CheckCircle class="w-12 h-12 text-green-600" />
+                <p class="text-sm sm:text-base font-medium text-gray-700">
+                  {{ existingFileName }}
+                </p>
+                <p class="text-xs sm:text-sm text-gray-600">
+                  {{ parsedData.length }} students loaded
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 1: File Upload (show if no existing file OR user wants to replace) -->
+          <div v-else-if="!isFetchingFile && (!fileExists || uploadedFile)" class="space-y-3">
             <div class="flex items-center gap-2">
               <div class="flex items-center justify-center w-6 h-6 rounded-full bg-[#235AA6] text-white text-sm font-semibold">
                 1
@@ -93,6 +129,24 @@
             <div v-if="uploadError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p class="text-sm text-red-600">{{ uploadError }}</p>
             </div>
+
+            <!-- Save File Button -->
+            <div v-if="uploadedFile && !fileExists" class="flex justify-end">
+              <button
+                @click="handleSaveFile"
+                :disabled="isSavingFile"
+                :class="[
+                  'px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2',
+                  isSavingFile
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                ]"
+              >
+                <CheckCircle class="w-4 h-4" />
+                <span v-if="isSavingFile">Saving...</span>
+                <span v-else>Save File</span>
+              </button>
+            </div>
           </div>
 
           <!-- Step 2: Range Selection -->
@@ -106,7 +160,7 @@
 
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div class="flex items-start gap-2 mb-3">
-                <Info class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Info class="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <p class="text-sm text-blue-700">
                   Total students in file: <span class="font-semibold">{{ parsedData.length }}</span>
                   (sorted by score - highest to lowest)
@@ -162,28 +216,26 @@
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                   <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">No.</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khmer Name</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Latin Name</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Origin</th>
                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                   <tr v-for="(student, index) in previewData" :key="index" class="hover:bg-gray-50">
                     <td class="px-3 py-2 text-sm text-gray-700">{{ (rangeFrom || 1) + index }}</td>
-                    <td class="px-3 py-2 text-sm text-gray-900">{{ student.name_latin }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-700">{{ student.id }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-900">{{ student.khmer_name }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-900">{{ student.latin_name }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-700">{{ student.gender }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-700">{{ student.phone_number }}</td>
+                    <td class="px-3 py-2 text-sm text-gray-700">{{ student.origin }}</td>
                     <td class="px-3 py-2 text-sm font-semibold text-gray-700">{{ student.score }}</td>
-                    <td class="px-3 py-2 text-sm">
-                      <span :class="getGradeBadgeClass(student.grade)" class="px-2 py-1 rounded text-xs font-medium">
-                        {{ student.grade }}
-                      </span>
-                    </td>
-                    <td class="px-3 py-2 text-sm">
-                      <span :class="getStatusBadgeClass(student.status)" class="px-2 py-1 rounded-full text-xs font-medium">
-                        {{ student.status }}
-                      </span>
-                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -206,16 +258,20 @@
             </button>
             <button
               @click="handleImport"
-              :disabled="filteredData.length === 0 || isImporting"
+              :disabled="filteredData.length === 0 || isImporting || isUploading || isSavingFile || uploadedFile !== null"
               :class="[
                 'px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2',
-                filteredData.length === 0 || isImporting
+                filteredData.length === 0 || isImporting || isUploading || isSavingFile || uploadedFile !== null
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-[#235AA6] text-white hover:bg-[#1e4a91]'
               ]"
             >
               <Upload class="w-4 h-4" />
-              <span>{{ isImporting ? 'Importing...' : `Import ${selectedCount} Student(s)` }}</span>
+              <span v-if="isUploading">Uploading {{ uploadProgress }}%...</span>
+              <span v-else-if="isSavingFile">Saving...</span>
+              <span v-else-if="isImporting">Processing...</span>
+              <span v-else-if="uploadedFile !== null">Save File First</span>
+              <span v-else>Import</span>
             </button>
           </div>
         </div>
@@ -225,20 +281,30 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { Upload, X, FileSpreadsheet, CheckCircle, Info } from 'lucide-vue-next';
 import * as XLSX from 'xlsx';
+import { useUploadFileScoreStore } from '@/stores/Admin/external_exam/upload_file_score';
+import api from '@/stores/apis/axios';
+import { finalizeExam } from '@/stores/Admin/external_exam/import_selected_student';
 
 // Props
 const props = defineProps({
   show: {
     type: Boolean,
     default: false
+  },
+  academicYear: {
+    type: Number,
+    default: () => new Date().getFullYear()
   }
 });
 
 // Emits
-const emit = defineEmits(['close', 'import']);
+const emit = defineEmits(['close', 'import', 'uploaded']);
+
+// Store
+const uploadStore = useUploadFileScoreStore();
 
 // State
 const fileInput = ref(null);
@@ -249,6 +315,11 @@ const parsedData = ref([]);
 const rangeFrom = ref(1);
 const rangeTo = ref(100);
 const isImporting = ref(false);
+const isSavingFile = ref(false);
+const fileExists = ref(false);
+const isFetchingFile = ref(false);
+const existingFileName = ref('');
+const existingFileId = ref(null);
 
 // Computed
 const filteredData = computed(() => {
@@ -330,15 +401,15 @@ const readExcelFile = (file) => {
 
         // Transform and sort data
         const transformedData = jsonData.map((row, index) => ({
-          id: Date.now() + index,
-          temp_user_id: row['Temp ID'] || row['temp_user_id'] || '',
-          name_khmer: row['Name (Khmer)'] || row['name_khmer'] || '',
-          name_latin: row['Name (Latin)'] || row['name_latin'] || '',
+          id: row['ID'] || row['id'] || Date.now() + index,
+          khmer_name: row['Khmer Name'] || row['khmer_name'] || '',
+          latin_name: row['Latin Name'] || row['latin_name'] || '',
+          date_of_birth: row['Date of Birth'] || row['date_of_birth'] || '',
           gender: row['Gender'] || row['gender'] || '',
           phone_number: row['Phone'] || row['phone_number'] || '',
           origin: row['Origin'] || row['origin'] || '',
-          department_id: parseInt(row['Department ID'] || row['department_id']) || null,
-          program_id: parseInt(row['Program ID'] || row['program_id']) || null,
+          department_id: parseInt(row['Department'] || row['department_id']) || null,
+          program_id: parseInt(row['Program'] || row['program_id']) || null,
           score: parseFloat(row['Score'] || row['score']) || 0,
           grade: row['Grade'] || row['grade'] || '',
           status: row['Status'] || row['status'] || '',
@@ -374,6 +445,89 @@ const formatFileSize = (bytes) => {
   return (bytes / 1048576).toFixed(1) + ' MB';
 };
 
+const fetchExistingFile = async () => {
+  isFetchingFile.value = true;
+  uploadError.value = '';
+  
+  try {
+    // Try to get existing file from store
+    const existingFile = await uploadStore.getExistingScoreFile();
+    
+    console.log('🔍 Fetch result:', existingFile);
+    
+    if (existingFile && existingFile.filename) {
+      console.log(`✅ Found existing file: ${existingFile.filename}`);
+      
+      // Construct the full URL to the file using the download endpoint
+      const fileUrl = `/external_exam/scores/${existingFile.id}/download`;
+      console.log(`📥 Downloading file from: ${fileUrl}`);
+      
+      try {
+        // Fetch the Excel file from backend storage with authentication
+        const response = await api.get(fileUrl, {
+          responseType: 'blob'
+        });
+        
+        const blob = response.data;
+        console.log(`✅ File downloaded: ${blob.size} bytes`);
+        
+        // Create a File object from the blob
+        const file = new File([blob], existingFile.filename, {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        
+        // Parse the Excel file
+        const studentData = await readExcelFile(file);
+        console.log(`✅ Parsed ${studentData.length} students from file`);
+        
+        if (studentData.length > 0) {
+          // ⚠️ Try to fetch student IDs from backend if available
+          try {
+            const studentIdsResponse = await api.get(`/external_exam/scores/${existingFile.id}/students`);
+            if (studentIdsResponse.data && Array.isArray(studentIdsResponse.data)) {
+              // Map temp_student_id from backend to parsed data
+              studentData.forEach((student, index) => {
+                if (studentIdsResponse.data[index]?.temp_student_id) {
+                  student.temp_student_id = studentIdsResponse.data[index].temp_student_id;
+                }
+              });
+              console.log('✅ Mapped student IDs from backend');
+            }
+          } catch (err) {
+            console.warn('⚠️ Could not fetch student IDs from backend:', err.message);
+          }
+          
+          // Set file exists flag
+          fileExists.value = true;
+          existingFileName.value = existingFile.filename;
+          existingFileId.value = existingFile.id;
+          parsedData.value = studentData;
+          
+          // Auto-adjust range
+          rangeTo.value = Math.min(100, parsedData.value.length);
+          
+          console.log(`✅ Range set: ${rangeFrom.value} to ${rangeTo.value}`);
+        } else {
+          console.log('⚠️ File is empty');
+          fileExists.value = false;
+        }
+      } catch (fetchError) {
+        console.error('❌ Failed to download or parse file:', fetchError);
+        uploadError.value = 'Failed to load existing file. Please upload a new one.';
+        fileExists.value = false;
+      }
+    } else {
+      console.log('ℹ️ No existing file found');
+      fileExists.value = false;
+    }
+  } catch (error) {
+    console.log('ℹ️ No existing file available:', error.message);
+    fileExists.value = false;
+  } finally {
+    isFetchingFile.value = false;
+  }
+};
+
 const getGradeBadgeClass = (grade) => {
   const classes = {
     'A': 'bg-green-100 text-green-800',
@@ -394,17 +548,120 @@ const getStatusBadgeClass = (status) => {
   return classes[status] || 'bg-gray-100 text-gray-800';
 };
 
-const handleImport = () => {
-  if (filteredData.value.length === 0) return;
+const handleSaveFile = async () => {
+  if (!uploadedFile.value) return;
+  
+  isSavingFile.value = true;
+  uploadError.value = '';
+
+  try {
+    console.log('📤 Saving file to backend...');
+    const result = await uploadStore.uploadScoreFile(uploadedFile.value, props.academicYear);
+    console.log('✅ File saved successfully:', result);
+    
+    // Get the file ID (handle cases where backend might not return it directly)
+    let fileId = result.id || result.data?.id;
+    
+    // If no ID returned, try to fetch it from the backend
+    if (!fileId) {
+      console.warn('⚠️ Backend did not return file ID. Attempting to fetch...');
+      try {
+        const existingFile = await uploadStore.getExistingScoreFile();
+        if (existingFile && existingFile.id) {
+          fileId = existingFile.id;
+          console.log('✅ Retrieved file ID:', fileId);
+        }
+      } catch (fetchError) {
+        console.error('❌ Could not fetch file ID:', fetchError);
+      }
+    }
+    
+    // Check if backend returned students with temp_student_id
+    if (result.students && Array.isArray(result.students) && result.students.length > 0) {
+      console.log('📋 Backend returned student data with database IDs');
+      parsedData.value = result.students.sort((a, b) => b.score - a.score);
+      console.log(`✅ Saved ${parsedData.value.length} students with database IDs`);
+    } else {
+      console.warn('⚠️ Backend did not return students. Using frontend-parsed data.');
+      console.warn('⚠️ Students will be created during import finalization.');
+    }
+    
+    // Mark as existing file
+    fileExists.value = true;
+    existingFileName.value = uploadedFile.value.name;
+    existingFileId.value = fileId;
+    
+    console.log(`✅ File saved with ID: ${fileId}`);
+    
+    // Clear the uploaded file to show "using existing file" state
+    uploadedFile.value = null;
+    
+  } catch (error) {
+    console.error('❌ Save file failed:', error);
+    uploadError.value = error.response?.data?.message || uploadStore.error || error.message || 'Failed to save file. Please try again.';
+  } finally {
+    isSavingFile.value = false;
+  }
+};
+
+const handleImport = async () => {
+  if (parsedData.value.length === 0) return;
   
   isImporting.value = true;
-  
-  setTimeout(() => {
+  uploadError.value = '';
+
+  try {
+    let fileId;
+    
+    // Check if we're using a saved file
+    if (existingFileId.value) {
+      console.log('📋 Using saved file with ID:', existingFileId.value);
+      fileId = existingFileId.value;
+    } else if (uploadedFile.value) {
+      throw new Error('Please save the file first before importing.');
+    } else {
+      throw new Error('No file available for import');
+    }
+    
+    // ⚠️ Note: Backend will create temp_students during finalization if they don't exist
+    const missingIds = parsedData.value.filter(s => !s.temp_student_id && !s.id);
+    if (missingIds.length > 0) {
+      console.warn(`⚠️ ${missingIds.length} students don't have database IDs yet. Backend will create them during finalization.`);
+    }
+    
+    // Finalize exam enrollment with ALL students
+    // Backend will determine selected vs non-selected based on rank range
+    console.log('📋 Finalizing exam enrollment...');
+    console.log(`📊 Sending ALL ${parsedData.value.length} students with rank range ${rangeFrom.value}-${rangeTo.value}`);
+    const finalizeResult = await finalizeExam({
+      academicYear: props.academicYear,
+      importScoreId: fileId,
+      fromRank: rangeFrom.value || 1,
+      toRank: rangeTo.value || parsedData.value.length,
+      students: parsedData.value // ✅ Send ALL students, not filtered subset
+    });
+    
+    console.log('✅ Exam finalized successfully:', finalizeResult);
+    
+    // Emit the uploaded data and result
+    emit('uploaded', {
+      file: { id: fileId, filename: existingFileName.value || uploadedFile.value?.name },
+      students: parsedData.value, // All students
+      selectedRange: { from: rangeFrom.value, to: rangeTo.value },
+      finalizeResult
+    });
+    
     emit('import', filteredData.value);
-    isImporting.value = false;
+    
+    // Close modal and reset
     closeModal();
     resetModal();
-  }, 500);
+  } catch (error) {
+    console.error('❌ Import failed:', error);
+    uploadError.value = error.response?.data?.message || uploadStore.error || 'Failed to import students. Please try again.';
+  } finally {
+    isImporting.value = false;
+  }
 };
 
 const closeModal = () => {
@@ -417,15 +674,28 @@ const resetModal = () => {
   uploadError.value = '';
   rangeFrom.value = 1;
   rangeTo.value = 100;
+  fileExists.value = false;
+  isFetchingFile.value = false;
+  existingFileName.value = '';
+  existingFileId.value = null;
   if (fileInput.value) {
     fileInput.value.value = '';
   }
+  uploadStore.resetUploadState();
 };
 
-// Watch for modal close to reset
-watch(() => props.show, (newVal) => {
-  if (!newVal) {
+// Watch for modal open/close
+watch(() => props.show, async (newVal) => {
+  if (newVal) {
+    // Modal opened - try to fetch existing file
+    await fetchExistingFile();
+  } else {
+    // Modal closed - reset
     resetModal();
   }
 });
+
+// Watch upload progress
+const uploadProgress = computed(() => uploadStore.progressPercentage);
+const isUploading = computed(() => uploadStore.isUploading);
 </script>

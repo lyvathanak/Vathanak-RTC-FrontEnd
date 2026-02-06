@@ -2,42 +2,49 @@
 <template>
   <form @submit.prevent="submit" class="max-w-none">
     <div class="space-y-8">
-      <!-- ============= Program Information ============= -->
+      <!-- ================= Program Information ================= -->
       <section
-        class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden">
-        <div class="flex items-center gap-2 px-4 py-3 border-b bg-gray-50">
+        class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden">
+        <div class="flex items-center gap-2 px-5 py-4 border-b bg-gray-50">
           <span
-            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-700 text-xs font-bold"
-            >i</span
-          >
-          <h3 class="font-semibold">Program Information</h3>
+            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 text-xs font-bold">
+            i
+          </span>
+          <div class="min-w-0">
+            <h3 class="font-semibold text-gray-900">Program Information</h3>
+            <p class="text-xs text-gray-500">
+              Basic details used to create a new program.
+            </p>
+          </div>
         </div>
 
-        <div class="px-4 py-4">
+        <div class="px-5 py-5">
           <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            <!-- Program Name (4/6) -->
+            <!-- Program Name -->
             <div class="flex flex-col md:col-span-4">
-              <label class="text-sm font-medium mb-1">Program Name</label>
+              <label class="text-sm font-medium text-gray-700 mb-1">
+                Program Name <span class="text-red-600">*</span>
+              </label>
               <input
                 v-model="form.program_name"
                 type="text"
                 placeholder="Enter Program Name"
-                class="h-10 w-full rounded-2xl border px-3 outline-none focus:ring-2 focus:ring-[#235AA6]" />
-              <p v-if="errors.program_name" class="text-red-600 text-sm mt-1">
+                class="h-11 w-full rounded-2xl border border-gray-200 px-4 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
+              <p v-if="errors.program_name" class="text-red-600 text-xs mt-1">
                 {{ errors.program_name }}
               </p>
             </div>
 
-            <!-- Degree Level (2/6) -->
+            <!-- Degree Level -->
             <div class="flex flex-col md:col-span-2">
-              <label class="text-sm font-medium mb-1"
-                >Degree Level <span class="text-red-600">*</span></label
-              >
+              <label class="text-sm font-medium text-gray-700 mb-1">
+                Degree Level <span class="text-red-600">*</span>
+              </label>
               <div class="relative">
                 <select
                   v-model="form.degree_level"
                   required
-                  class="h-10 w-full rounded-2xl border px-3 outline-none bg-white focus:ring-2 focus:ring-[#235AA6] appearance-none pr-9">
+                  class="h-11 w-full rounded-2xl border border-gray-200 px-4 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6] appearance-none pr-10">
                   <option value="">Select degree level</option>
                   <option
                     v-for="opt in degreeOptions"
@@ -52,37 +59,37 @@
                   <ChevronDown class="w-4 h-4 text-gray-500" />
                 </span>
               </div>
-              <p v-if="errors.degree_level" class="text-red-600 text-sm mt-1">
+              <p v-if="errors.degree_level" class="text-red-600 text-xs mt-1">
                 {{ errors.degree_level }}
               </p>
             </div>
 
-            <!-- Duration (2/6) -->
+            <!-- Duration -->
             <div class="flex flex-col md:col-span-2">
-              <label class="text-sm font-medium mb-1"
-                >Duration (years) <span class="text-red-600">*</span></label
-              >
+              <label class="text-sm font-medium text-gray-700 mb-1">
+                Duration (years) <span class="text-red-600">*</span>
+              </label>
               <input
                 v-model.number="form.duration_years"
                 type="number"
                 min="1"
                 placeholder="Enter Duration"
-                class="h-10 w-full rounded-2xl border px-3 outline-none focus:ring-2 focus:ring-[#235AA6]"
+                class="h-11 w-full rounded-2xl border border-gray-200 px-4 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]"
                 required />
-              <p v-if="errors.duration_years" class="text-red-600 text-sm mt-1">
+              <p v-if="errors.duration_years" class="text-red-600 text-xs mt-1">
                 {{ errors.duration_years }}
               </p>
             </div>
 
-            <!-- Department (4/6) -->
+            <!-- Department -->
             <div class="flex flex-col md:col-span-2">
-              <label class="text-sm font-medium mb-1"
-                >Department <span class="text-red-600">*</span></label
-              >
+              <label class="text-sm font-medium text-gray-700 mb-1">
+                Department <span class="text-red-600">*</span>
+              </label>
               <div class="relative">
                 <select
                   v-model="form.department_id"
-                  class="h-10 w-full rounded-2xl border px-3 outline-none bg-white focus:ring-2 focus:ring-[#235AA6] appearance-none pr-9 disabled:bg-gray-100"
+                  class="h-11 w-full rounded-2xl border border-gray-200 px-4 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6] appearance-none pr-10 disabled:bg-gray-100"
                   :disabled="loadingDepartments"
                   required>
                   <option value="">Select department…</option>
@@ -99,23 +106,23 @@
                   <ChevronDown class="w-4 h-4 text-gray-500" />
                 </span>
               </div>
-              <p v-if="errors.department_id" class="text-red-600 text-sm mt-1">
+              <p v-if="errors.department_id" class="text-red-600 text-xs mt-1">
                 {{ errors.department_id }}
               </p>
             </div>
 
+            <!-- Academic Year -->
             <div class="flex flex-col md:col-span-2">
-              <label class="text-sm font-medium mb-1">
+              <label class="text-sm font-medium text-gray-700 mb-1">
                 Academic Year <span class="text-red-600">*</span>
               </label>
               <input
                 v-model="form.academic_year"
                 type="text"
-                placeholder="Enter Academic Year"
-                class="h-10 w-full rounded-2xl border px-3 outline-none focus:ring-2 focus:ring-[#235AA6]"
-                required
-              />
-              <p v-if="errors.academic_year" class="text-red-600 text-sm mt-1">
+                placeholder="e.g. 2025-2026"
+                class="h-11 w-full rounded-2xl border border-gray-200 px-4 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]"
+                required />
+              <p v-if="errors.academic_year" class="text-red-600 text-xs mt-1">
                 {{ errors.academic_year }}
               </p>
             </div>
@@ -123,48 +130,55 @@
         </div>
       </section>
 
-      <!-- ============= Semesters & Subjects ============= -->
+      <!-- ================= Semesters & Subjects ================= -->
       <section
-        class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden">
+        class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden">
         <div
-          class="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
+          class="flex items-center justify-between px-5 py-4 border-b bg-gray-50">
           <div class="flex items-center gap-2">
             <span
-              class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-700 text-xs font-bold"
-              >i</span
-            >
-            <h3 class="font-semibold">Semesters</h3>
+              class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-gray-700 text-xs font-bold">
+              i
+            </span>
+            <div>
+              <h3 class="font-semibold text-gray-900">Semesters</h3>
+              <p class="text-xs text-gray-500">
+                Add semesters, then assign subjects per semester.
+              </p>
+            </div>
           </div>
+
           <button
             type="button"
             @click="startNewSemester"
-            class="inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-3 py-2 text-white font-semibold shadow hover:bg-[#1f4f93]">
+            class="inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-3 py-2 text-white font-semibold shadow hover:bg-[#1f4f93] active:scale-[0.99]">
             <Plus class="w-4 h-4" />
             <span>Add Semester</span>
           </button>
         </div>
 
-        <div class="px-4 py-4">
-          <!-- New semester inline editor (stays open after save) -->
+        <div class="px-5 py-5">
+          <!-- New semester inline editor -->
           <div
             v-if="showNewSem"
-            class="rounded-xl bg-white shadow border border-gray-200 mb-6">
-            <div class="px-4 py-3 border-b flex items-center justify-between">
-              <div class="font-medium text-gray-700">New Semester</div>
+            class="rounded-2xl bg-white shadow-sm border border-gray-200 mb-6 overflow-hidden">
+            <div
+              class="px-4 py-3 border-b flex items-center justify-between bg-gray-50">
+              <div class="font-medium text-gray-800">New Semester</div>
               <div class="flex gap-2">
                 <button
                   type="button"
-                  class="px-3 py-1.5 rounded-xl bg-[#235AA6] text-white text-sm font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60"
+                  class="px-3 py-2 rounded-xl bg-[#235AA6] text-white text-sm font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60"
                   :disabled="creatingSem"
                   @click="createNewSemester">
                   <span
                     v-if="creatingSem"
-                    class="inline-block h-4 w-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    class="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                   Save
                 </button>
                 <button
                   type="button"
-                  class="px-3 py-1.5 rounded-xl border text-sm hover:bg-gray-50 disabled:opacity-60"
+                  class="px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-gray-50 disabled:opacity-60"
                   :disabled="creatingSem"
                   @click="cancelNewSemester">
                   Cancel
@@ -179,7 +193,7 @@
                   <input
                     :value="newSem.semester_number"
                     disabled
-                    class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100" />
+                    class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-gray-100" />
                 </div>
 
                 <div class="flex flex-col md:col-span-3">
@@ -189,7 +203,7 @@
                   <input
                     v-model="newSem.semester_key"
                     type="text"
-                    class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                    class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                 </div>
 
                 <div class="flex flex-col">
@@ -197,7 +211,7 @@
                   <input
                     v-model="newSem.start_date"
                     type="date"
-                    class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                    class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                 </div>
 
                 <div class="flex flex-col">
@@ -205,27 +219,30 @@
                   <input
                     v-model="newSem.end_date"
                     type="date"
-                    class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                    class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                 </div>
               </div>
 
-              <!-- Subject picker (like create UI) -->
+              <!-- Subjects picker -->
               <div>
                 <div class="flex justify-between items-center mb-2">
-                  <div class="text-xs text-gray-700 font-medium">Subjects</div>
+                  <div class="text-xs text-gray-700 font-semibold">
+                    Subjects
+                  </div>
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1 rounded bg-gray-800 text-white text-xs px-2 py-1 hover:bg-black"
+                    class="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white text-xs px-3 py-2 hover:bg-black"
                     @click="addNewRow"
                     title="Add subject">
                     + Add Subject
                   </button>
                 </div>
 
-                <div class="overflow-x-auto border rounded-lg">
+                <div
+                  class="overflow-x-auto border border-gray-200 rounded-2xl bg-white">
                   <table class="min-w-full text-sm">
                     <thead>
-                      <tr class="text-left bg-gray-100">
+                      <tr class="text-left bg-gray-50 border-b border-gray-200">
                         <th class="px-3 py-2 font-semibold w-72">Subject</th>
                         <th class="px-3 py-2 font-semibold w-20">Credit</th>
                         <th class="px-3 py-2 font-semibold w-24">Hour</th>
@@ -236,18 +253,19 @@
                       <tr v-if="!newSem.rows.length">
                         <td
                           colspan="4"
-                          class="px-3 py-3 text-center text-gray-500 italic">
+                          class="px-3 py-4 text-center text-gray-500 italic">
                           No subjects
                         </td>
                       </tr>
+
                       <tr
                         v-for="(r, i) in newSem.rows"
                         :key="`ns-${i}`"
-                        class="border-t">
+                        class="border-t border-gray-100">
                         <td class="px-3 py-2">
                           <div class="relative">
                             <select
-                              class="w-full border rounded px-2 py-2 bg-white focus:ring-2 focus:ring-black appearance-none pr-9"
+                              class="h-10 w-full border border-gray-200 rounded-xl px-3 bg-white focus:ring-2 focus:ring-black/20 focus:border-black appearance-none pr-10"
                               :value="r.subjectId || ''"
                               @change="
                                 onNewSubjectPicked(i, $event.target.value)
@@ -261,7 +279,7 @@
                               </option>
                             </select>
                             <span
-                              class="pointer-events-none absolute inset-y-0 right-2 flex items-center"
+                              class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
                               aria-hidden="true">
                               <ChevronDown class="w-4 h-4 text-gray-500" />
                             </span>
@@ -272,7 +290,7 @@
                         <td class="px-3 py-2">
                           <button
                             type="button"
-                            class="inline-flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 px-2.5 py-1.5 transition-colors"
+                            class="inline-flex items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 px-3 py-2 text-xs transition-colors"
                             @click="removeNewRow(i)">
                             Remove
                           </button>
@@ -281,14 +299,14 @@
                     </tbody>
                   </table>
                 </div>
-              </div>
 
-              <p
-                v-if="newSemMsg"
-                class="text-xs"
-                :class="newSemOk ? 'text-green-700' : 'text-red-600'">
-                {{ newSemMsg }}
-              </p>
+                <p
+                  v-if="newSemMsg"
+                  class="text-xs mt-2"
+                  :class="newSemOk ? 'text-green-700' : 'text-red-600'">
+                  {{ newSemMsg }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -302,27 +320,26 @@
             No semesters in this program.
           </div>
 
-          <!-- Semester Cards -->
+          <!-- Semester cards -->
           <div
             v-for="sem in semesters"
             :key="sem.id"
-            class="rounded-xl bg-white shadow border border-gray-200 mb-4">
-            <!-- Header + edit controls -->
-            <div class="px-4 py-3">
+            class="rounded-2xl bg-white shadow-sm border border-gray-200 mb-4 overflow-hidden">
+            <div class="px-4 py-4">
               <div class="flex items-start justify-between gap-3">
                 <!-- View -->
-                <div
-                  v-if="!sem._editing"
-                  class="flex flex-wrap items-center gap-2 sm:gap-x-6">
-                  <div class="text-sm text-gray-700 font-medium">
-                    <span class="text-gray-600">{{ sem.semester_key }}</span>
+                <div v-if="!sem._editing" class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class="text-sm font-semibold text-gray-900 truncate">
+                      {{ sem.semester_key }}
+                    </div>
+                    <span
+                      v-if="sem.academic_year_label"
+                      class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
+                      AY {{ sem.academic_year_label }}
+                    </span>
                   </div>
-                  <span
-                    v-if="sem.academic_year_label"
-                    class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700">
-                    AY {{ sem.academic_year_label }}
-                  </span>
-                  <div class="text-xs text-gray-500">
+                  <div class="text-xs text-gray-500 mt-1">
                     <span class="font-medium">Start:</span>
                     {{ sem.start_date || "—" }}
                     <span class="mx-2">•</span>
@@ -342,7 +359,7 @@
                     <input
                       v-model="sem._edit.semester_key"
                       type="text"
-                      class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                      class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                   </div>
                   <div>
                     <label class="text-xs text-gray-700 mb-1 block"
@@ -351,7 +368,7 @@
                     <input
                       v-model="sem._edit.start_date"
                       type="date"
-                      class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                      class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                   </div>
                   <div>
                     <label class="text-xs text-gray-700 mb-1 block"
@@ -360,23 +377,24 @@
                     <input
                       v-model="sem._edit.end_date"
                       type="date"
-                      class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]" />
+                      class="h-10 w-full border border-gray-200 rounded-xl px-3 text-sm bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]" />
                   </div>
                 </div>
 
-                <!-- Right controls -->
+                <!-- Controls -->
                 <div class="flex items-center gap-2 shrink-0">
                   <template v-if="!sem._editing">
                     <button
                       type="button"
-                      class="p-2 rounded-lg hover:bg-gray-100"
+                      class="p-2 rounded-xl hover:bg-gray-100"
                       title="Edit semester"
                       @click="enterEdit(sem)">
                       <Pencil class="w-4 h-4" />
                     </button>
+
                     <button
                       type="button"
-                      class="p-2 rounded-lg hover:bg-red-50 text-red-600 disabled:opacity-50"
+                      class="p-2 rounded-xl hover:bg-red-50 text-red-600 disabled:opacity-50"
                       title="Delete semester"
                       :disabled="sem._deleting"
                       @click="deleteSemester(sem)">
@@ -386,20 +404,21 @@
                       <Trash2 v-else class="w-4 h-4" />
                     </button>
                   </template>
+
                   <template v-else>
                     <button
                       type="button"
-                      class="px-3 py-1.5 rounded-xl bg-[#235AA6] text-white text-sm font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60"
+                      class="px-3 py-2 rounded-xl bg-[#235AA6] text-white text-sm font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60"
                       :disabled="sem._saving"
                       @click="saveSemHeader(sem)">
                       <span
                         v-if="sem._saving"
-                        class="inline-block h-4 w-4 mr-1 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        class="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                       Save
                     </button>
                     <button
                       type="button"
-                      class="px-3 py-1.5 rounded-xl border text-sm hover:bg-gray-50 disabled:opacity-60"
+                      class="px-3 py-2 rounded-xl border border-gray-200 text-sm hover:bg-gray-50 disabled:opacity-60"
                       :disabled="sem._saving"
                       @click="cancelEdit(sem)">
                       Cancel
@@ -416,13 +435,13 @@
               </p>
             </div>
 
-            <!-- Subjects table -->
+            <!-- Subjects -->
             <div class="px-4 pb-4">
-              <div class="flex items-center gap-2 mb-2">
-                <div class="relative">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                <div class="relative w-full sm:w-auto">
                   <select
                     v-model="sem._subjectToAdd"
-                    class="h-9 rounded-xl border px-3 outline-none bg-white focus:ring-2 focus:ring-[#235AA6] min-w-[18rem] appearance-none pr-9"
+                    class="h-10 rounded-xl border border-gray-200 px-3 outline-none bg-white focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6] min-w-[18rem] appearance-none pr-10 w-full"
                     :disabled="sem._adding || loadingAllSubjects"
                     title="Select a subject to add">
                     <option value="">Select subject…</option>
@@ -438,7 +457,7 @@
                     </option>
                   </select>
                   <span
-                    class="pointer-events-none absolute inset-y-0 right-2 flex items-center"
+                    class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
                     aria-hidden="true">
                     <ChevronDown class="w-4 h-4 text-gray-500" />
                   </span>
@@ -448,23 +467,24 @@
                   type="button"
                   @click="addSubjectToSemester(sem)"
                   :disabled="!sem._subjectToAdd || sem._adding"
-                  class="inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-3 py-1.5 text-white font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60">
+                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#235AA6] px-4 py-2 text-white font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60 w-full sm:w-auto">
                   <span
                     v-if="sem._adding"
                     class="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  <span>{{ sem._adding ? "Adding…" : "+ Add Subject" }}</span>
+                  <span>{{ sem._adding ? "Adding…" : "Add Subject" }}</span>
                 </button>
               </div>
 
-              <div class="overflow-x-auto border rounded-lg">
+              <div
+                class="overflow-x-auto border border-gray-200 rounded-2xl bg-white">
                 <table class="min-w-full text-sm">
                   <thead>
-                    <tr class="bg-gray-100 text-left">
+                    <tr class="bg-gray-50 text-left border-b border-gray-200">
                       <th class="px-3 py-2 font-semibold w-24">ID</th>
                       <th class="px-3 py-2 font-semibold">Subject</th>
                       <th class="px-3 py-2 font-semibold w-20">Credit</th>
                       <th class="px-3 py-2 font-semibold w-24">Hours</th>
-                      <th class="px-3 py-2 font-semibold w-24 text-right">
+                      <th class="px-3 py-2 font-semibold w-20 text-right">
                         Action
                       </th>
                     </tr>
@@ -473,7 +493,7 @@
                     <tr v-if="sem._loading">
                       <td
                         colspan="5"
-                        class="px-3 py-3 text-center text-gray-500">
+                        class="px-3 py-4 text-center text-gray-500">
                         Loading…
                       </td>
                     </tr>
@@ -482,7 +502,7 @@
                       v-else-if="(semesterSubjects[sem.id] || []).length === 0">
                       <td
                         colspan="5"
-                        class="px-3 py-3 text-center text-gray-500 italic">
+                        class="px-3 py-4 text-center text-gray-500 italic">
                         No subjects in this semester.
                       </td>
                     </tr>
@@ -490,10 +510,10 @@
                     <tr
                       v-for="sub in semesterSubjects[sem.id] || []"
                       :key="`${sem.id}-${sub.id}`"
-                      class="border-t">
+                      class="border-t border-gray-100">
                       <td class="px-3 py-2">#{{ sub.id }}</td>
                       <td class="px-3 py-2">
-                        <div class="font-medium">
+                        <div class="font-medium text-gray-900">
                           {{
                             sub.subject_code
                               ? `${sub.subject_code} — ${sub.subject_name}`
@@ -516,12 +536,7 @@
                             type="button"
                             :disabled="isRemoving(sem.id, sub.id)"
                             @click="removeSubjectFromSemester(sem, sub.id)"
-                            :title="
-                              isRemoving(sem.id, sub.id)
-                                ? 'Removing…'
-                                : 'Remove subject from semester'
-                            "
-                            class="inline-flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 px-2.5 py-1.5 transition-colors disabled:opacity-50 disabled:pointer-events-none">
+                            class="inline-flex items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 px-3 py-2 transition-colors disabled:opacity-50 disabled:pointer-events-none">
                             <span
                               v-if="isRemoving(sem.id, sub.id)"
                               class="inline-block h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -546,9 +561,8 @@
       </section>
     </div>
 
-    <!-- ============= Footer (sticky) ============= -->
-    <div
-      class="sticky -bottom-5 mt-10 -mx-6 sm:mx-0 bg-white border-t px-6 py-4 -mb-5">
+    <!-- ================= Footer ================= -->
+    <div class="sticky bottom-0 mt-10 bg-white border-t px-6 py-4">
       <div class="flex items-center justify-end gap-3">
         <button
           type="button"
@@ -586,7 +600,8 @@
 <script setup>
 import { ref, computed, onMounted, watch, reactive } from "vue";
 import api from "@/stores/apis/axios";
-import { Trash2, Pencil, Plus, ChevronDown } from "lucide-vue-next"; // ⟵ added ChevronDown
+import { Trash2, Pencil, Plus, ChevronDown } from "lucide-vue-next";
+import BaseSelect from "@/components/features/BaseSelect.vue";
 
 /* ---------- props / emits ---------- */
 const props = defineProps({ program: { type: Object, required: true } });
@@ -599,14 +614,16 @@ const degreeOptions = [
   { label: "Master", value: "Master" },
   { label: "PhD", value: "PhD" },
 ];
+
 const form = ref({
   program_code: "",
   program_name: "",
   degree_level: "",
   duration_years: 1,
   department_id: "",
-  academic_year:"",
+  academic_year: "",
 });
+
 const errors = ref({});
 const loading = ref(false);
 
@@ -615,7 +632,7 @@ const departments = ref([]);
 const loadingDepartments = ref(false);
 
 /* ---------- semesters ---------- */
-const semesters = ref([]); // [{id, semester_number, semester_key, start_date, end_date, locals...}]
+const semesters = ref([]);
 const loadingSemesters = ref(false);
 
 /* ---------- subjects (catalog) ---------- */
@@ -633,19 +650,20 @@ const subjectCatalog = computed(() =>
   }))
 );
 
-/* ---------- subjects per semester ---------- */
-const semesterSubjects = reactive({}); // { [semesterId]: Subject[] }
-const removingSet = ref(new Set()); // keys "semesterId|subjectId"
+const degreeSelectOptions = computed(() =>
+  degreeOptions.map((d) => ({ label: d.label, value: d.value }))
+);
 
-const academicYears = ref([]);
-async function loadAcademicYears() {
-  try {
-    const { data } = await api.get("/managements/academic_years");
-    academicYears.value = data?.academic_years || [];
-  } catch (e) {
-    console.error("Failed to load academic years:", e);
-  }
-}
+const departmentSelectOptions = computed(() =>
+  (departments.value || []).map((d) => ({
+    label: d.department_name,
+    value: String(d.id),
+  }))
+);
+
+/* ---------- subjects per semester ---------- */
+const semesterSubjects = reactive({});
+const removingSet = ref(new Set());
 
 /* =============================== Date helpers =============================== */
 function pad2(n) {
@@ -672,6 +690,7 @@ function augmentSemester(s) {
   const startISO = toISO(s.start_date);
   const endISO = toISO(s.end_date);
   const ayLabel = s.academic_year?.year_label || s.academic_year || null;
+
   return {
     ...s,
     start_date: startISO || "",
@@ -764,6 +783,7 @@ async function createNewSemester() {
   newSemMsg.value = "";
   newSemOk.value = false;
   creatingSem.value = true;
+
   try {
     const body = {
       program_id: Number(props.program.id),
@@ -774,16 +794,16 @@ async function createNewSemester() {
       start_date: newSem.value.start_date || "",
       end_date: newSem.value.end_date || "",
     };
-    // 1) create semester
+
     const r = await api.post("/managements/create_new_semester_program", body);
     const created = r?.data?.semester || null;
     const createdId = created?.id;
     if (!createdId) throw new Error("Semester not created.");
 
-    // 2) assign selected subjects (if any)
     const subjectIds = newSem.value.rows
       .map((x) => Number(x.subjectId))
       .filter((n) => Number.isFinite(n) && n > 0);
+
     if (subjectIds.length) {
       await api.post("/managements/add_subject_to_semester", {
         semester_id: Number(createdId),
@@ -791,12 +811,10 @@ async function createNewSemester() {
       });
     }
 
-    // 3) show in list immediately (keep the inline creator open)
     const uiSem = augmentSemester(created);
     semesters.value.push(uiSem);
     await loadSubjectsInSemester(uiSem.id);
 
-    // 4) reset the inline editor for the next one
     const nextNo =
       Math.max(...semesters.value.map((s) => Number(s.semester_number) || 0)) +
       1;
@@ -807,6 +825,7 @@ async function createNewSemester() {
       end_date: "",
       rows: [],
     };
+
     newSemOk.value = true;
     newSemMsg.value = "Semester created. You can add another.";
   } catch (e) {
@@ -838,6 +857,7 @@ async function saveSemHeader(sem) {
   sem._saving = true;
   sem._okHead = false;
   sem._msgHead = "";
+
   try {
     const body = {
       semester_key:
@@ -848,13 +868,13 @@ async function saveSemHeader(sem) {
       end_date: sem._edit.end_date || "",
       program_id: Number(props.program?.id),
     };
+
     const { data } = await api.put(
       `/managements/update_semester/${sem.id}`,
       body
     );
     const srv = data?.semester || {};
 
-    // reflect server-of-record values (API returns DMY)
     sem.semester_key = srv.semester_key ?? body.semester_key;
     sem.semester_number = Number(srv.semester_number ?? body.semester_number);
     sem.start_date = dmyToISO(srv.start_date ?? body.start_date);
@@ -880,6 +900,7 @@ async function saveSemHeader(sem) {
 async function deleteSemester(sem) {
   if (!sem?.id) return;
   if (!confirm(`Delete "${sem.semester_key}"? This cannot be undone.`)) return;
+
   sem._deleting = true;
   try {
     await api.delete(`/managements/delete_semester/${sem.id}`);
@@ -890,9 +911,7 @@ async function deleteSemester(sem) {
   } catch (e) {
     sem._msgHead = e?.response?.data?.message || "Failed to delete semester.";
     sem._okHead = false;
-    setTimeout(() => {
-      sem._msgHead = "";
-    }, 3000);
+    setTimeout(() => (sem._msgHead = ""), 3000);
   } finally {
     sem._deleting = false;
   }
@@ -911,19 +930,21 @@ async function addSubjectToSemester(sem) {
   sem._ok = false;
   sem._msg = "";
   sem._adding = true;
+
   try {
     await api.post("/managements/add_subject_to_semester", {
       semester_id: Number(sem.id),
       subject_ids: [Number(sem._subjectToAdd)],
     });
+
     sem._subjectToAdd = "";
     await loadSubjectsInSemester(sem.id);
+
     sem._ok = true;
     sem._msg = "Subject added to semester.";
   } catch (e) {
     sem._ok = false;
     sem._msg = e?.response?.data?.message || "Failed to add subject.";
-    console.error("❌ Add subject to semester failed:", e?.response?.data || e);
   } finally {
     sem._adding = false;
   }
@@ -931,27 +952,25 @@ async function addSubjectToSemester(sem) {
 
 async function removeSubjectFromSemester(sem, subjectId) {
   const key = rmKey(sem.id, subjectId);
-  const set = new Set(removingSet.value);
-  set.add(key);
-  removingSet.value = set;
+  removingSet.value = new Set([...removingSet.value, key]);
+
   sem._ok = false;
   sem._msg = "";
+
   try {
     await api.delete("/managements/remove_subject_from_semester", {
       data: { semester_id: Number(sem.id), subject_ids: [Number(subjectId)] },
     });
+
     semesterSubjects[sem.id] = (semesterSubjects[sem.id] || []).filter(
       (s) => String(s.id) !== String(subjectId)
     );
+
     sem._ok = true;
     sem._msg = "Subject removed from semester.";
   } catch (e) {
     sem._ok = false;
     sem._msg = e?.response?.data?.message || "Failed to remove subject.";
-    console.error(
-      "❌ Remove subject from semester failed:",
-      e?.response?.data || e
-    );
   } finally {
     const s2 = new Set(removingSet.value);
     s2.delete(key);
@@ -962,6 +981,7 @@ async function removeSubjectFromSemester(sem, subjectId) {
 /* =============================== Loaders ==================================== */
 const canSubmit = computed(
   () =>
+    !!form.value.program_name?.trim() &&
     !!form.value.degree_level &&
     Number(form.value.duration_years) >= 1 &&
     !!form.value.department_id
@@ -983,7 +1003,6 @@ async function loadDepartments() {
       : [];
   } catch (e) {
     departments.value = [];
-    console.error("❌ Departments load failed:", e?.response?.data || e);
   } finally {
     loadingDepartments.value = false;
   }
@@ -1005,26 +1024,28 @@ async function loadAllSubjects() {
     }));
   } catch (e) {
     allSubjects.value = [];
-    console.error("⚠️ All subjects load failed:", e?.response?.data || e);
   } finally {
     loadingAllSubjects.value = false;
   }
 }
 
 async function loadSemesters(programId) {
+  if (!programId) return; // ✅ guard
   loadingSemesters.value = true;
+
   try {
     const { data } = await api.get(
       `/managements/get_semesters_by_program/${programId}`
     );
     const list = Array.isArray(data?.semesters) ? data.semesters : [];
     semesters.value = list.map(augmentSemester);
+
+    // load subjects per semester
     for (const s of semesters.value) {
       await loadSubjectsInSemester(s.id);
     }
   } catch (e) {
     semesters.value = [];
-    console.error("❌ Semesters load failed:", e?.response?.data || e);
   } finally {
     loadingSemesters.value = false;
   }
@@ -1033,6 +1054,7 @@ async function loadSemesters(programId) {
 async function loadSubjectsInSemester(semesterId) {
   const sem = semesters.value.find((x) => Number(x.id) === Number(semesterId));
   if (sem) sem._loading = true;
+
   try {
     const { data } = await api.get(
       `/managements/get_all_subject_in_semester/${semesterId}`
@@ -1042,10 +1064,6 @@ async function loadSubjectsInSemester(semesterId) {
       : [];
   } catch (e) {
     semesterSubjects[semesterId] = [];
-    console.error(
-      "❌ Subjects in semester load failed:",
-      e?.response?.data || e
-    );
   } finally {
     if (sem) sem._loading = false;
   }
@@ -1054,18 +1072,22 @@ async function loadSubjectsInSemester(semesterId) {
 /* ============================== Submit program ============================== */
 function validateLocal() {
   errors.value = {};
+  if (!form.value.program_name?.trim())
+    errors.value.program_name = "Program name is required.";
   if (!form.value.degree_level)
     errors.value.degree_level = "Degree level is required.";
-  if (!form.value.duration_years || Number(form.value.duration_years) < 1) {
+  if (!form.value.duration_years || Number(form.value.duration_years) < 1)
     errors.value.duration_years = "Duration must be at least 1.";
-  }
   if (!form.value.department_id)
     errors.value.department_id = "Department is required.";
+  if (!form.value.academic_year?.trim())
+    errors.value.academic_year = "Academic year is required.";
   return Object.keys(errors.value).length === 0;
 }
 
 async function submit() {
   if (!validateLocal()) return;
+
   loading.value = true;
   try {
     const payload = {
@@ -1073,30 +1095,35 @@ async function submit() {
       degree_level: form.value.degree_level,
       duration_years: Number(form.value.duration_years),
       department_id: Number(form.value.department_id),
-      academic_year: form.value.academic_year || ""
+      academic_year: form.value.academic_year?.trim() || "",
     };
+
     await api.put(`/managements/update_program/${props.program.id}`, payload);
     emit("success", { ...payload, id: props.program.id });
   } catch (err) {
     const data = err?.response?.data;
     if (data?.errors) {
       const flat = {};
-      Object.entries(data.errors).forEach(([k, v]) => {
-        flat[k] = Array.isArray(v) ? v[0] : String(v);
-      });
+      Object.entries(data.errors).forEach(
+        ([k, v]) => (flat[k] = Array.isArray(v) ? v[0] : String(v))
+      );
       errors.value = flat;
     }
-    console.error("❌ Update program failed:", data || err);
   } finally {
     loading.value = false;
   }
 }
 
 /* =============================== Hydration ================================== */
+/**
+ * ✅ One single source of truth:
+ * When props.program changes -> hydrate form + load deps/subjects/semesters.
+ */
 watch(
   () => props.program,
   async (p) => {
-    if (!p) return;
+    if (!p?.id) return;
+
     form.value.program_code = p.program_code || p.code || "";
     form.value.program_name = p.program_name || p.name || "";
     form.value.degree_level = p.degree_level || "";
@@ -1106,30 +1133,11 @@ watch(
     );
     form.value.academic_year = p.academic_year || "";
 
+    errors.value = {};
+
     await Promise.all([loadDepartments(), loadAllSubjects()]);
     await loadSemesters(p.id);
-    errors.value = {};
   },
   { immediate: true }
 );
-
-// onMounted(async () => {
-//   await Promise.all([loadDepartments(), loadAllSubjects()]);
-//   if (props.program?.id) await loadSemesters(props.program.id);
-// });
-
-onMounted(() => {
-  Object.assign(form.value, {
-    program_code: props.program.program_code || "",
-    program_name: props.program.program_name || "",
-    degree_level: props.program.degree_level || "",
-    duration_years: props.program.duration_years || 1,
-    department_id: props.program.department_id || "",
-    academic_year: props.program.academic_year || "",
-  });
-  loadDepartments();
-  loadAllSubjects();
-  loadAcademicYears();
-  loadSemesters();
-});
 </script>

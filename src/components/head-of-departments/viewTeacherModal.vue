@@ -6,7 +6,7 @@
       @click.self="close">
       <div class="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200 shrink-0">
+        <div class="bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200 shrink-0">
           <div class="flex items-center justify-between gap-4">
             <h3 :class="['text-xl font-bold text-gray-800', locale === 'kh' ? 'khmer-text' : '']">
               {{ t("teacher_profile") }}
@@ -101,10 +101,19 @@ const emit = defineEmits(["update:modelValue"]);
 
 const close = () => emit("update:modelValue", false);
 
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
+
 const imageSrc = computed(() => {
   const t = props.teacher;
-  return t.profile_picture ? `https://api.rtc-bb.camai.kh/storage/${t.profile_picture}` 
-       : t.photo_url || t.user_detail?.profile_picture || null;
+  const imageFile = t.profile_picture || t.photo_url || t.user_detail?.profile_picture;
+  
+  if (!imageFile) return null;
+  
+  // If it's already a full URL, return as is
+  if (imageFile.startsWith("http")) return imageFile;
+  
+  // Otherwise, construct the full URL using FILE_ORIGIN
+  return `${FILE_ORIGIN}/storage/${imageFile}`;
 });
 
 const getDepartmentName = () => {

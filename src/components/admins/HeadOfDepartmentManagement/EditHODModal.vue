@@ -354,18 +354,12 @@
 
           <!-- Footer -->
           <div
-            class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
-            <button
-              class="px-4 py-2 bg-red-500 text-white rounded-lg border hover:bg-red-600"
-              @click="closeModal">
-              Cancel
-            </button>
-
+            class="px-6 py-4 border-t bg-gray-50 flex items-center justify-end">
             <div class="flex gap-2">
               <button
-                class="px-4 py-2 rounded-lg bg-[#FF7700] text-white hover:bg-[#e66a00] transition-colors"
-                @click="promoteHOD">
-                Promote HOD
+                class="px-4 py-2 bg-red-500 text-white rounded-lg border hover:bg-red-600"
+                @click="closeModal">
+                Cancel
               </button>
               <button
                 class="px-4 py-2 rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a94] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -383,7 +377,7 @@
   <transition name="fade">
     <div
       v-if="imageViewerOpen"
-      class="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center"
+      class="fixed inset-0 z-60 bg-black/80 flex items-center justify-center"
       @click="closeImageViewer">
       <div class="relative max-w-[90vw] max-h-[90vh]" @click.stop>
         <img
@@ -751,19 +745,24 @@ function releaseBlob() {
   previewUrl.value = "";
 }
 
-const STORAGE_BASE = "https://api.rtc-bb.camai.kh/storage/";
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
 
 const currentImageSrc = computed(() => {
   if (previewUrl.value) return previewUrl.value;
 
-  const v = form.value.profile_picture ?? form.value.photo_url ?? "";
-  if (!v) return "";
+  const imageFile = form.value.profile_picture ?? form.value.photo_url ?? "";
+  if (!imageFile) return "";
 
   // If it's a File, don't use it as src (previewUrl covers this case).
-  if (v instanceof File) return "";
+  if (imageFile instanceof File) return "";
 
-  if (v.startsWith("http") || v.startsWith("data:")) return v;
-  return STORAGE_BASE + v.replace(/^\/+/, "");
+  // If it's already a full URL or data URI, return as is
+  if (imageFile.startsWith("http") || imageFile.startsWith("data:")) {
+    return imageFile;
+  }
+  
+  // Otherwise, construct the full URL using FILE_ORIGIN
+  return `${FILE_ORIGIN}/storage/${imageFile.replace(/^\/+/, "")}`;
 });
 
 function onPhotoChange(e) {

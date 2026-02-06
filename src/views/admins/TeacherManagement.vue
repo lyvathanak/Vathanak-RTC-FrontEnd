@@ -1,62 +1,48 @@
 <template>
-  <div class="flex flex-col gap-4 py-3 sm:py-5">
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
     <!-- Top bar -->
-    <div class="px-3 sm:px-5 space-y-4">
-      <!-- Row 1: Title (left) + Actions (right) -->
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <!-- Title -->
-        <PageHeader
-          :title="t('teachers_management')"
-          subtitle="Track and manage your Teacher applications" />
+    <PageHeader
+      :title="t('teachers_management')"
+      subtitle="Track and manage your Teacher applications">
+      <!-- Actions -->
+      <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <!--Add teacher-->
+        <button
+          @click="openAdd"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 transition text-sm font-medium">
+          <Plus class="w-4 h-4" />
+          Add Teacher
+        </button>
 
-        <!-- Actions -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-          <!--Add teacher-->
-          <button
-            @click="openAdd"
-            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 transition text-sm font-medium">
-            <Plus class="w-4 h-4" />
-            Add Teacher
-          </button>
-
-          <!-- Export -->
-          <ExcelForm
-            :filtered-rows="filteredRows"
-            :programs-map="programLookup"
-            :departments-map="departmentLookup" />
-        </div>
+        <!-- Export -->
+        <ExcelForm
+          :filtered-rows="filteredRows"
+          :programs-map="programLookup"
+          :departments-map="departmentLookup" />
       </div>
+    </PageHeader>
 
-      <!-- Row 2: Search (bottom) -->
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ">
-        <!-- Search -->
-        <div class="relative w-full sm:max-w-md">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Search teachers..."
-            class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <Search class="w-4 h-4" />
-          </span>
-        </div>
+    <div class="relative mb-3 w-full max-w-lg">
+      <Search
+        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
 
-        <!-- Button Section -->
-        <div
-          class="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-          <!-- Selected count indicator -->
-          <div
-            v-if="selectedIds.length > 0"
-            class="text-xs sm:text-sm text-gray-600 font-medium order-3 sm:order-1 text-center sm:text-left">
-            {{ selectedIds.length }} teacher{{
-              selectedIds.length > 1 ? "s" : ""
-            }}
-            selected
-          </div>
-        </div>
-      </div>
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search by name, ID, or email..."
+        :disabled="loading"
+        class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+      <button
+        v-if="search && search.trim().length"
+        type="button"
+        :disabled="loading"
+        @click="search = ''"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+        aria-label="Clear search">
+        ✕
+      </button>
     </div>
 
     <!-- Filters -->
@@ -65,7 +51,7 @@
       @clear-filters="handleClearFilters" />
 
     <!-- Teacher Table -->
-    <div class="overflow-x-auto px-3 sm:px-5">
+    <div class="overflow-x-auto">
       <div class="min-w-full">
         <TeacherTable
           :teachers="pagedRows"
@@ -85,7 +71,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <Pagination
         v-model:current-page="page"
         v-model:page-size="pageSize"
@@ -124,6 +110,14 @@
 <script setup>
 import { Plus, Search } from "lucide-vue-next";
 import { ref, computed, watch, onMounted } from "vue";
+import { TeacherCRUD } from "@/stores/apis/TeacherCRUD.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
+import { showNotification } from "@/lib/notifications.js";
+import { useI18n } from "vue-i18n";
+import PageHeader from "@/components/features/PageHeader.vue";
 import AddTeacherModal from "@/components/admins/TeacherManagement/AddTeacherModal.vue";
 import EditTeacherModal from "@/components/admins/TeacherManagement/EditTeacherModal.vue";
 import ViewTeacherModal from "@/components/admins/TeacherManagement/ViewTeacherModal.vue";
@@ -131,14 +125,6 @@ import TeacherFilterRole from "@/components/admins/TeacherManagement/TeacherFilt
 import TeacherTable from "@/components/admins/TeacherManagement/TeacherTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import ExcelForm from "@/components/features/ExcelForm.vue";
-import { TeacherCRUD } from "@/stores/apis/TeacherCRUD.js";
-import {
-  useFilteredByDepartment,
-  useProgramsFilteredByDepartment,
-} from "@/stores/global/FilterByDepartment.js";
-import { showNotification } from "@/lib/notifications.js";
-import PageHeader from "@/components/features/PageHeader.vue";
-import { useI18n } from "vue-i18n";
 
 const { t, locale } = useI18n();
 
@@ -195,7 +181,7 @@ onMounted(async () => {
             resolve();
           }
         },
-        { immediate: true }
+        { immediate: true },
       );
     }),
   ]);
@@ -458,7 +444,7 @@ const filteredRows = computed(() => {
       ];
 
       return searchFields.some((field) =>
-        field.toString().toLowerCase().includes(q)
+        field.toString().toLowerCase().includes(q),
       );
     });
   }
@@ -470,12 +456,12 @@ const filteredRows = computed(() => {
   // by department/program **ID**
   if (filters.value.department_id)
     list = list.filter(
-      (r) => Number(r.department_id) === Number(filters.value.department_id)
+      (r) => Number(r.department_id) === Number(filters.value.department_id),
     );
 
   if (filters.value.program_id)
     list = list.filter(
-      (r) => Number(r.program_id) === Number(filters.value.program_id)
+      (r) => Number(r.program_id) === Number(filters.value.program_id),
     );
 
   // by gender/origin when present
@@ -490,7 +476,7 @@ const filteredRows = computed(() => {
 
 /** ------- Pagination ------- */
 const page = ref(1);
-const pageSize = ref(25);
+const pageSize = ref(10);
 
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;
@@ -525,7 +511,7 @@ watch(
       loadTeachers();
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 /** ------- Actions ------- */

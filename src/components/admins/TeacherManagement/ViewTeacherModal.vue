@@ -10,7 +10,7 @@
         aria-modal="true">
         <!-- Header (sticky) -->
         <div
-          class="sticky top-0 z-10 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
+          class="sticky top-0 z-10 bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
           <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
               <h3
@@ -47,7 +47,7 @@
               <!-- Profile -->
               <div class="text-center mb-6">
                 <div
-                  class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
+                  class="w-30 h-38 mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
                   <img
                     v-if="teacherPhotoSrc"
                     :src="teacherPhotoSrc"
@@ -249,7 +249,7 @@
   <transition name="fade">
     <div
       v-if="showImagePreview"
-      class="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+      class="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4"
       @click="closeImagePreview">
       <div class="relative max-w-[90vw] max-h-[90vh]" @click.stop>
         <img
@@ -327,12 +327,12 @@ const onImgError = (e) => {
 };
 
 /** --- URL helpers --- */
-const STORAGE_BASE = "https://api.rtc-bb.camai.kh/storage/";
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
 const pickFirst = (...vals) =>
   vals.find((v) => v !== undefined && v !== null && v !== "");
 const isAbsoluteUrl = (u) => /^https?:\/\//i.test(u);
 const toStorageUrl = (path) =>
-  isAbsoluteUrl(path) ? path : STORAGE_BASE + String(path).replace(/^\/+/, "");
+  isAbsoluteUrl(path) ? path : `${FILE_ORIGIN}/storage/${String(path).replace(/^\/+/, "")}`;
 
 /** Subject */
 const subject = computed(() => props.teacher ?? null);
@@ -342,17 +342,19 @@ const teacherPhotoSrc = computed(() => {
   const u = subject.value;
   if (!u) return null;
 
-  const raw = pickFirst(
-    u.photo_url,
-    u.photo,
-    u.profile_picture,
-    u.user_detail?.profile_picture,
-    u.user_detail?.photo,
-    u.teacher_detail?.profile_picture,
-    u.teacher_detail?.photo
-  );
+  // Check for profile_picture first, then fallback to user_detail
+  const imageFile = u.profile_picture || u.user_detail?.profile_picture;
+  
+  if (imageFile) {
+    // If it's already a full URL, return as is
+    if (isAbsoluteUrl(imageFile)) {
+      return imageFile;
+    }
+    // Otherwise, construct the full URL using FILE_ORIGIN
+    return `${FILE_ORIGIN}/storage/${imageFile}`;
+  }
 
-  return raw ? toStorageUrl(raw) : null;
+  return null;
 });
 
 /** Names */

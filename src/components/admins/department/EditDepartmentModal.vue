@@ -1,110 +1,151 @@
-<!-- /src/components/admins/department/EditDepartmentModal.vue -->
+<!-- /src/components/admins/DepartmentManagement/EditDepartmentModal.vue -->
 <template>
-  <transition name="fade">
+  <transition name="fade-up">
     <div
       v-if="modelValue"
-      class="fixed inset-0 z-[9999] flex items-center justify-center">
-      <div class="absolute inset-0 bg-black/50" @click="onClose" />
+      class="fixed inset-0 z-9999 flex items-center justify-center px-3 sm:px-6"
+      role="dialog"
+      aria-modal="true"
+      @click.self="saving ? null : close()">
       <div
-        class="relative bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden"
-        role="dialog"
-        aria-modal="true">
-        <!-- Header -->
-        <div class="px-6 py-4 border-b flex items-center justify-between">
-          <h3 class="text-xl font-semibold text-gray-900">Edit Department</h3>
-          <button
-            class="p-2 rounded-full hover:bg-gray-100 disabled:opacity-60"
-            @click="onClose"
-            :disabled="saving"
-            aria-label="Close">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
+        class="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+        @click="saving ? null : close()" />
 
-        <!-- Body -->
-        <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div class="text-xs text-gray-500">Department ID</div>
-              <div class="text-sm font-medium text-gray-900">
-                #{{ form.id }}
+      <div class="relative w-full flex items-center justify-center p-3 sm:p-6">
+        <div
+          class="w-full max-w-245 overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+          @click.stop>
+          <!-- Header -->
+          <div class="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
+            <div
+              class="flex items-start justify-between gap-4 px-5 sm:px-6 py-4">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3
+                    class="text-base sm:text-lg font-bold text-gray-900 truncate">
+                    Edit Department
+                  </h3>
+                  <span
+                    class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#235AA6] ring-1 ring-inset ring-blue-200"
+                    :class="[locale === 'kh' ? 'khmer-text' : '']">
+                    {{ t("edit_department") }}
+                  </span>
+                </div>
+
+                <p class="mt-1 text-xs sm:text-sm text-gray-500">
+                  Update name, description, head assignment, and manage
+                  sub-departments.
+                </p>
               </div>
-            </div>
 
-            <div>
-              <label class="text-xs text-gray-500">
-                Name <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model.trim="form.name"
-                :class="[
-                  'w-full rounded-lg border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500',
-                  errors.name && 'border-red-400',
-                ]"
-                placeholder="Department name" />
-              <p
-                class="text-xs mt-1 h-4"
-                :class="errors.name ? 'text-red-600' : 'opacity-0'">
-                {{ errors.name || "placeholder" }}
-              </p>
-            </div>
-
-            <div>
-              <label class="text-xs text-gray-500">Head of Department</label>
-              <div class="relative">
-                <select
-                  v-model.number="form.hodUserId"
-                  class="w-full rounded-lg border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white appearance-none pr-10">
-                  <option :value="''">Not Assigned</option>
-                  <option
-                    v-for="h in filteredHodOptions"
-                    :key="`${h.value}-${h.label}`"
-                    :value="h.value">
-                    {{ h.label }}
-                  </option>
-                </select>
-                <span
-                  class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
-                  aria-hidden="true">
-                  <ChevronDown class="w-4 h-4 text-gray-500" />
-                </span>
-              </div>
-              <p class="text-xs text-gray-500 mt-1">
-                Sends <code>{ user_id }</code> to
-                <code>/managements/assign_head/:id</code> if changed.
-              </p>
-              <p v-if="unassignWarning" class="text-xs text-amber-600 mt-1">
-                Unassign isn’t supported by the API; clearing the HOD won’t
-                change the current assignment.
-              </p>
-            </div>
-
-            <div class="md:col-span-2">
-              <label class="text-xs text-gray-500">Description</label>
-              <textarea
-                v-model="form.description"
-                rows="4"
-                class="w-full rounded-lg border px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Short description" />
+              <button
+                type="button"
+                class="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200 transition disabled:opacity-60"
+                :disabled="saving"
+                @click="close()"
+                aria-label="Close">
+                <X class="h-5 w-5 text-gray-600" />
+              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Footer -->
-        <div
-          class="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-2">
-          <button
-            class="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
-            @click="onClose"
-            :disabled="saving">
-            Cancel
-          </button>
-          <button
-            class="px-4 py-2.5 rounded-lg bg-[#235AA6] text-white hover:bg-[#1f4c93] disabled:opacity-60"
-            @click="onSave"
-            :disabled="saving">
-            {{ saving ? "Saving…" : "Save" }}
-          </button>
+          <!-- Body -->
+          <div class="max-h-[75vh] overflow-y-auto px-5 sm:px-6 py-5 space-y-6">
+            <!-- Form card -->
+            <section
+              class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+              <div class="flex items-center gap-2 mb-4">
+                <span
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white ring-1 ring-gray-200">
+                  <Info class="h-4 w-4 text-gray-600" />
+                </span>
+                <h4 class="text-sm font-semibold text-gray-900">
+                  Department Details
+                </h4>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Name -->
+                <div class="space-y-1.5">
+                  <div class="text-xs font-semibold text-gray-500">Name</div>
+                  <input
+                    v-model.trim="form.name"
+                    class="h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none transition focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6] disabled:bg-gray-50"
+                    :class="
+                      errors.name
+                        ? 'border-red-400 focus:ring-red-500/25 focus:border-red-400'
+                        : 'border-gray-200'
+                    "
+                    placeholder="Department name"
+                    :disabled="saving" />
+                  <p v-if="errors.name" class="text-xs text-red-600">
+                    {{ errors.name }}
+                  </p>
+                </div>
+                <!-- HOD -->
+                <div class="space-y-1.5">
+                  <BaseSelect
+                    v-model="form.hodUserId"
+                    :options="filteredHods"
+                    label="Head of Department"
+                    placeholder="Select head of department"
+                    allLabel="Not Assigned"
+                    :disabled="saving"
+                    :hint="
+                      unassignWarning
+                        ? 'Clearing HOD won’t unassign (no API for unassign).'
+                        : ''
+                    " />
+                </div>
+
+                <!-- Description -->
+                <div class="md:col-span-2 space-y-1.5">
+                  <div class="text-xs font-semibold text-gray-500">
+                    Description
+                  </div>
+                  <textarea
+                    v-model="form.description"
+                    rows="4"
+                    class="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6] disabled:bg-gray-50"
+                    :disabled="saving"
+                    placeholder="Write a short description..." />
+                </div>
+              </div>
+            </section>
+
+            <!-- ✅ Sub-departments card -->
+            <section
+              class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+              <SubDepartmentSection
+                :department="props.department"
+                :busy="saving" />
+            </section>
+          </div>
+
+          <!-- Footer -->
+          <div
+            class="sticky bottom-0 z-20 border-t bg-gray-50/95 backdrop-blur px-5 sm:px-6 py-4">
+            <div class="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                class="inline-flex justify-center rounded-lg border border-red-600 bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 active:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-500/40 transition disabled:opacity-60"
+                @click="close()"
+                :disabled="saving">
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1f4c93] active:bg-[#1a407c] transition disabled:opacity-60 disabled:cursor-not-allowed"
+                :disabled="saving"
+                @click="save()">
+                <span
+                  v-if="saving"
+                  class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+                {{ saving ? "Saving…" : "Save" }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -112,78 +153,91 @@
 </template>
 
 <script setup>
-import {
-  reactive,
-  ref,
-  watch,
-  onMounted,
-  onBeforeUnmount,
-  computed,
-  nextTick,
-} from "vue";
+import { ref, reactive, computed, watch } from "vue";
 import api from "@/stores/apis/axios";
 import { showNotification } from "@/lib/notifications.js";
-import { ChevronDown, X } from "lucide-vue-next";
+import { X, Info } from "lucide-vue-next";
+import SubDepartmentSection from "./SubDepartmentSection.vue";
+import { useI18n } from "vue-i18n";
+import BaseSelect from "@/components/features/BaseSelect.vue";
 
-/* Props / Emits */
+const { t, locale: i18nLocale } = useI18n();
+
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   department: { type: Object, default: null },
 });
-const emit = defineEmits(["update:modelValue", "saved", "error"]);
+const emit = defineEmits(["update:modelValue", "saved"]);
 
-/* -------- State -------- */
 const saving = ref(false);
 const errors = reactive({ name: "" });
-const form = reactive({ id: "", name: "", description: "", hodUserId: "" });
+
+const rawHeads = ref([]);
+const form = reactive({ id: null, name: "", description: "", hodUserId: "" });
 const original = reactive({ name: "", description: "", hodUserId: "" });
 
-/* Raw API list */
-const rawHeads = ref([]); // [{ id, name, head_department|null }, ...]
+function close() {
+  emit("update:modelValue", false);
+}
 
-/* Utilities */
-const N = (v) => (v === 0 || v ? Number(v) : null);
-const S = (v) => (v === 0 || v ? String(v) : "");
+function copyIntoForm(d) {
+  const safe = d || {};
 
-/* Current dept context */
-const currentDeptIdStr = computed(() => S(props.department?.id));
+  // ✅ accept both API + normalized field names
+  const name = safe.name ?? safe.department_name ?? "";
+  const description = safe.description ?? "";
 
-const currentHeadIdFromProp = computed(() => {
-  const d = props.department || {};
-  const id = d?.head_of_department?.id ?? d?.department_head_id;
-  return N(id);
-});
+  const headId =
+    safe?.head_of_department?.id != null
+      ? Number(safe.head_of_department.id)
+      : safe?.department_head_id != null
+        ? Number(safe.department_head_id)
+        : "";
 
-/* Derived flags */
-const changedCore = computed(
-  () =>
-    (form.name || "") !== (original.name || "") ||
-    (form.description || "") !== (original.description || "")
-);
-const changedHod = computed(
-  () => String(form.hodUserId || "") !== String(original.hodUserId || "")
-);
-const unassignWarning = computed(
-  () => changedHod.value && !form.hodUserId && !!original.hodUserId
-);
+  form.id = safe?.id ?? null;
+  form.name = name;
+  form.description = description;
+  form.hodUserId = headId;
 
-/* Filter HOD options (free OR current of this department) */
-const filteredHodOptions = computed(() => {
-  const opts = [];
-  const deptIdStr = currentDeptIdStr.value;
-  const currentHeadNum = currentHeadIdFromProp.value;
+  original.name = form.name;
+  original.description = form.description;
+  original.hodUserId = form.hodUserId;
+}
 
+async function loadHeads() {
+  try {
+    const { data } = await api.get("/users/get_all_head");
+    rawHeads.value = Array.isArray(data?.users) ? data.users : [];
+  } catch (e) {
+    showNotification(
+      e?.response?.data?.message || e?.message || "Failed to load HOD list",
+      "error",
+    );
+    rawHeads.value = [];
+  }
+}
+
+const filteredHods = computed(() => {
+  const d = props.department;
+  const depId = d?.id != null ? String(d.id) : "";
+  const currentHeadId =
+    d?.head_of_department?.id != null
+      ? String(d.head_of_department.id)
+      : d?.department_head_id != null
+        ? String(d.department_head_id)
+        : "";
+
+  const out = [];
   for (const u of rawHeads.value || []) {
     const free = u && u.head_department === null;
     const isCurrentOfThis =
-      !!currentHeadNum &&
-      u &&
-      Number(u.id) === Number(currentHeadNum) &&
-      u.head_department &&
-      String(u.head_department.id) === String(deptIdStr);
+      currentHeadId &&
+      String(u?.id) === currentHeadId &&
+      u?.head_department &&
+      String(u.head_department.id) === depId;
 
     if (free || isCurrentOfThis) {
-      opts.push({
+      out.push({
         value: Number(u.id),
         label: isCurrentOfThis
           ? `${u.name || "Current Head"} (current)`
@@ -193,8 +247,8 @@ const filteredHodOptions = computed(() => {
   }
 
   const seen = new Set();
-  const uniq = opts.filter((o) =>
-    seen.has(o.value) ? false : (seen.add(o.value), true)
+  const uniq = out.filter((o) =>
+    seen.has(o.value) ? false : (seen.add(o.value), true),
   );
   uniq.sort((a, b) => {
     const ac = a.label.endsWith("(current)");
@@ -206,48 +260,52 @@ const filteredHodOptions = computed(() => {
   return uniq;
 });
 
-/* Fetch raw heads */
-async function fetchHeads() {
-  try {
-    const { data } = await api.get("/users/get_all_head");
-    rawHeads.value = Array.isArray(data?.users) ? data.users : [];
-  } catch {
-    rawHeads.value = [];
-  }
+const changedCore = computed(
+  () =>
+    (form.name || "") !== (original.name || "") ||
+    (form.description || "") !== (original.description || ""),
+);
+const changedHod = computed(
+  () => String(form.hodUserId || "") !== String(original.hodUserId || ""),
+);
+const unassignWarning = computed(
+  () => changedHod.value && !form.hodUserId && !!original.hodUserId,
+);
+
+function buildEmitPayload(updatedFromApi, selectedHodId) {
+  const d = updatedFromApi || props.department || {};
+  const opt = filteredHods.value.find(
+    (h) => String(h.value) === String(selectedHodId),
+  );
+  const fallbackLabel =
+    opt?.label || (selectedHodId ? `User ${selectedHodId}` : "Not Assigned");
+
+  const headObj = d.head_of_department
+    ? d.head_of_department
+    : selectedHodId
+      ? { id: Number(selectedHodId), name: fallbackLabel }
+      : { name: "Not Assigned" };
+
+  return {
+    id: d.id ?? form.id,
+    name: form.name,
+    description: form.description || "",
+    department_head_id:
+      d.department_head_id ?? (selectedHodId ? Number(selectedHodId) : null),
+    head_of_department: headObj,
+  };
 }
 
-/* Hydrate form from prop */
-function hydrate() {
-  const d = props.department || {};
-  const headId = d?.head_of_department?.id ?? d?.department_head_id ?? null;
+async function save() {
+  if (!form.id) return;
 
-  form.id = d.id ?? "";
-  form.name = d.name ?? d.department_name ?? "";
-  form.description = d.description ?? "";
-  form.hodUserId = N(headId) ?? ""; // empty if none
-
-  original.name = form.name;
-  original.description = form.description;
-  original.hodUserId = form.hodUserId;
-
-  errors.name = "";
-}
-
-function onClose() {
-  if (!saving.value) emit("update:modelValue", false);
-}
-
-/* Save pipeline */
-async function onSave() {
   errors.name = form.name ? "" : "Name is required";
-  if (errors.name) {
-    showNotification(errors.name, "warning");
-    return;
-  }
+  if (errors.name) return;
 
   if (!changedCore.value && !changedHod.value) {
     showNotification("No changes to save.", "info");
-    emit("update:modelValue", false);
+    emit("saved", buildEmitPayload(null, form.hodUserId));
+    close();
     return;
   }
 
@@ -265,15 +323,9 @@ async function onSave() {
         const msg = e?.response?.data?.message || e?.message || "Update failed";
         const fieldErr =
           e?.response?.data?.errors?.department_name?.[0] ||
-          (msg && /name|exist|taken|already/i.test(msg) ? msg : "");
-        if (fieldErr) {
-          errors.name = fieldErr;
-          showNotification(fieldErr, "error");
-          emit("error", fieldErr);
-        } else {
-          showNotification(msg, "error");
-          emit("error", msg);
-        }
+          (msg && /name/i.test(msg) ? msg : "");
+        if (fieldErr) errors.name = fieldErr;
+        showNotification(fieldErr || msg, "error");
         saving.value = false;
         return;
       }
@@ -285,66 +337,72 @@ async function onSave() {
           user_id: Number(form.hodUserId),
         });
       } catch (e) {
-        const warn =
-          e?.response?.data?.message || e?.message || "Failed to assign HOD";
-        warnings.push(warn);
+        warnings.push(
+          e?.response?.data?.message || e?.message || "Failed to assign head",
+        );
       }
     }
 
+    let refreshed = null;
+    try {
+      const { data } = await api.get(
+        `/managements/get_department_detail/${form.id}`,
+      );
+      refreshed = data?.department
+        ? {
+            id: data.department.id ?? form.id,
+            name: data.department.department_name ?? form.name,
+            description: data.department.description ?? form.description,
+            department_head_id: data.department.department_head_id ?? null,
+            head_of_department: data.department.head_of_department ?? null,
+          }
+        : null;
+    } catch {}
+
+    emit("saved", buildEmitPayload(refreshed, form.hodUserId));
+
     if (warnings.length) {
       showNotification(
-        `Saved with warnings:\n- ${warnings.join("\n- ")}`,
-        "warning"
+        `Saved with warnings: ${warnings.join(" | ")}`,
+        "warning",
       );
     } else {
-      showNotification("Department updated successfully!", "success");
+      showNotification("Department updated successfully.", "success");
     }
 
-    emit("saved");
-    emit("update:modelValue", false);
+    close();
   } catch (e) {
-    const msg = e?.response?.data?.message || e?.message || "Unexpected error";
-    showNotification(msg, "error");
-    emit("error", msg);
+    showNotification(
+      `Save failed: ${e?.response?.data?.message || e?.message || "Unknown error"}`,
+      "error",
+    );
   } finally {
     saving.value = false;
   }
 }
 
-/* Boot & watchers */
-async function boot() {
-  hydrate();
-  await nextTick();
-  await fetchHeads();
-}
 watch(
   () => props.modelValue,
-  (open) => {
-    if (open) boot();
-  }
+  async (open) => {
+    if (open) {
+      copyIntoForm(props.department);
+      await loadHeads();
+      errors.name = "";
+    }
+  },
 );
-watch(
-  () => props.department?.id,
-  async () => {
-    if (props.modelValue) boot();
-  }
-);
-
-/* ESC to close */
-function onKey(e) {
-  if (e.key === "Escape") onClose();
-}
-onMounted(() => window.addEventListener("keydown", onKey));
-onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
+.fade-up-enter-active,
+.fade-up-leave-active {
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
-.fade-enter-from,
-.fade-leave-to {
+.fade-up-enter-from,
+.fade-up-leave-to {
   opacity: 0;
+  transform: translateY(6px);
 }
 </style>

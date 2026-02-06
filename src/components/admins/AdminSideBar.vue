@@ -3,24 +3,33 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import NavMain from "@/components/features/NavMain.vue";
-
+import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import {
-  Book,
-  CalendarDays,
-  Gauge,
-  HomeIcon,
-  User,
-  UserCheck,
-  Clock,
+  LayoutDashboard,
+  GraduationCap,
+  ArrowUpRight,
   Users,
+  BadgeCheck,
+  BookCopy,
+  Building2,
+  NotebookText,
+  FileUp,
+  Users2,
+  Map,
+  CalendarClock,
+  CalendarX2,
+  MessageSquareText,
+  ClipboardList,
+  ClipboardCheck,
+  FileUser,
+  Settings,
   Building,
   BookOpen,
   MapPin,
-  Settings,
-  NotebookPen,
+  FileText,
+  Target, // Alternative
 } from "lucide-vue-next";
-import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -33,7 +42,7 @@ const props = withDefaults(
   {
     collapsible: "icon",
     isOpen: false,
-  }
+  },
 );
 
 const handleNavClick = (item: any) => {
@@ -57,31 +66,55 @@ const data = computed(() => {
       {
         title: t("overview"),
         url: `/${currentLang}/admin/overview`,
-        icon: Gauge,
+        icon: LayoutDashboard,
         isActive: currentPath.includes("/admin/overview"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
+        title: t("departments_management"),
+        url: `/${currentLang}/admin/departments`,
+        icon: Building2,
+        isActive: currentPath.includes("/admin/departments"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
+        title: t("programs_management"),
+        url: `/${currentLang}/admin/programs`,
+        icon: BookCopy,
+        isActive: currentPath.includes("/admin/programs"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
+        title: t("subjects_management"),
+        url: `/${currentLang}/admin/subjects`,
+        icon: NotebookText,
+        isActive: currentPath.includes("/admin/subjects"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
+      {
+        title: t("groups_management"),
+        url: `/${currentLang}/admin/groups`,
+        icon: Users2,
+        isActive: currentPath.includes("/admin/groups"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
         title: t("students_management"),
         url: `/${currentLang}/admin/students`,
-        icon: User,
+        icon: GraduationCap,
         isActive: currentPath.includes("/admin/students"),
-        class: khmerClass,
-        action: handleNavClick,
-      },
-      {
-        title: t("promote_student"),
-        url: `/${currentLang}/admin/promote_student`,
-        icon: User,
-        isActive: currentPath.includes("/admin/promote_student"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
         title: t("teachers_management"),
         url: `/${currentLang}/admin/teachers`,
-        icon: User,
+        icon: Users,
         isActive: currentPath.includes("/admin/teachers"),
         class: khmerClass,
         action: handleNavClick,
@@ -89,55 +122,31 @@ const data = computed(() => {
       {
         title: t("hod_management"),
         url: `/${currentLang}/admin/hod`,
-        icon: User,
+        icon: BadgeCheck,
         isActive: currentPath.includes("/admin/hod"),
-        class: khmerClass,
-        action: handleNavClick,
-      },
-      {
-        title: t("programs_management"),
-        url: `/${currentLang}/admin/programs`,
-        icon: Book,
-        isActive: currentPath.includes("/admin/programs"),
-        class: khmerClass,
-        action: handleNavClick,
-      },
-      {
-        title: t("departments_management"),
-        url: `/${currentLang}/admin/departments`,
-        icon: Building,
-        isActive: currentPath.includes("/admin/departments"),
-        class: khmerClass,
-        action: handleNavClick,
-      },
-      {
-        title: t("subjects_management"),
-        url: `/${currentLang}/admin/subjects`,
-        icon: BookOpen,
-        isActive: currentPath.includes("/admin/subjects"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
         title: t("import_score"),
         url: `/${currentLang}/admin/ImportScore`,
-        icon: BookOpen,
+        icon: FileUp,
         isActive: currentPath.includes("/admin/ImportScore"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
-        title: t("groups_management"),
-        url: `/${currentLang}/admin/groups`,
-        icon: Users,
-        isActive: currentPath.includes("/admin/groups"),
+        title: t("promote_student"),
+        url: `/${currentLang}/admin/promote_student`,
+        icon: ArrowUpRight,
+        isActive: currentPath.includes("/admin/promote_student"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
         title: t("location_management"),
         url: `/${currentLang}/admin/location`,
-        icon: MapPin,
+        icon: Map,
         isActive: currentPath.includes("/admin/location"),
         class: khmerClass,
         action: handleNavClick,
@@ -145,7 +154,7 @@ const data = computed(() => {
       {
         title: t("timetable_management"),
         url: `/${currentLang}/admin/timetable`,
-        icon: CalendarDays,
+        icon: CalendarClock,
         isActive: currentPath.includes("/admin/timetable"),
         class: khmerClass,
         action: handleNavClick,
@@ -153,31 +162,30 @@ const data = computed(() => {
       {
         title: t("leave_request_management"),
         url: `/${currentLang}/admin/leave-requests`,
-        icon: Clock,
+        icon: CalendarX2,
         isActive: currentPath.includes("/admin/leave-requests"),
         class: khmerClass,
         action: handleNavClick,
       },
       {
-        title: t("feedback"),
-        url: `/${currentLang}/admin/feedback`,
-        icon: Clock,
-        isActive: currentPath.includes("/admin/feedback"),
-        class: khmerClass,
-        action: handleNavClick,
-      },
-      {
-        title: t("survey"),
-        url: `/${currentLang}/admin/survey`,
-        icon: Settings,
-        isActive: currentPath.includes("/admin/survey"),
-        class: khmerClass,
-      },
-      {
         title: t("external_exam_enrollment"),
         url: `/${currentLang}/admin/external-exam-enrollment`,
-        icon: NotebookPen,
+        icon: ClipboardCheck,
         isActive: currentPath.includes("/admin/external-exam-enrollment"),
+        class: khmerClass,
+      },
+      {
+        title: t("mission_record_management") || "Mission Record",
+        url: `/${currentLang}/admin/mission-records`,
+        icon: ClipboardCheck,
+        isActive: currentPath.includes("/admin/mission-records"),
+        class: khmerClass,
+      },
+      {
+        title: t("cv_management"),
+        url: `/${currentLang}/admin/cv-management`,
+        icon: FileUser,
+        isActive: currentPath.includes("/admin/cv-management"),
         class: khmerClass,
       },
       {
@@ -187,21 +195,44 @@ const data = computed(() => {
         isActive: currentPath.includes("/admin/setting"),
         class: khmerClass,
       },
-      
+      {
+        title: t("survey"),
+        url: `/${currentLang}/admin/survey`,
+        icon: ClipboardList,
+        isActive: currentPath.includes("/admin/survey"),
+        class: khmerClass,
+      },
+      {
+        title: t("feedback"),
+        url: `/${currentLang}/admin/feedback`,
+        icon: MessageSquareText,
+        isActive: currentPath.includes("/admin/feedback"),
+        class: khmerClass,
+        action: handleNavClick,
+      },
     ],
   };
 });
 </script>
 
 <template>
-  <Sidebar :collapsible="props.collapsible" :default-open="false" variant="sidebar"
+  <Sidebar
+    :collapsible="props.collapsible"
+    :default-open="false"
+    variant="sidebar"
     class="peer/sidebar min-w-0 shrink-0 transition-[width] duration-300 ease-in-out">
     <SidebarContent class="bg-[#235AA6]">
       <!-- Sidebar Header -->
-      <div class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">
+      <div
+        class="flex items-center px-3 py-4.75 border-b border-white/20 gap-2">
         <SidebarTrigger class="text-white hover:bg-white/10" />
         <!-- Show title when sidebar is expanded -->
-        <div :class="['text-white text-1xl font-semibold', locale === 'kh' ? 'khmer-text' : '']">{{ t('management') }}
+        <div
+          :class="[
+            'text-white text-1xl font-semibold',
+            locale === 'kh' ? 'khmer-text' : '',
+          ]">
+          {{ t("management") }}
         </div>
       </div>
 

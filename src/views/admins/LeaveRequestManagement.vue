@@ -20,32 +20,35 @@
     <!-- Search and Filter - Responsive Only -->
     <div class="flex flex-col">
       <div class="relative mb-3 w-full max-w-lg">
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
         <input
           v-model="search"
           type="text"
           placeholder="Search by name, ID, or leave type..."
           :disabled="loading"
-          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
-        <Search
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+        <button
+          v-if="search && search.trim().length"
+          type="button"
+          :disabled="loading"
+          @click="search = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          aria-label="Clear search">
+          ✕
+        </button>
       </div>
+
       <div class="w-full">
         <div class="mt-3">
           <LeaveRequestFilter
-            :enabled-filters="[
-              'status',
-              'type',
-              'role',
-              'academicYear',
-              'program',
-              'department',
-              'section',
-              'semester',
-              'year',
-              'date',
-            ]"
-            @update:filters="handleFilterUpdate"
-            :disabled="loading" />
+            :enabled-filters="['status', 'type', 'role', 'date']"
+            :options="{
+              role: ['Admin', 'Head_Department', 'Teacher', 'Student'],
+            }"
+            @update:filters="handleFilterUpdate" />
         </div>
       </div>
     </div>
@@ -102,7 +105,12 @@ const allLeaveRequests = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const search = ref("");
-const filters = ref({});
+const filters = ref({
+  status: "",
+  type: "",
+  role: "",
+});
+
 const page = ref(1);
 const pageSize = ref(10);
 const totalItems = ref(0);
@@ -161,13 +169,13 @@ const calculateStatusStats = () => {
   // Calculate from filtered results, not all data
   const filtered = applyClientSideFilters(allLeaveRequests.value);
   const pending = filtered.filter(
-    (lr) => lr.status.toLowerCase() === "pending"
+    (lr) => lr.status.toLowerCase() === "pending",
   ).length;
   const approved = filtered.filter(
-    (lr) => lr.status.toLowerCase() === "approved"
+    (lr) => lr.status.toLowerCase() === "approved",
   ).length;
   const rejected = filtered.filter(
-    (lr) => lr.status.toLowerCase() === "rejected"
+    (lr) => lr.status.toLowerCase() === "rejected",
   ).length;
   const total = filtered.length;
   statusStats.value = { pending, approved, rejected, total };
@@ -187,7 +195,7 @@ const applyClientSideFilters = (requests) => {
       (req) =>
         req.id_card?.toLowerCase().includes(searchLower) ||
         req.latin_name?.toLowerCase().includes(searchLower) ||
-        req.leaveType?.toLowerCase().includes(searchLower)
+        req.leaveType?.toLowerCase().includes(searchLower),
     );
     console.log("📍 After search:", filtered.length, "requests");
   }
@@ -195,7 +203,7 @@ const applyClientSideFilters = (requests) => {
   // Apply status filter
   if (filters.value.status && filters.value.status !== "All") {
     filtered = filtered.filter(
-      (req) => req.status.toLowerCase() === filters.value.status.toLowerCase()
+      (req) => req.status.toLowerCase() === filters.value.status.toLowerCase(),
     );
     console.log("📍 After status filter:", filtered.length, "requests");
   }
@@ -211,16 +219,21 @@ const applyClientSideFilters = (requests) => {
     console.log(
       "📍 After type filter (" + filters.value.type + "):",
       filtered.length,
-      "requests"
+      "requests",
     );
   }
 
   // Apply role filter
   if (filters.value.role && filters.value.role !== "All") {
+    const want = String(filters.value.role).trim().toLowerCase();
+
     filtered = filtered.filter((req) => {
-      const userRole = req.originalData?.user_role || req.originalData?.role;
-      return userRole?.toLowerCase() === filters.value.role.toLowerCase();
+      const got = String(req.role || "")
+        .trim()
+        .toLowerCase();
+      return got === want;
     });
+
     console.log("📍 After role filter:", filtered.length, "requests");
   }
 
@@ -293,7 +306,7 @@ const applyClientSideFilters = (requests) => {
         endDate = new Date(
           now.getFullYear(),
           now.getMonth(),
-          now.getDate() + 1
+          now.getDate() + 1,
         );
         break;
       case "This Week":
@@ -311,7 +324,7 @@ const applyClientSideFilters = (requests) => {
     if (startDate && endDate) {
       filtered = filtered.filter((req) => {
         const reqDate = parseDate(
-          req.originalData?.requested_at || req.submitDate
+          req.originalData?.requested_at || req.submitDate,
         );
         return reqDate >= startDate && reqDate <= endDate;
       });
@@ -333,10 +346,33 @@ const parseDate = (dateStr) => {
   return new Date(dateStr);
 };
 
+function roleFromIdCard(idCard) {
+  const s = String(idCard || "")
+    .trim()
+    .toLowerCase();
+
+  // use first letter prefix
+  const prefix = s[0];
+
+  if (prefix === "a") return "Admin";
+  if (prefix === "t") return "Teacher";
+  if (prefix === "e") return "Student";
+  if (prefix === "h") return "Head_Department";
+
+  return ""; // Unknown
+}
+
 // Transform API data → table row
 const transformLeaveRequestData = (request) => {
+  const requestId =
+    request.request_id ?? request.id ?? request.leave_request_id ?? null;
+
+  const rowId = requestId
+    ? `lr_${requestId}`
+    : `lr_${request.user_id ?? request.id_card ?? "u"}_${request.requested_at ?? request.created_at ?? Date.now()}_${Math.random().toString(16).slice(2)}`;
+
   return {
-    uid: request.id || request.request_id, // 👈 MUST be unique
+    row_id: rowId,
     id_card: request.id_card || "N/A",
     latin_name:
       request.latin_name || `User ${request.user_id}` || "Unknown User",
@@ -344,6 +380,9 @@ const transformLeaveRequestData = (request) => {
     submitDate: request.requested_at || "N/A",
     status: capitalizeFirst(request.status) || "Pending",
     originalData: request,
+
+    // ✅ role derived from id_card
+    role: roleFromIdCard(request.id_card),
   };
 };
 
@@ -377,25 +416,6 @@ const isUrgent = (leaveRequest) => {
   );
 };
 
-// Filtering + pagination (client-side)
-const filteredLeaveRequests = computed(() => {
-  // Apply all filters
-  const filtered = applyClientSideFilters(allLeaveRequests.value);
-
-  // 2️⃣ Sort newest → oldest
-  filtered.sort((a, b) => {
-    const dateA = parseDate(a.originalData?.requested_at || a.submitDate);
-    const dateB = parseDate(b.originalData?.requested_at || b.submitDate);
-    return dateB - dateA; // DESC → newest first
-  });
-
-  // Apply client-side pagination
-  const start = (page.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-
-  return filtered.slice(start, end);
-});
-
 const totalFilteredItems = computed(() => {
   // Return count of filtered items (for pagination)
   return applyClientSideFilters(allLeaveRequests.value).length;
@@ -422,6 +442,10 @@ function handleLeaveRequestUpdated() {
   fetchLeaveRequests();
   closeViewModal();
 }
+
+const filteredLeaveRequests = computed(() =>
+  applyClientSideFilters(allLeaveRequests.value),
+);
 
 function handleFilterUpdate(newFilters) {
   console.log("🎯 Filter updated:", newFilters);

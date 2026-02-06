@@ -33,32 +33,27 @@
 import { computed, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import {
-  Users,
-  UserPlus,
-  UserCog,
-  BookOpen,
-  Building2,
-  ClipboardList,
-  Upload,
-  UsersRound,
-  MapPin,
-  CalendarDays,
-  Clock,
-  MessageSquareText,
-  ListChecks,
-  Settings,
-  Plus,
-  ClipboardCheck,
-  BarChart3,
-  PiggyBank,
-  BadgeCheck,
-  User,
   LayoutDashboard,
-  FileCheck2,
-  Gauge,
-  FileText,
-  UserCheck,
-  Lock, // Added Lock icon
+  GraduationCap,
+  ArrowUpRight,
+  UsersRound,
+  BadgeCheck,
+  LibraryBig,
+  Building2,
+  NotebookText,
+  FileUp,
+  Users2,
+  Map,
+  CalendarClock,
+  CalendarX2,
+  MessageSquareText,
+  ClipboardList,
+  ClipboardCheck,
+  Settings,
+  FileSpreadsheet,
+  CircleUser,
+  BookOpenText,
+  FileUser,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -104,15 +99,15 @@ const actions = computed(() => {
       {
         title: "Students Management",
         desc: "Manage student accounts",
-        icon: Users,
+        icon: GraduationCap,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
-        to: `${base.value}/admin/students`,
+        to: `${base.value}/admin/overview`,
       },
       {
         title: "Promote Student",
         desc: "Promote student level",
-        icon: UserPlus,
+        icon: ArrowUpRight,
         bg: "bg-indigo-50 hover:bg-indigo-100",
         iconBg: "bg-indigo-500",
         to: `${base.value}/admin/promote_student`,
@@ -120,7 +115,7 @@ const actions = computed(() => {
       {
         title: "Teachers Management",
         desc: "Manage teachers",
-        icon: UserCog,
+        icon: UsersRound,
         bg: "bg-green-50 hover:bg-green-100",
         iconBg: "bg-green-500",
         to: `${base.value}/admin/teachers`,
@@ -128,7 +123,7 @@ const actions = computed(() => {
       {
         title: "Head-of-Department Management",
         desc: "Manage HOD users",
-        icon: UsersRound,
+        icon: BadgeCheck,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
         to: `${base.value}/admin/hod`,
@@ -136,7 +131,7 @@ const actions = computed(() => {
       {
         title: "Programs Management",
         desc: "Manage programs",
-        icon: BookOpen,
+        icon: LibraryBig,
         bg: "bg-cyan-50 hover:bg-cyan-100",
         iconBg: "bg-cyan-500",
         to: `${base.value}/admin/programs`,
@@ -152,7 +147,7 @@ const actions = computed(() => {
       {
         title: "Subjects Management",
         desc: "Manage subjects",
-        icon: ClipboardList,
+        icon: NotebookText,
         bg: "bg-lime-50 hover:bg-lime-100",
         iconBg: "bg-lime-500",
         to: `${base.value}/admin/subjects`,
@@ -160,7 +155,7 @@ const actions = computed(() => {
       {
         title: "Import Score",
         desc: "Upload scores",
-        icon: Upload,
+        icon: FileUp,
         bg: "bg-teal-50 hover:bg-teal-100",
         iconBg: "bg-teal-500",
         to: `${base.value}/admin/ImportScore`,
@@ -168,7 +163,7 @@ const actions = computed(() => {
       {
         title: "Groups Management",
         desc: "Manage groups",
-        icon: UsersRound,
+        icon: Users2,
         bg: "bg-sky-50 hover:bg-sky-100",
         iconBg: "bg-sky-500",
         to: `${base.value}/admin/groups`,
@@ -176,7 +171,7 @@ const actions = computed(() => {
       {
         title: "Location Management",
         desc: "Manage locations",
-        icon: MapPin,
+        icon: Map,
         bg: "bg-rose-50 hover:bg-rose-100",
         iconBg: "bg-rose-500",
         to: `${base.value}/admin/location`,
@@ -184,7 +179,7 @@ const actions = computed(() => {
       {
         title: "Timetable Management",
         desc: "Manage timetables",
-        icon: CalendarDays,
+        icon: CalendarClock,
         bg: "bg-fuchsia-50 hover:bg-fuchsia-100",
         iconBg: "bg-fuchsia-500",
         to: `${base.value}/admin/timetable`,
@@ -192,34 +187,43 @@ const actions = computed(() => {
       {
         title: "Leave Request Management",
         desc: "Review leave requests",
-        icon: Clock,
+        icon: CalendarX2,
         bg: "bg-red-50 hover:bg-red-100",
         iconBg: "bg-red-500",
         to: `${base.value}/admin/leave-requests`,
       },
       {
-        title: "Feedback",
-        desc: "View feedback",
-        icon: MessageSquareText,
-        bg: "bg-orange-50 hover:bg-orange-100",
-        iconBg: "bg-orange-500",
-        to: `${base.value}/admin/feedback`,
-      },
-      {
-        title: "Survey",
-        desc: "Manage surveys",
-        icon: ListChecks,
-        bg: "bg-yellow-50 hover:bg-yellow-100",
-        iconBg: "bg-yellow-500",
-        to: `${base.value}/admin/survey`,
-      },
-      {
         title: "External Exam Enrollment",
         desc: "Manage external exam enrollments",
-        icon: FileCheck2,
+        icon: ClipboardCheck,
         bg: "bg-emerald-50 hover:bg-emerald-100",
         iconBg: "bg-emerald-600",
         to: `${base.value}/admin/external-exam-enrollment`,
+      },
+      {
+        title: "Mission Record Management",
+        desc: "Manage mission assignments and records",
+        icon: ClipboardList, // ✅ Mission
+        bg: "bg-violet-50 hover:bg-violet-100",
+        iconBg: "bg-violet-600",
+        to: `${base.value}/admin/mission-records`,
+      },
+      {
+        title: "CV Management",
+        desc: "Manage CV submissions and templates",
+        icon: FileUser, // ✅ CV
+        bg: "bg-blue-50 hover:bg-blue-100",
+        iconBg: "bg-blue-600",
+        to: `${base.value}/admin/cv-management`,
+      },
+
+      {
+        title: "Survey",
+        desc: "Manage surveys",
+        icon: ClipboardList,
+        bg: "bg-yellow-50 hover:bg-yellow-100",
+        iconBg: "bg-yellow-500",
+        to: `${base.value}/admin/survey`,
       },
       {
         title: "Setting",
@@ -228,6 +232,14 @@ const actions = computed(() => {
         bg: "bg-gray-50 hover:bg-gray-100",
         iconBg: "bg-gray-700",
         to: `${base.value}/admin/settings`,
+      },
+      {
+        title: "Feedback",
+        desc: "View feedback",
+        icon: MessageSquareText,
+        bg: "bg-orange-50 hover:bg-orange-100",
+        iconBg: "bg-orange-500",
+        to: `${base.value}/admin/feedback`,
       },
     ];
   }
@@ -238,7 +250,7 @@ const actions = computed(() => {
       {
         title: "Overview",
         desc: "Teacher dashboard overview",
-        icon: Gauge,
+        icon: LayoutDashboard,
         bg: "bg-slate-50 hover:bg-slate-100",
         iconBg: "bg-slate-600",
         to: `${base.value}/teacher/overview`,
@@ -246,7 +258,7 @@ const actions = computed(() => {
       {
         title: "Students Management",
         desc: "View and manage students",
-        icon: Users,
+        icon: GraduationCap,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
         to: `${base.value}/teacher/student-info`,
@@ -254,7 +266,7 @@ const actions = computed(() => {
       {
         title: "Timetable Management",
         desc: "View teaching schedule",
-        icon: CalendarDays,
+        icon: CalendarClock,
         bg: "bg-indigo-50 hover:bg-indigo-100",
         iconBg: "bg-indigo-500",
         to: `${base.value}/teacher/timetable`,
@@ -278,7 +290,7 @@ const actions = computed(() => {
       {
         title: "Exam Scoring",
         desc: "Score exams and tests",
-        icon: FileText,
+        icon: FileSpreadsheet,
         bg: "bg-cyan-50 hover:bg-cyan-100",
         iconBg: "bg-cyan-500",
         to: `${base.value}/teacher/exam-scoring`,
@@ -294,7 +306,7 @@ const actions = computed(() => {
       {
         title: "Leave Request",
         desc: "Request and track leave",
-        icon: Clock,
+        icon: CalendarX2,
         bg: "bg-red-50 hover:bg-red-100",
         iconBg: "bg-red-500",
         to: `${base.value}/teacher/leave-request`,
@@ -302,18 +314,10 @@ const actions = computed(() => {
       {
         title: "Profile Account",
         desc: "Manage your profile",
-        icon: User,
+        icon: CircleUser,
         bg: "bg-gray-50 hover:bg-gray-100",
         iconBg: "bg-gray-700",
         to: `${base.value}/teacher/teacher-profile`,
-      },
-      {
-        title: "Change Password",
-        desc: "Update your password",
-        icon: Lock,
-        bg: "bg-rose-50 hover:bg-rose-100",
-        iconBg: "bg-rose-500",
-        to: `${base.value}/teacher/change-password`,
       },
     ];
   }
@@ -324,7 +328,7 @@ const actions = computed(() => {
       {
         title: "Overview",
         desc: "Department dashboard overview",
-        icon: Gauge,
+        icon: LayoutDashboard,
         bg: "bg-slate-50 hover:bg-slate-100",
         iconBg: "bg-slate-600",
         to: `${base.value}/hod/overview`,
@@ -332,7 +336,7 @@ const actions = computed(() => {
       {
         title: "Students Management",
         desc: "Manage students in department",
-        icon: Users,
+        icon: GraduationCap,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
         to: `${base.value}/hod/student-management`,
@@ -340,7 +344,7 @@ const actions = computed(() => {
       {
         title: "Teachers Management",
         desc: "Manage teachers in department",
-        icon: UserCheck,
+        icon: UsersRound,
         bg: "bg-green-50 hover:bg-green-100",
         iconBg: "bg-green-500",
         to: `${base.value}/hod/teacher-management`,
@@ -348,7 +352,7 @@ const actions = computed(() => {
       {
         title: "Timetable Management",
         desc: "Manage department timetables",
-        icon: CalendarDays,
+        icon: CalendarClock,
         bg: "bg-indigo-50 hover:bg-indigo-100",
         iconBg: "bg-indigo-500",
         to: `${base.value}/hod/timetable`,
@@ -356,7 +360,7 @@ const actions = computed(() => {
       {
         title: "Leave Request",
         desc: "Review teacher leave requests",
-        icon: Clock,
+        icon: CalendarX2,
         bg: "bg-red-50 hover:bg-red-100",
         iconBg: "bg-red-500",
         to: `${base.value}/hod/leave-requests`,
@@ -364,18 +368,10 @@ const actions = computed(() => {
       {
         title: "Profile Account",
         desc: "Manage your account",
-        icon: User,
+        icon: CircleUser,
         bg: "bg-gray-50 hover:bg-gray-100",
         iconBg: "bg-gray-700",
         to: `${base.value}/hod/hod-profile`,
-      },
-      {
-        title: "Change Password",
-        desc: "Update your password",
-        icon: Lock,
-        bg: "bg-rose-50 hover:bg-rose-100",
-        iconBg: "bg-rose-500",
-        to: `${base.value}/hod/change-password`,
       },
     ];
   }
@@ -386,7 +382,7 @@ const actions = computed(() => {
       {
         title: "Overview",
         desc: "Department dashboard overview",
-        icon: Gauge,
+        icon: LayoutDashboard,
         bg: "bg-slate-50 hover:bg-slate-100",
         iconBg: "bg-slate-600",
         to: `${base.value}/student/overview`,
@@ -394,7 +390,7 @@ const actions = computed(() => {
       {
         title: "Academic Information",
         desc: "View your courses and results",
-        icon: BookOpen,
+        icon: BookOpenText,
         bg: "bg-blue-50 hover:bg-blue-100",
         iconBg: "bg-blue-500",
         to: `${base.value}/student/academic-info`,
@@ -402,7 +398,7 @@ const actions = computed(() => {
       {
         title: "Leave Request",
         desc: "Submit and track leave requests",
-        icon: CalendarDays,
+        icon: CalendarX2,
         bg: "bg-green-50 hover:bg-green-100",
         iconBg: "bg-green-500",
         to: `${base.value}/student/leave-request`,
@@ -410,18 +406,10 @@ const actions = computed(() => {
       {
         title: "Profile & Account",
         desc: "Update your profile settings",
-        icon: User,
+        icon: CircleUser,
         bg: "bg-purple-50 hover:bg-purple-100",
         iconBg: "bg-purple-500",
         to: `${base.value}/student/student-profile`,
-      },
-      {
-        title: "Change Password",
-        desc: "Update your password",
-        icon: Lock,
-        bg: "bg-rose-50 hover:bg-rose-100",
-        iconBg: "bg-rose-500",
-        to: `${base.value}/student/change-password`,
       },
     ];
   }
@@ -431,7 +419,7 @@ const actions = computed(() => {
 
 function getScrollContainer() {
   return [...document.querySelectorAll("*")].find(
-    (el) => el.scrollTop > 0 && el.scrollHeight > el.clientHeight
+    (el) => el.scrollTop > 0 && el.scrollHeight > el.clientHeight,
   );
 }
 

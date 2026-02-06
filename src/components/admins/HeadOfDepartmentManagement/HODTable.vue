@@ -3,7 +3,7 @@
     :data="hods"
     :loading="loading"
     :selected-ids="selectedIds"
-    :columns="columns"
+    :columns="columnsToUse"
     :sort-field="sortField"
     :sort-direction="sortDirection"
     :show-actions="showActions"
@@ -22,73 +22,101 @@
     @delete="$emit('delete', $event)"
     @select="$emit('select', $event)"
     @selectAll="$emit('selectAll', $event)"
-    @sort="$emit('sort', $event)"
-  >
-    <!-- ID Column Slot -->
+    @sort="$emit('sort', $event)">
+    <!-- ID -->
     <template #column-id_card="{ value }">
-      <span class="font-medium text-gray-700">{{ value }}</span>
-    </template>
-
-    <!-- Khmer Name Column Slot -->
-    <template #column-khmer_name="{ value }">
-      <div class="flex items-center">
-        <div class="ml-4">
-          <div class="text-sm font-medium text-gray-900 khmer-text">
-            {{ value || 'N/A' }}
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- Latin Name Column Slot -->
-    <template #column-latin_name="{ value }">
-      <div class="flex items-center">
-        <div class="ml-4">
-          <div class="text-sm font-medium text-gray-900">
-            {{ value || 'N/A' }}
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- Department Column Slot -->
-    <template #column-department="{ value }">
-      <span
-        class="inline-flex items-center px-2 py-1 rounded-md bg-purple-50 text-purple-700 text-xs font-medium"
-      >
-        {{ value }}
+      <span class="font-semibold text-gray-900 tracking-wide">
+        {{ value || "N/A" }}
       </span>
     </template>
 
-    <!-- Phone Column Slot -->
-    <template #column-phone="{ value }">
-      <span class="text-sm text-gray-600">
+    <!-- Khmer Name (avatar + subtitle) -->
+    <template #column-khmer_name="{ value }">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="min-w-0">
+          <div class="font-semibold text-gray-900 khmer-text truncate">
+            {{ value || "N/A" }}
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5 truncate">
+            Head of Department
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Latin Name -->
+    <template #column-latin_name="{ value, row }">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- avatar initials -->
+        <div
+          class="h-9 w-9 rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-100 flex items-center justify-center font-bold text-xs shrink-0">
+          {{ getInitials(row?.latin_name || value) }}
+        </div>
+        <div class="min-w-0">
+          <div class="font-semibold text-gray-900 truncate">
+            {{ value || "N/A" }}
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5">Latin name</div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Gender -->
+    <template #column-gender="{ value }">
+      <span
+        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset"
+        :class="
+          String(value).toLowerCase() === 'male'
+            ? 'bg-blue-50 text-blue-700 ring-blue-200'
+            : String(value).toLowerCase() === 'female'
+              ? 'bg-pink-50 text-pink-700 ring-pink-200'
+              : 'bg-gray-50 text-gray-700 ring-gray-200'
+        ">
+        <span
+          class="h-1.5 w-1.5 rounded-full"
+          :class="
+            String(value).toLowerCase() === 'male'
+              ? 'bg-blue-600'
+              : String(value).toLowerCase() === 'female'
+                ? 'bg-pink-600'
+                : 'bg-gray-500'
+          " />
+        {{ value || "N/A" }}
+      </span>
+    </template>
+
+    <!-- Email (clickable) -->
+    <template #column-email="{ value }">
+      <a
+        v-if="value"
+        class="font-medium text-blue-600 hover:text-blue-700 hover:underline truncate block max-w-60"
+        :href="`mailto:${value}`"
+        @click.stop>
+        {{ value }}
+      </a>
+      <span v-else class="text-gray-400">N/A</span>
+    </template>
+
+    <!-- ✅ Phone (FIXED SLOT NAME) -->
+    <template #column-phone_number="{ value }">
+      <span
+        class="inline-flex items-center gap-2 font-mono text-xs px-2.5 py-1 rounded-lg bg-gray-50 text-gray-700 ring-1 ring-gray-200">
         {{ formatPhone(value) }}
       </span>
     </template>
 
-    <!-- Email Column Slot -->
-    <template #column-email="{ value }">
-      <span class="text-sm text-blue-600 hover:text-blue-800">
-        {{ value }}
-      </span>
-    </template>
-
-    <!-- Gender Column Slot -->
-    <template #column-gender="{ value }">
+    <!-- Department -->
+    <template #column-department="{ value }">
       <span
-        class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium"
-        :class="getGenderBadgeClass(value)"
-      >
-        {{ value }}
+        class="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-xs font-semibold ring-1 ring-inset ring-purple-200">
+        {{ value || "N/A" }}
       </span>
     </template>
-
   </ListTable>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, computed, watchEffect } from "vue";
 import ListTable from "@/components/features/ListTable.vue";
 
 // Props
@@ -130,6 +158,7 @@ const props = defineProps({
         visible: true,
         sortable: true,
       },
+      { key: "gender", label: "Gender", visible: true, sortable: true },
       { key: "email", label: "Email", visible: true, sortable: true },
       { key: "phone_number", label: "Phone", visible: true, sortable: false },
       { key: "department", label: "Department", visible: true, sortable: true },
@@ -207,6 +236,24 @@ const emit = defineEmits([
   "sort",
 ]);
 
+const columnsToUse = computed(() => {
+  const cols = Array.isArray(props.columns) ? [...props.columns] : [];
+
+  if (!cols.some((c) => c.key === "gender")) {
+    const latinIndex = cols.findIndex((c) => c.key === "latin_name");
+    const insertAt = latinIndex >= 0 ? latinIndex + 1 : 3;
+
+    cols.splice(insertAt, 0, {
+      key: "gender",
+      label: "Gender",
+      visible: true,
+      sortable: true,
+    });
+  }
+
+  return cols;
+});
+
 // Helper methods (HOD-specific formatting)
 const getInitials = (name) => {
   if (!name) return "H";
@@ -227,11 +274,27 @@ const getGenderBadgeClass = (gender) => {
 
 const formatPhone = (phone) => {
   if (!phone) return "N/A";
-  // Format phone number for Cambodia (+855)
-  if (phone.startsWith("0")) {
-    return phone.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
-  }
+  const digits = String(phone).replace(/\D/g, "");
+  if (digits.length < 8) return phone;
+
+  // Cambodia common: 9 digits (xxx xxx xxx)
+  if (digits.length === 9)
+    return digits.replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
+  // 10 digits (xxx xxx xxxx)
+  if (digits.length === 10)
+    return digits.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3");
+
   return phone;
+};
+
+const getGenderLabel = (gender) => {
+  const labels = {
+    Male: "Male",
+    Female: "Female",
+    male: "Male",
+    female: "Female",
+  };
+  return labels[gender] || gender || "N/A";
 };
 
 // Expose methods for parent component
@@ -239,5 +302,6 @@ defineExpose({
   getInitials,
   getGenderBadgeClass,
   formatPhone,
+  getGenderLabel,
 });
 </script>

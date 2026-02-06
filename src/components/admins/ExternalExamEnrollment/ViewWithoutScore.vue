@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-4">
     <ListTable
-      :data="props.students"
-      :loading="props.loading"
+      :data="students"
+      :loading="loading"
       :show-selection="props.showSelection"
       :selected-ids="selectedIds"
       :columns="columns"
@@ -26,14 +26,9 @@
       @selectAll="handleSelectAll"
       @sort="handleSort"
     >
-      <!-- ID Column Slot -->
-      <template #column-temp_user_id="{ value }">
-        <span class="font-medium text-gray-700">{{ value }}</span>
-      </template>
-
-      <!-- Profile Picture Column Slot -->
-      <template #column-profile_picture="{ value }">
-        <img :src="value" alt="Profile Picture" class="w-10 h-10 rounded-full object-cover" />
+      <!-- ID Column Slot - Display as sequential index -->
+      <template #column-id="{ index }">
+        <span class="font-medium text-gray-700">{{ index + 1 }}</span>
       </template>
 
       <!-- Khmer name Column Slot -->
@@ -86,53 +81,77 @@
       
 
     </ListTable>
+
+    <!-- Pagination -->
+    <Pagination
+      v-if="totalItems > 0"
+      :current-page="currentPage"
+      :total-items="totalItems"
+      :page-size="pageSize"
+      :page-size-options="[10, 25, 50, 100]"
+      item-label="students"
+      @page-change="handlePageChange"
+      @page-size-change="handlePageSizeChange"
+    />
+
+    <!-- View Temp Student Modal -->
+    <ViewTempStudentModal
+      :showView="showViewModal"
+      :studentId="selectedStudentId"
+      @close="showViewModal = false"
+    />
+
+    <!-- Edit Temp Student Modal -->
+    <EditTempStudentModal
+      :showEdit="showEditModal"
+      :student="selectedStudent"
+      @close="showEditModal = false"
+      @update="handleUpdateStudent"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import ListTable from '@/components/features/ListTable.vue';
+import Pagination from '@/components/features/Pagination.vue';
+import EditTempStudentModal from '@/components/admins/ExternalExamEnrollment/EditTempStudentModal.vue';
+import ViewTempStudentModal from '@/components/admins/ExternalExamEnrollment/ViewTempStudentModal.vue';
 import { useDepartment } from '@/stores/global/useDepartment';
 import { useSection } from '@/stores/global/useSection';
-import avatar from '@/assets/default-avatar.png';
+import { useTempStudentStore } from '@/stores/Admin/external_exam/CRUD_temp_student';
+import { showNotification } from '@/lib/notifications.js';
 
 // Props
 const props = defineProps({
-  students: {
-    type: Array,
-    default: () => [
-      {
-        id: 1,
-        temp_user_id: 'TEMP2024001',
-        profile_picture: avatar,
-        name_khmer: 'សុខ សំណាង',
-        name_latin: 'Sok Somnang',
-        gender: 'Male',
-        phone_number: '012 345 678',
-        department_id: 1,
-        program_id: 1
-      }
-    ]
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  },
   showSelection: {
     type: Boolean,
     default: true
   }
 });
 
+// Store
+const tempStudentStore = useTempStudentStore();
+
 const selectedIds = ref([]);
 const sortField = ref('');
 const sortDirection = ref('asc');
 
+// Pagination state
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+// Modal state
+const showViewModal = ref(false);
+const showEditModal = ref(false);
+const selectedStudent = ref(null);
+const selectedStudentId = ref(null);
+
 // Action flags
 const showActions = ref(true);
 const showViewAction = ref(true);
-const showEditAction = ref(false);
-const showDeleteAction = ref(false);
+const showEditAction = ref(true);
+const showDeleteAction = ref(true);
 
 // Action titles
 const viewActionTitle = ref('View student details');
@@ -146,10 +165,9 @@ const loadingMessage = ref('Loading students...');
 
 // Column configuration
 const columns = ref([
-  { key: 'temp_user_id', label: 'Temp ID', visible: true, sortable: true },
-  { key: 'profile_picture', label: 'Photo', visible: true, sortable: false },
-  { key: 'name_khmer', label: 'Khmer Name', visible: true, sortable: true },
-  { key: 'name_latin', label: 'Latin Name', visible: true, sortable: true },
+  { key: 'id', label: 'No.', visible: true, sortable: false },
+  { key: 'khmer_name', label: 'Khmer Name', visible: true, sortable: true },
+  { key: 'latin_name', label: 'Latin Name', visible: true, sortable: true },
   { key: 'gender', label: 'Gender', visible: true, sortable: true },
   { key: 'phone_number', label: 'Phone', visible: true, sortable: false },
   { key: 'origin', label: 'Origin', visible: true, sortable: false },
@@ -161,17 +179,42 @@ const columns = ref([
 const { departments, getAllDepartments, getDepartmentById } = useDepartment();
 const { sections, getAllSections, getSectionById } = useSection();
 
+// Computed properties for data from store
+const allStudents = computed(() => tempStudentStore.allTempStudents);
+const loading = computed(() => tempStudentStore.loading);
+
+// Pagination computed properties
+const totalItems = computed(() => allStudents.value.length);
+
+const students = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return allStudents.value.slice(start, end);
+});
+
 // Fetch data on mount
 onMounted(async () => {
   try {
     await Promise.all([
       getAllDepartments(),
-      getAllSections()
+      getAllSections(),
+      tempStudentStore.fetchTempStudents()
     ]);
   } catch (error) {
     console.error('Failed to fetch data:', error);
   }
 });
+
+// Expose refresh method for parent component
+const refresh = async () => {
+  try {
+    await tempStudentStore.refresh();
+  } catch (error) {
+    console.error('Failed to refresh temp students:', error);
+  }
+};
+
+defineExpose({ refresh });
 
 // Helper methods
 const getDepartmentName = (id) => {
@@ -207,17 +250,34 @@ const getGenderBadgeClass = (gender) => {
 // Event handlers
 const handleView = (student) => {
   console.log('View student:', student);
-  // TODO: Implement view logic
+  selectedStudentId.value = student.id;
+  showViewModal.value = true;
 };
 
 const handleEdit = (student) => {
   console.log('Edit student:', student);
-  // TODO: Implement edit logic
+  selectedStudent.value = student;
+  showEditModal.value = true;
 };
 
-const handleDelete = (student) => {
+const handleDelete = async (student) => {
   console.log('Delete student:', student);
-  // TODO: Implement delete logic
+  
+  try {
+    // Call delete API (it will auto-remove from local list)
+    await tempStudentStore.deleteTempStudent(student.id);
+    
+    // Refresh the list
+    await refresh();
+    
+    // Show success notification
+    showNotification(tempStudentStore.successMessage || 'Student deleted successfully!', 'success');
+    console.log('✅ Student deleted and list refreshed');
+  } catch (error) {
+    // Show error notification
+    showNotification(tempStudentStore.error || 'Failed to delete student. Please try again.', 'error');
+    console.error('❌ Failed to delete student:', error);
+  }
 };
 
 const handleSelect = (id) => {
@@ -237,16 +297,29 @@ const handleSort = ({ field, direction }) => {
   sortField.value = field;
   sortDirection.value = direction;
   
+  console.log('Sort requested:', { field, direction });
   // TODO: Implement sorting logic or call API with sort parameters
-  students.value.sort((a, b) => {
-    const aVal = a[field];
-    const bVal = b[field];
-    
-    if (aVal === bVal) return 0;
-    
-    const comparison = aVal > bVal ? 1 : -1;
-    return direction === 'asc' ? comparison : -comparison;
-  });
 };
-</script>Note: Sorting should be handled by parent component since students is a prop
-  console.log('Sort requested:', { field, direction
+
+// Handle student update from modal
+const handleUpdateStudent = async (updatedStudent) => {
+  console.log('Student updated:', updatedStudent);
+  
+  // Update the student in the store (already done by editTempStudent action)
+  // Just refresh the list to ensure consistency
+  await refresh();
+  
+  // Show success message
+  console.log('✅ Student list refreshed');
+};
+
+// Pagination handlers
+const handlePageChange = ({ page }) => {
+  currentPage.value = page;
+};
+
+const handlePageSizeChange = ({ pageSize: newSize, currentPage: newPage }) => {
+  pageSize.value = newSize;
+  currentPage.value = newPage;
+};
+</script>

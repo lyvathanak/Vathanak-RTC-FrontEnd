@@ -3,7 +3,7 @@
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6">
     <!-- Modal -->
     <div
-      class="relative w-full max-w-[760px] overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10">
+      class="relative w-full max-w-190 overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10">
       <!-- Header (sticky) -->
       <!-- Sticky Header -->
       <div
@@ -138,7 +138,7 @@
                 <textarea
                   :value="leaveRequest.originalData?.reason"
                   readonly
-                  class="mt-2 min-h-[110px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+                  class="mt-2 min-h-27.5 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
               </div>
 
               <div>
@@ -151,7 +151,7 @@
                     'No handover details provided'
                   "
                   readonly
-                  class="mt-2 min-h-[90px] w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
+                  class="mt-2 min-h-22.5 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-800 shadow-sm"></textarea>
               </div>
 
               <div>
@@ -264,12 +264,13 @@ import { showNotification } from "@/lib/notifications.js";
 import UniversalFilePreview from "@/components/features/UniversalFilePreview.vue";
 
 // ---------- PUBLIC FILE URL BUILDER ----------
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
+
 const toPublicUrl = (docPath) => {
   if (!docPath) return null;
   if (/^https?:\/\//i.test(docPath)) return docPath; // already absolute
-  // -> https://api.rtc-bb.camai.kh/storage/<docPath>
   const cleanPath = docPath.startsWith("/") ? docPath.substring(1) : docPath;
-  return `https://api.rtc-bb.camai.kh/storage/${cleanPath}`;
+  return `${FILE_ORIGIN}/storage/${cleanPath}`;
 };
 
 // ---------- PROPS / EMITS ----------

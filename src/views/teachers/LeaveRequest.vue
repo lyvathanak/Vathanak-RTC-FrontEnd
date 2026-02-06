@@ -52,14 +52,26 @@
     <!-- Search and Filter -->
     <div class="flex flex-col">
       <div class="relative mb-3 w-full max-w-lg">
+        <!-- Search icon -->
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
         <input
           v-model="search"
           type="text"
           placeholder="Search by name, ID, or leave type..."
           :disabled="loading"
-          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
-        <Search
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+        <button
+          v-if="search && search.trim().length"
+          type="button"
+          :disabled="loading"
+          @click="search = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          aria-label="Clear search">
+          ✕
+        </button>
       </div>
       <div class="w-full mt-3">
         <LeaveRequestFilter
@@ -182,15 +194,15 @@ const currentYearAllRequests = computed(() => {
 });
 
 const currentYearLeaveCount = computed(
-  () => currentYearApprovedRequests.value.length
+  () => currentYearApprovedRequests.value.length,
 );
 
 const remainingRequests = computed(() =>
-  Math.max(0, MAX_LEAVE_REQUESTS - currentYearLeaveCount.value)
+  Math.max(0, MAX_LEAVE_REQUESTS - currentYearLeaveCount.value),
 );
 
 const reachedLeaveLimit = computed(
-  () => currentYearLeaveCount.value >= MAX_LEAVE_REQUESTS
+  () => currentYearLeaveCount.value >= MAX_LEAVE_REQUESTS,
 );
 
 const statusCounts = computed(() => {
@@ -200,10 +212,10 @@ const statusCounts = computed(() => {
     pending: allCurrentYear.filter((r) => r.status.toLowerCase() === "pending")
       .length,
     approved: allCurrentYear.filter(
-      (r) => r.status.toLowerCase() === "approved"
+      (r) => r.status.toLowerCase() === "approved",
     ).length,
     rejected: allCurrentYear.filter(
-      (r) => r.status.toLowerCase() === "rejected"
+      (r) => r.status.toLowerCase() === "rejected",
     ).length,
     total: allCurrentYear.length,
   };
@@ -219,21 +231,21 @@ const filteredLeaveRequests = computed(() => {
       (r) =>
         r.id_card?.toLowerCase().includes(query) ||
         r.latin_name?.toLowerCase().includes(query) ||
-        r.leaveType?.toLowerCase().includes(query)
+        r.leaveType?.toLowerCase().includes(query),
     );
   }
 
   // Apply status filter
   if (filters.value.status && filters.value.status !== "All") {
     filtered = filtered.filter(
-      (r) => r.status.toLowerCase() === filters.value.status.toLowerCase()
+      (r) => r.status.toLowerCase() === filters.value.status.toLowerCase(),
     );
   }
 
   // Apply type filter
   if (filters.value.type && filters.value.type !== "All") {
     filtered = filtered.filter(
-      (r) => r.leaveType.toLowerCase() === filters.value.type.toLowerCase()
+      (r) => r.leaveType.toLowerCase() === filters.value.type.toLowerCase(),
     );
   }
 
@@ -252,19 +264,19 @@ const totalFilteredItems = computed(() => {
       (r) =>
         r.id_card?.toLowerCase().includes(query) ||
         r.latin_name?.toLowerCase().includes(query) ||
-        r.leaveType?.toLowerCase().includes(query)
+        r.leaveType?.toLowerCase().includes(query),
     );
   }
 
   if (filters.value.status && filters.value.status !== "All") {
     filtered = filtered.filter(
-      (r) => r.status.toLowerCase() === filters.value.status.toLowerCase()
+      (r) => r.status.toLowerCase() === filters.value.status.toLowerCase(),
     );
   }
 
   if (filters.value.type && filters.value.type !== "All") {
     filtered = filtered.filter(
-      (r) => r.leaveType.toLowerCase() === filters.value.type.toLowerCase()
+      (r) => r.leaveType.toLowerCase() === filters.value.type.toLowerCase(),
     );
   }
 

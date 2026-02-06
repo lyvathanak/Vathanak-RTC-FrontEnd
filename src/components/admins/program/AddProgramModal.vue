@@ -1,256 +1,391 @@
 <template>
-  <div class="p-6 space-y-5">
-    <!-- Program inputs -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-      <!-- Program Name -->
-      <div class="flex flex-col gap-y-2 w-full min-w-0">
-        <label class="text-[12px] pr-2">Program Name</label>
-        <Input
-          v-model="program.name"
-          placeholder="Input Program Name"
-          class="transition-all border-black w-full placeholder:text-xs bg-white focus:border-black focus:ring-2 focus:ring-black"
-          :class="program.name ? 'border-black ring-1 ring-black' : ''" />
-      </div>
-
-      <!-- Academic Year -->
-      <div class="flex flex-col gap-y-2 w-full min-w-0">
-        <label class="text-[12px] pr-2">Academic Year</label>
-        <Input
-          v-model="academicYear"
-          placeholder="Input Academic Year"
-          class="transition-all border-black w-full placeholder:text-xs bg-white focus:border-black focus:ring-2 focus:ring-black"
-          :class="academicYear ? 'border-black ring-1 ring-black' : ''" />
-      </div>
-    </div>
-
-    <!-- Degree + Duration (Degree required) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-      <!-- Degree Level -->
-      <div class="flex flex-col gap-y-2 w-full min-w-0">
-        <label class="text-[12px] pr-2"
-          >Degree Level <span class="text-red-600">*</span></label
-        >
-        <div class="relative">
-          <select
-            v-model="degreeLevel"
-            class="border-black border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black appearance-none pr-9 w-full">
-            <option value="">Select degree…</option>
-            <option v-for="opt in DEGREE_OPTIONS" :key="opt" :value="opt">
-              {{ opt }}
-            </option>
-          </select>
-          <span
-            class="pointer-events-none absolute inset-y-0 right-2 flex items-center"
-            aria-hidden="true">
-            <ChevronDown class="w-4 h-4 text-gray-500" />
-          </span>
-        </div>
-        <p v-if="degreeError" class="text-xs text-red-600 mt-1">
-          {{ degreeError }}
+  <div class="p-6 space-y-6">
+    <!-- ======= Program Info Card ======= -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="border-b border-gray-200 px-5 py-4">
+        <h3 class="text-sm font-semibold text-gray-900">Program Information</h3>
+        <p class="text-xs text-gray-500 mt-1">
+          Basic details used to create a new program.
         </p>
       </div>
 
-      <!-- Duration -->
-      <div class="flex flex-col gap-y-2 w-full min-w-0">
-        <label class="text-[12px] pr-2">Duration (years)</label>
-        <input
-          v-model.number="durationYears"
-          type="number"
-          min="1"
-          class="border-black border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black"
-          placeholder="e.g., 4" />
-      </div>
-    </div>
+      <div class="p-5 space-y-5">
+        <!-- Program Name + Academic Year -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="flex flex-col gap-2 min-w-0">
+            <label class="text-xs font-semibold text-gray-700">
+              Program Name <span class="text-red-600">*</span>
+            </label>
+            <Input
+              v-model="program.name"
+              placeholder="e.g., Computer Science"
+              class="h-11 w-full rounded-xl border border-gray-200 bg-white placeholder:text-xs outline-none transition focus:border-black focus:ring-2 focus:ring-black/20"
+              :class="
+                program.name ? 'border-black ring-1 ring-black/10' : ''
+              " />
+            <p class="text-[11px] text-gray-500">
+              This is the name shown to students.
+            </p>
+          </div>
 
-    <!-- Single Department (REQUIRED) -->
-    <div class="grid grid-cols-1 gap-2 items-start">
-      <div class="flex flex-col gap-y-2 w-full min-w-0">
-        <label class="text-[12px] pr-2"
-          >Department <span class="text-red-600">*</span></label
-        >
-        <div class="relative min-w-[16rem]">
-          <select
-            v-model="departmentId"
-            class="border-black border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black appearance-none pr-9 w-full disabled:bg-gray-100"
-            :disabled="loadingDepartments">
-            <option value="">Select department…</option>
-            <option v-for="d in departments" :key="d.id" :value="String(d.id)">
-              {{ d.department_name }}
-            </option>
-          </select>
-          <span
-            class="pointer-events-none absolute inset-y-0 right-2 flex items-center"
-            aria-hidden="true">
-            <ChevronDown class="w-4 h-4 text-gray-500" />
-          </span>
+          <div class="flex flex-col gap-2 min-w-0">
+            <label class="text-xs font-semibold text-gray-700">
+              Academic Year <span class="text-red-600">*</span>
+            </label>
+
+            <Input
+              v-model="academicYear"
+              placeholder="e.g., 2025-2026"
+              class="h-11 w-full rounded-xl border border-gray-200 bg-white placeholder:text-xs outline-none transition focus:border-black focus:ring-2 focus:ring-black/20"
+              :class="
+                academicYear ? 'border-black ring-1 ring-black/10' : ''
+              " />
+
+            <p v-if="yearError" class="text-xs text-red-600">
+              {{ yearError }}
+            </p>
+            <p v-else class="text-[11px] text-gray-500">
+              Example formats: <span class="font-medium">2025-2026</span> or
+              <span class="font-medium">2026</span>
+            </p>
+          </div>
         </div>
-        <p v-if="deptError" class="text-xs text-red-600 mt-1">
-          {{ deptError }}
-        </p>
+
+        <!-- Degree + Duration -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Degree -->
+          <div class="flex flex-col gap-2 min-w-0">
+            <label class="text-xs font-semibold text-gray-700">
+              Degree Level <span class="text-red-600">*</span>
+            </label>
+
+            <div class="relative">
+              <select
+                v-model="degreeLevel"
+                class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 pr-10 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed appearance-none"
+                :class="degreeLevel ? 'border-black ring-1 ring-black/10' : ''">
+                <option value="" disabled>Select degree…</option>
+                <option v-for="opt in DEGREE_OPTIONS" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
+                aria-hidden="true">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+            </div>
+
+            <p v-if="degreeError" class="text-xs text-red-600">
+              {{ degreeError }}
+            </p>
+            <p v-else class="text-[11px] text-gray-500">
+              Choose the official level for this program.
+            </p>
+          </div>
+
+          <!-- Duration -->
+          <div class="flex flex-col gap-2 min-w-0">
+            <label class="text-xs font-semibold text-gray-700">
+              Duration (years)
+            </label>
+
+            <input
+              v-model.number="durationYears"
+              type="number"
+              min="1"
+              class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20"
+              placeholder="e.g., 4" />
+
+            <p class="text-[11px] text-gray-500">
+              Default is 1 year. Use the official duration.
+            </p>
+          </div>
+        </div>
+
+        <!-- Department -->
+        <div class="grid grid-cols-1 gap-2">
+          <!-- Department -->
+          <div class="flex flex-col gap-2 min-w-0">
+            <label class="text-xs font-semibold text-gray-700">
+              Department <span class="text-red-600">*</span>
+            </label>
+
+            <div class="relative">
+              <select
+                v-model="departmentId"
+                class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 pr-10 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed appearance-none"
+                :disabled="loadingDepartments"
+                :class="
+                  departmentId ? 'border-black ring-1 ring-black/10' : ''
+                ">
+                <option value="" disabled>
+                  {{
+                    loadingDepartments
+                      ? "Loading departments…"
+                      : "Select department…"
+                  }}
+                </option>
+
+                <option
+                  v-for="d in departments"
+                  :key="d.id"
+                  :value="String(d.id)">
+                  {{ d.department_name }}
+                </option>
+              </select>
+
+              <span
+                class="pointer-events-none absolute inset-y-0 right-3 flex items-center"
+                aria-hidden="true">
+                <ChevronDown class="w-4 h-4 text-gray-500" />
+              </span>
+
+              <!-- small spinner while loading -->
+              <span
+                v-if="loadingDepartments"
+                class="absolute inset-y-0 right-10 flex items-center"
+                aria-hidden="true">
+                <span
+                  class="h-4 w-4 rounded-full border-2 border-gray-300 border-t-transparent animate-spin"></span>
+              </span>
+            </div>
+
+            <p v-if="deptError" class="text-xs text-red-600">
+              {{ deptError }}
+            </p>
+            <p v-else class="text-[11px] text-gray-500">
+              Department controls what students see and where the program is
+              grouped.
+            </p>
+          </div>
+
+          <!-- Add Semester Button -->
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              type="button"
+              @click="addSemester"
+              class="inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-4 py-2 text-sm font-semibold text-white shadow hover:bg-[#1f4f93] active:scale-[0.99]">
+              <Plus class="w-4 h-4" />
+              Add Semester
+            </button>
+
+            <p class="text-[11px] text-gray-500">
+              Add semesters first, then assign subjects.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= Semesters Section ======= -->
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div
+        class="border-b border-gray-200 px-5 py-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Semesters</h3>
+          <p class="text-xs text-gray-500 mt-1">
+            Configure semester dates and attach subjects.
+          </p>
+        </div>
+
+        <div class="text-xs text-gray-500">
+          Total:
+          <span class="font-semibold text-gray-800">{{
+            semesters.length
+          }}</span>
+        </div>
       </div>
 
-      <!-- Add Semester under department -->
-      <div class="flex">
+      <div class="p-5 space-y-4">
+        <div
+          v-for="(sem, idx) in semesters"
+          :key="sem._key"
+          class="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+          <!-- Header -->
+          <button
+            type="button"
+            class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition"
+            @click="sem.expanded = !sem.expanded"
+            :aria-expanded="sem.expanded ? 'true' : 'false'">
+            <div class="flex items-center gap-3">
+              <div
+                class="h-9 w-9 rounded-xl bg-gray-900 text-white flex items-center justify-center text-sm font-bold">
+                {{ sem.semester_number }}
+              </div>
+              <div class="text-left">
+                <div class="text-sm font-semibold text-gray-900">
+                  Semester {{ sem.semester_number }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ sem.semester_key || `Semester ${sem.semester_number}` }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 px-3 py-2 text-xs font-semibold"
+                @click.stop="removeSemester(idx)">
+                <Trash2 class="w-4 h-4 mr-1" />
+                Remove
+              </button>
+
+              <ChevronRight
+                class="w-5 h-5 text-gray-600 transition-transform"
+                :class="sem.expanded ? 'rotate-90' : ''" />
+            </div>
+          </button>
+
+          <!-- Body -->
+          <div v-show="sem.expanded" class="px-5 pb-5 pt-2 space-y-5">
+            <!-- Meta -->
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
+              <div class="flex flex-col">
+                <label class="text-xs font-semibold text-gray-700 mb-1">
+                  Semester Number
+                </label>
+                <input
+                  :value="sem.semester_number"
+                  type="number"
+                  disabled
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm" />
+              </div>
+
+              <div class="flex flex-col md:col-span-3">
+                <label class="text-xs font-semibold text-gray-700 mb-1">
+                  Semester Key
+                </label>
+                <input
+                  v-model="sem.semester_key"
+                  type="text"
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20"
+                  placeholder="e.g., Semester 1" />
+              </div>
+
+              <div class="flex flex-col">
+                <label class="text-xs font-semibold text-gray-700 mb-1">
+                  Start Date
+                </label>
+                <input
+                  v-model="sem.start_date"
+                  type="date"
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20" />
+              </div>
+
+              <div class="flex flex-col">
+                <label class="text-xs font-semibold text-gray-700 mb-1">
+                  End Date
+                </label>
+                <input
+                  v-model="sem.end_date"
+                  type="date"
+                  class="h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none transition focus:border-black focus:ring-2 focus:ring-black/20" />
+              </div>
+            </div>
+
+            <!-- Subjects -->
+            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <div class="text-sm font-semibold text-gray-900">
+                    Subjects
+                  </div>
+                  <p class="text-xs text-gray-500">
+                    Pick subjects — credit/hour will be filled automatically.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white text-sm px-3 py-2 hover:bg-black active:scale-[0.99]"
+                  @click="addRow(sem.rows)"
+                  :disabled="loadingSubjects">
+                  <Plus class="w-4 h-4" />Add Subject
+                </button>
+              </div>
+
+              <PickerTable
+                :rows="sem.rows"
+                :subjects="subjectOptions"
+                @remove="(i) => sem.rows.splice(i, 1)"
+                @subject-change="(p) => onSubjectPicked(sem, p)" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="!semesters.length"
+          class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center">
+          <div class="text-sm font-semibold text-gray-800">
+            No semesters yet
+          </div>
+          <div class="text-xs text-gray-500 mt-1">
+            Click <span class="font-semibold">Add Semester</span> to start
+            assigning subjects.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= Footer Actions ======= -->
+    <div
+      class="sticky bottom-0 bg-white/90 backdrop-blur border-t border-gray-200 py-4">
+      <div class="flex items-center justify-end gap-3 px-1">
         <button
           type="button"
-          @click="addSemester"
-          class="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-3 py-2 text-white font-semibold shadow hover:bg-[#1f4f93]">
-          <span class="text-xs leading-none"><Plus /></span>
-          <span class="text-sm">Add Semester</span>
+          @click="onCancel"
+          class="inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          @click="createProgram"
+          :disabled="saving"
+          class="inline-flex items-center rounded-xl bg-[#235AA6] px-5 py-2 text-sm font-semibold text-white shadow hover:bg-[#1f4f93] disabled:opacity-60">
+          <span
+            v-if="saving"
+            class="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+          {{ saving ? "Saving…" : "Create Program" }}
         </button>
       </div>
-    </div>
-
-    <!-- Semester cards -->
-    <div class="my-4 space-y-3">
-      <div
-        v-for="(sem, idx) in semesters"
-        :key="sem._key"
-        class="rounded-xl bg-white shadow border border-gray-200">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3">
-          <div class="flex items-center gap-3">
-            <div class="text-sm text-gray-700 font-medium">
-              Semester {{ sem.semester_number }}
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button
-              class="inline-flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 px-2.5 py-1.5 transition-colors"
-              @click="removeSemester(idx)"
-              title="Remove this semester">
-              <Trash2 class="w-5 h-5" />
-            </button>
-            <button
-              class="p-2 rounded hover:bg-gray-100 transition"
-              @click="sem.expanded = !sem.expanded"
-              :aria-expanded="sem.expanded ? 'true' : 'false'"
-              title="Expand / Collapse">
-              <ChevronRight
-                class="w-5 h-5 transition-transform"
-                :class="sem.expanded ? 'rotate-90' : ''" />
-            </button>
-          </div>
-        </div>
-
-        <!-- Body -->
-        <div v-show="sem.expanded" class="px-5 pb-5 pt-0 space-y-6">
-          <!-- Semester meta -->
-          <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <!-- Semester Number (read-only) -->
-            <div class="flex flex-col">
-              <label class="text-xs text-gray-700 mb-1">Semester Number</label>
-              <input
-                :value="sem.semester_number"
-                type="number"
-                disabled
-                class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-100" />
-            </div>
-
-            <!-- Semester Key -->
-            <div class="flex flex-col md:col-span-3">
-              <label class="text-xs text-gray-700 mb-1">Semester Key</label>
-              <input
-                v-model="sem.semester_key"
-                type="text"
-                class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black"
-                placeholder="e.g., Semester 1" />
-            </div>
-
-            <!-- Start Date -->
-            <div class="flex flex-col">
-              <label class="text-xs text-gray-700 mb-1">Start Date</label>
-              <input
-                v-model="sem.start_date"
-                type="date"
-                class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black" />
-            </div>
-
-            <!-- End Date -->
-            <div class="flex flex-col">
-              <label class="text-xs text-gray-700 mb-1">End Date</label>
-              <input
-                v-model="sem.end_date"
-                type="date"
-                class="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-black" />
-            </div>
-          </div>
-
-          <!-- Subjects -->
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <div class="text-xs text-gray-700 font-medium">Subjects</div>
-              <button
-                class="inline-flex items-center gap-1 rounded bg-gray-800 text-white text-xs px-2 py-1 hover:bg-black"
-                @click="addRow(sem.rows)"
-                title="Add subject">
-                + Add Subject
-              </button>
-            </div>
-
-            <PickerTable
-              :rows="sem.rows"
-              :subjects="subjectOptions"
-              @remove="(i) => sem.rows.splice(i, 1)"
-              @subject-change="(p) => onSubjectPicked(sem, p)" />
-          </div>
-        </div>
-      </div>
-
-      <div v-if="!semesters.length" class="text-sm text-gray-500 px-1">
-        No semesters yet — add one to start assigning subjects.
-      </div>
-    </div>
-
-    <!-- Submit -->
-    <!-- <div class="pt-1">
-      <button
-        type="button"
-        @click="createProgram"
-        :disabled="saving"
-        class="inline-flex items-center rounded-xl bg-[#235AA6] px-4 py-2 text-white font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60">
-        <spanclass
-          v-if="saving"
-          ="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></spanclass>
-        <span>{{ saving ? "Saving…" : "Create Program" }}</span>
-      </button>
-    </div> -->
-
-    <!-- Footer Buttons -->
-    <div class="pt-6 flex justify-end gap-3 border-t border-gray-200 mt-6">
-      <!-- Cancel -->
-      <button
-        type="button"
-        @click="onCancel"
-        class="inline-flex items-center rounded-xl border border-gray-300 bg-[#FF4040] px-4 py-2 text-white font-semibold shadow-sm hover:bg-red-700">
-        Cancel
-      </button>
-
-      <!-- Create Program -->
-      <button
-        type="button"
-        @click="createProgram"
-        :disabled="saving"
-        class="inline-flex items-center rounded-xl bg-[#235AA6] px-4 py-2 text-white font-semibold shadow hover:bg-[#1f4f93] disabled:opacity-60">
-        <span
-          v-if="saving"
-          class="inline-block h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-        <span>{{ saving ? "Saving…" : "Create Program" }}</span>
-      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, h, defineComponent, watch } from "vue";
-import api from "@/stores/apis/axios"; // token-aware axios instance (adds Authorization)
+import {
+  ref,
+  reactive,
+  onMounted,
+  h,
+  defineComponent,
+  watch,
+  computed,
+} from "vue";
+import api from "@/stores/apis/axios";
 import { Input } from "@/components/ui/input";
 import { Plus, ChevronRight, Trash2, ChevronDown } from "lucide-vue-next";
 
 const DEGREE_OPTIONS = ["Bachelor", "High Bachelor", "Master", "PhD"];
 
-/* ---------- Row table (subject picker + readonly credit/hour) ---------- */
+// Computed options for BaseSelect
+const degreeOptions = computed(() =>
+  DEGREE_OPTIONS.map((d) => ({ label: d, value: d }))
+);
+
+const departmentOptions = computed(() =>
+  (departments.value || []).map((d) => ({
+    label: d.department_name,
+    value: String(d.id),
+  }))
+);
+
+/* ---------- Row table ---------- */
 const PickerTable = defineComponent({
   name: "PickerTable",
   props: {
@@ -358,21 +493,24 @@ const emit = defineEmits(["success", "cancel"]);
 const saving = ref(false);
 const program = reactive({ code: "", name: "" });
 
-const degreeLevel = ref(""); // REQUIRED
+const degreeLevel = ref("");
 const degreeError = ref("");
+
 const durationYears = ref(1);
-const academicYear = ref(""); // for Academic Year input
+const academicYear = ref("");
+
+const yearError = ref("");
 
 const departments = ref([]);
 const departmentId = ref("");
 const loadingDepartments = ref(false);
 const deptError = ref("");
 
-const semesters = ref([]); // [{ _key, expanded, semester_number, semester_key, start_date, end_date, rows: [] }]
+const semesters = ref([]);
 const subjectOptions = ref([]);
 const loadingSubjects = ref(false);
 
-/* ---------- (optional) code suggestion seed ---------- */
+/* ---------- code suggestion ---------- */
 const suggestedCode = ref("");
 function acronymFromName(name = "") {
   if (!name.trim()) return "PRG";
@@ -412,7 +550,7 @@ function addSemester() {
   semesters.value.push({
     _key: uid(),
     expanded: true,
-    semester_number: semesters.value.length + 1, // auto number
+    semester_number: semesters.value.length + 1,
     semester_key: `Semester ${semesters.value.length + 1}`,
     start_date: "",
     end_date: "",
@@ -453,11 +591,11 @@ function onSubjectPicked(sem, { index, value }) {
   }
 }
 
-/* ---------- fetchers (token-aware `api`) ---------- */
+/* ---------- fetchers ---------- */
 async function fetchDepartments() {
   loadingDepartments.value = true;
   try {
-    const { data } = await api.get("/managements/get_all_department"); // {{base_url2}}
+    const { data } = await api.get("/managements/get_all_department");
     departments.value = Array.isArray(data?.all_department)
       ? data.all_department
       : [];
@@ -472,7 +610,7 @@ async function fetchDepartments() {
 async function fetchSubjects() {
   loadingSubjects.value = true;
   try {
-    const { data } = await api.get("/managements/get_all_subjects"); // {{base_url}}
+    const { data } = await api.get("/managements/get_all_subjects");
     const arr = Array.isArray(data?.subjects?.data) ? data.subjects.data : [];
     subjectOptions.value = arr.map((s) => ({
       id: s.id,
@@ -491,8 +629,7 @@ async function fetchSubjects() {
   }
 }
 
-/* ---------- semester subject bulk helpers ---------- */
-// base_url2: add subjects to semester (bulk)
+/* ---------- bulk helpers ---------- */
 async function bulkAddSubjectsToSemester(semesterId, subjectIds) {
   if (!semesterId || !Array.isArray(subjectIds) || subjectIds.length === 0)
     return;
@@ -502,7 +639,6 @@ async function bulkAddSubjectsToSemester(semesterId, subjectIds) {
   });
 }
 
-// base_url: remove subjects from semester (bulk)
 async function bulkRemoveSubjectsFromSemester(semesterId, subjectIds) {
   if (!semesterId || !Array.isArray(subjectIds) || subjectIds.length === 0)
     return;
@@ -514,18 +650,23 @@ async function bulkRemoveSubjectsFromSemester(semesterId, subjectIds) {
   });
 }
 
-/* ---------- submit flow (token-aware `api`) ---------- */
+/* ---------- submit flow ---------- */
 async function createProgram() {
   deptError.value = "";
   degreeError.value = "";
+  yearError.value = "";
+
+  if (!program.name?.trim()) {
+    // keep it simple; optional if you want required program name
+  }
   if (!departmentId.value) deptError.value = "Department is required.";
   if (!degreeLevel.value) degreeError.value = "Degree level is required.";
-  if (!academicYear.value) degreeError.value = "Academic Year is required.";
-  if (deptError.value || degreeError.value) return;
+  if (!academicYear.value) yearError.value = "Academic Year is required.";
+
+  if (deptError.value || degreeError.value || yearError.value) return;
 
   saving.value = true;
   try {
-    // 1) Create Program ({{base_url2}})
     const payloadProgram = {
       program_name: program.name?.trim() || null,
       degree_level: degreeLevel.value,
@@ -534,6 +675,7 @@ async function createProgram() {
       sub_department_id: null,
       academic_year: academicYear.value,
     };
+
     const createRes = await api.post(
       "/managements/create_new_program",
       payloadProgram
@@ -542,7 +684,6 @@ async function createProgram() {
     const programId = Number(createdProgram?.id);
     if (!programId) throw new Error("Program was not created.");
 
-    // 2) Create each semester ({{base_url}})
     for (const sem of semesters.value) {
       if (!sem.start_date || !sem.end_date) continue;
 
@@ -567,7 +708,6 @@ async function createProgram() {
         console.error("❌ Create semester failed:", e?.response?.data || e);
       }
 
-      // 3) Bulk-assign subjects to the semester ({{base_url2}})
       if (createdSemId) {
         const subjectIds = sem.rows
           .map((row) => Number(row.subjectId))
@@ -584,7 +724,6 @@ async function createProgram() {
       }
     }
 
-    // ✅ Done
     emit("success", createdProgram);
 
     // reset
@@ -593,6 +732,7 @@ async function createProgram() {
     degreeLevel.value = "";
     durationYears.value = 1;
     departmentId.value = "";
+    academicYear.value = "";
     semesters.value = [];
   } catch (err) {
     alert(
@@ -605,6 +745,7 @@ async function createProgram() {
     saving.value = false;
   }
 }
+
 function onCancel() {
   emit("cancel");
 }

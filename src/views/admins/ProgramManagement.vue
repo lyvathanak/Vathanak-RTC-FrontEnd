@@ -1,10 +1,26 @@
 <!-- /src/pages/admins/program/ProgramIndex.vue -->
 <template>
-  <div class="flex flex-col gap-4 py-5">
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
     <!-- Header / Tools -->
+    <PageHeader
+      :title="t('programs_management')"
+      subtitle="Track and manage your program applications">
+      <!--  actions -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          @click="openCreate = true"
+          class="h-10 inline-flex items-center gap-2 rounded-lg bg-[#235AA6] px-4 text-white font-semibold hover:bg-[#1f4f93] focus:outline-none focus:ring-2 focus:ring-offset-2">
+          <Plus class="h-4 w-4" />
+          <span class="text-sm">Create Program</span>
+        </button>
+      </div>
+    </PageHeader>
+
     <div
-      class="px-3 sm:px-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <!-- Left: search -->
+      class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <!--  search -->
       <div class="relative w-full md:w-md">
         <input
           v-model="searchTerm"
@@ -15,33 +31,24 @@
         <Search
           class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
       </div>
-
-      <!-- Right: actions -->
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          @click="openCreate = true"
-          class="h-10 shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-[#235AA6] px-4 text-white font-semibold hover:bg-[#1f4f93] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#235AA6]">
-          <Plus class="h-4 w-4" />
-          <span class="text-sm">Create Program</span>
-        </button>
-      </div>
     </div>
 
     <!-- Filters -->
-    <Filter
-      class="px-3 sm:px-5"
-      :key="filterKey"
-      :filter-definitions="programFilterDefinitions"
-      :initial-filters="initialProgramFilters"
+    <ProgramFilter
+      title="Program Filters"
+      subtitle="Filter programs by department, academic year, and degree level."
       clear-button-text="Clear"
-      :auto-clear="true"
+      :auto-emit="true"
+      :department-options="departmentFilterOptions"
+      :academic-year-options="academicYearFilterOptions"
+      :degree-level-options="degreeLevelFilterOptions"
+      :initial-filters="initialProgramFilters"
       @update:filters="handleFiltersUpdate"
       @clear-filters="handleClearFilters"
       @filter-change="handleFilterChange" />
 
     <!-- Table -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
         <ListTable
           :key="columnsKey"
@@ -56,10 +63,11 @@
           :show-view-action="false"
           :show-edit-action="true"
           :show-delete-action="true"
-          :showCloneAction="true"
+          :show-clone-action="true"
           view-action-title="View program"
           edit-action-title="Edit program"
           delete-action-title="Delete program"
+          clone-action-title="Clone program"
           empty-state-title="No programs found"
           empty-state-message="Try adjusting your search or filters."
           loading-message="Loading programs..."
@@ -100,16 +108,14 @@
           </template>
 
           <template #column-academic_year="{ value }">
-            <span>{{
-              value 
-            }}</span>
+            <span>{{ value }}</span>
           </template>
         </ListTable>
       </div>
     </div>
 
     <!-- Pagination (uses your component API exactly) -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <Pagination
         v-model:current-page="page"
         v-model:page-size="pageSize"
@@ -123,14 +129,29 @@
     <!-- Create -->
     <Dialog v-model:open="openCreate">
       <DialogContent
-        class="max-w-none w-[90vw] sm:w-[80vw] sm:max-w-[1000px]! rounded-sm p-0">
-        <div class="flex flex-col h-auto bg-gray-50 rounded-sm overflow-hidden">
+        class="max-w-none w-[90vw] sm:w-[80vw] sm:max-w-250 rounded-sm p-0">
+        <div
+          class="flex flex-col bg-gray-50 rounded-sm overflow-hidden max-h-[85vh]">
           <div
             class="sticky top-0 z-10 bg-white border-b rounded-t-sm flex items-center justify-between px-6 py-4">
-            <!-- <div class="w-5"></div> -->
             <DialogHeader class="p-0">
-              <DialogTitle>Create Program</DialogTitle>
+              <div class="flex items-center gap-2 flex-wrap">
+                <DialogTitle class="text-lg font-semibold text-gray-900">
+                  CREATE PROGRAM
+                </DialogTitle>
+                <!-- Badge -->
+                <div
+                  class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-[#235AA6] bg-blue-50 border border-[#235AA6] ring-1 ring-gray-200"
+                  :class="[locale === 'kh' ? 'khmer-text' : '']">
+                  {{ t("add_program") }}
+                </div>
+              </div>
+              <DialogDescription class="text-sm text-gray-500">
+                Fill program details, choose department, then add semesters &
+                subjects.
+              </DialogDescription>
             </DialogHeader>
+
             <button
               @click="openCreate = false"
               class="p-1 rounded hover:bg-gray-100"
@@ -138,7 +159,8 @@
               <X class="w-5 h-5" />
             </button>
           </div>
-          <div class="flex-1 overflow-y-auto px-6 py-4">
+
+          <div class="flex-1 overflow-y-auto">
             <AddProgramModal
               @success="onCreated"
               @cancel="openCreate = false" />
@@ -150,15 +172,28 @@
     <!-- Update -->
     <Dialog v-model:open="openEdit">
       <DialogContent
-        class="max-w-none w-[90vw] sm:w-[80vw] sm:max-w-[1000px]! rounded-sm p-0">
+        class="max-w-none w-[90vw] sm:w-[80vw] sm:max-w-250 rounded-sm p-0">
         <div
           class="flex flex-col bg-gray-50 rounded-sm overflow-hidden max-h-[85vh]">
           <div
             class="sticky top-0 z-10 bg-white border-b rounded-t-sm flex items-center justify-between px-6 py-4">
-            <!-- <div class="w-5"></div> -->
             <DialogHeader class="p-0">
-              <DialogTitle>Edit Program</DialogTitle>
+              <div class="flex items-center gap-2 flex-wrap">
+                <DialogTitle class="text-lg font-semibold text-gray-900">
+                  EDIT PROGRAM
+                </DialogTitle>
+                <!-- Badge -->
+                <div
+                  class="hidden sm:inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-[#235AA6] bg-blue-50 border border-[#235AA6] ring-1 ring-gray-200"
+                  :class="[locale === 'kh' ? 'khmer-text' : '']">
+                  {{ t("edit_program") }}
+                </div>
+              </div>
+              <DialogDescription class="text-sm text-gray-500">
+                Update base details then manage semesters & subjects.
+              </DialogDescription>
             </DialogHeader>
+
             <button
               @click="openEdit = false"
               class="p-1 rounded hover:bg-gray-100"
@@ -178,90 +213,13 @@
       </DialogContent>
     </Dialog>
 
-    <!-- Clone -->
-    <Dialog v-model:open="openClone">
-      <DialogContent
-        class="max-w-none w-[90vw] sm:w-[80vw] sm:!max-w-[1000px] rounded-sm p-0">
-        <div class="flex flex-col bg-gray-50 rounded-sm overflow-hidden">
-          <!-- Header -->
-          <div class="sticky top-0 z-10 bg-white border-b rounded-t-sm flex items-center justify-between px-6 py-4">
-            <DialogHeader class="p-0">
-              <DialogTitle>Clone Program</DialogTitle>
-            </DialogHeader>
-            <button
-              @click="openClone = false"
-              class="p-1 rounded hover:bg-gray-100"
-              aria-label="Close">
-              <X class="w-5 h-5" />
-            </button>
-          </div>
-
-          <!-- Body -->
-          <div class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
-            <!-- Program Info -->
-            <div class="bg-white border rounded-lg p-4 shadow-sm">
-              <h3 class="text-lg font-semibold text-gray-800 mb-2">
-                Program Details
-              </h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700 text-sm">
-                <div>
-                  <span class="font-medium">Name:</span> {{ cloningProgram?.program_name }}
-                </div>
-                <div>
-                  <span class="font-medium">Department:</span> {{ getDepartmentName(cloningProgram?.department_id) }}
-                </div>
-                <div>
-                  <span class="font-medium">Degree Level:</span> {{ cloningProgram?.degree_level || "—" }}
-                </div>
-                <div>
-                  <span class="font-medium">Duration:</span>
-                  {{ cloningProgram?.duration_years ? cloningProgram.duration_years + (cloningProgram.duration_years > 1 ? " years" : " year") : "—" }}
-                </div>
-                <div>
-                  <span class="font-medium">Current Academic Year:</span> {{ cloningProgram?.academic_year || "—" }}
-                </div>
-                <div class="bg-white">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Academic Year (optional)
-                </label>
-                <input
-                  v-model="cloneAcademicYear"
-                  type="text"
-                  placeholder="e.g. 2027-2028 (leave empty to auto increase)"
-                  class="w-full h-10 rounded-lg border px-3 outline-none focus:ring-2 focus:ring-green-600"
-                />
-                <p class="text-xs text-gray-500 mt-1">
-                  Leave empty to auto-generate next academic year
-                </p>
-              </div>
-              </div>
-              
-            </div>
-
-            <!-- Confirmation -->
-            <p class="text-gray-600">
-              Are you sure you want to clone this program? A new program will be created with the same details.
-            </p>
-
-            <!-- Action Buttons -->
-            <div class="flex justify-end gap-3">
-              <button
-                @click="openClone = false"
-                class="h-10 shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-gray-200 px-4 text-gray-800 font-semibold hover:bg-gray-300">
-                Cancel
-              </button>
-              <button
-                @click="confirmClone"
-                class="h-10 shrink-0 whitespace-nowrap inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 text-white font-semibold hover:bg-green-700">
-                Clone
-              </button>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-
-
+    <!-- Clone Modal Component -->
+    <CloneProgram
+      v-model="openClone"
+      :program="cloningProgram"
+      :departments="departmentOptions"
+      @success="handleCloneSuccess"
+      @cancel="handleCloneCancel" />
   </div>
 </template>
 
@@ -270,19 +228,24 @@ import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import api from "@/stores/apis/axios";
 import AddProgramModal from "@/components/admins/program/AddProgramModal.vue";
 import UpdateProgramModal from "@/components/admins/program/UpdateProgramModal.vue";
+import CloneProgram from "@/components/admins/program/CloneProgram.vue";
 import ListTable from "@/components/features/ListTable.vue";
 import Pagination from "@/components/features/Pagination.vue";
-import Filter from "@/components/features/Filter.vue";
+import PageHeader from "@/components/features/PageHeader.vue";
 import { useFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
-import { showNotification } from "@/lib/notifications.js";
-
+import ProgramFilter from "@/components/admins/program/ProgramFilter.vue";
 import { Plus, X, Search } from "lucide-vue-next";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 const S = (v) => String(v ?? "");
 
@@ -290,6 +253,8 @@ const S = (v) => String(v ?? "");
 const openCreate = ref(false);
 const openEdit = ref(false);
 const editingProgram = ref(null);
+const openClone = ref(false);
+const cloningProgram = ref(null);
 
 /* programs (filtered dataset) */
 const programs = ref([]);
@@ -302,7 +267,8 @@ const deptIndex = ref(new Map());
 const searchTerm = ref("");
 const searching = ref(false);
 const selectedDeptLabel = ref("All");
-const cloneAcademicYear = ref("");
+const selectedAcademicYear = ref("All");
+const selectedDegreeLevel = ref("All");
 
 /* sorting */
 const sortField = ref("");
@@ -310,20 +276,22 @@ const sortDirection = ref("asc");
 
 /* pagination */
 const page = ref(1);
-const pageSize = ref(25);
-
-const openClone = ref(false);
-const cloningProgram = ref(null);
+const pageSize = ref(10);
 
 /* responsive columns */
-const isPhone = ref(false); // <= 768px
+const isPhone = ref(false);
 const columnsDesktop = [
   { key: "id", label: "ID", visible: true, sortable: true },
   { key: "program_name", label: "Program", visible: true, sortable: true },
   { key: "degree_level", label: "Degree Level", visible: true, sortable: true },
   { key: "duration_years", label: "Duration", visible: true, sortable: true },
   { key: "department_id", label: "Department", visible: true, sortable: true },
-  { key: "academic_year", label: "Academic Year", visible: true, sortable: true },
+  {
+    key: "academic_year",
+    label: "Academic Year",
+    visible: true,
+    sortable: true,
+  },
 ];
 const columnsPhone = [
   { key: "id", label: "ID", visible: true, sortable: true },
@@ -332,32 +300,35 @@ const columnsPhone = [
 ];
 const columns = computed(() => (isPhone.value ? columnsPhone : columnsDesktop));
 const columnsKey = computed(
-  () => `cols-${isPhone.value ? "phone" : "desktop"}`
+  () => `cols-${isPhone.value ? "phone" : "desktop"}`,
 );
 
-/* Filter component */
-const programFilterDefinitions = computed(() => {
-  const deptNames = departmentOptions.value.map(d => d.department_name || d.name);
-
-  // Collect unique academic years and degree levels from programs
-  const academicYears = Array.from(
-    new Set(programs.value.map(p => p.academic_year).filter(y => y && y !== "—"))
-  ).sort();
-
-  const degreeLevels = Array.from(
-    new Set(programs.value.map(p => p.degree_level).filter(d => d))
-  ).sort();
-
-  return [
-    { key: "department", label: "Department", options: ["All", ...deptNames] },
-    { key: "academic_year", label: "Academic Year", options: ["All", ...academicYears] },
-    { key: "degree_level", label: "Degree Level", options: ["All", ...degreeLevels] },
-  ];
+const departmentFilterOptions = computed(() => {
+  return departmentOptions.value.map((d) => d.department_name || d.name);
 });
 
-const initialProgramFilters = computed(() => ({ department: "All" }));
+const academicYearFilterOptions = computed(() => {
+  return Array.from(
+    new Set(
+      programs.value.map((p) => p.academic_year).filter((y) => y && y !== "—"),
+    ),
+  ).sort();
+});
+
+const degreeLevelFilterOptions = computed(() => {
+  return Array.from(
+    new Set(programs.value.map((p) => p.degree_level).filter((d) => d)),
+  ).sort();
+});
+
+const initialProgramFilters = computed(() => ({
+  department: "All ",
+  academic_year: "All",
+  degree_level: "All",
+}));
+
 const filterKey = computed(
-  () => `program-filter-${departmentOptions.value.length}`
+  () => `program-filter-${departmentOptions.value.length}`,
 );
 
 /* page slice */
@@ -387,13 +358,12 @@ function buildDeptIndexFromPrograms(list) {
 function normalizePrograms(list, programMap) {
   return (list || []).map((p) => {
     const isCloned = !!p.original_program_id;
-    const original = isCloned
-      ? programMap.get(p.original_program_id)
-      : null;
+    const original = isCloned ? programMap.get(p.original_program_id) : null;
 
-    const displayName = isCloned && original
-      ? `${p.program_name} (from ${original.program_name} – ${original.academic_year})`
-      : p.program_name;
+    const displayName =
+      isCloned && original
+        ? `${p.program_name} (from ${original.program_name} – ${original.academic_year})`
+        : p.program_name;
 
     return {
       id: p.id,
@@ -409,12 +379,11 @@ function normalizePrograms(list, programMap) {
   });
 }
 
-
 /* API */
 async function apiListAllPrograms() {
   const { data } = await api.get("/managements/get_all_program");
   const raw = data?.programs || [];
-  const map = new Map(raw.map(p => [p.id, p]));
+  const map = new Map(raw.map((p) => [p.id, p]));
   return normalizePrograms(raw, map);
 }
 
@@ -424,12 +393,14 @@ async function apiListProgramsByDepartmentId(deptId) {
   });
   return normalizePrograms(data?.programs || []);
 }
+
 async function apiSearchPrograms(q) {
   const { data } = await api.get("/managements/search_paginate_program", {
     params: { search: q },
   });
   return normalizePrograms(data?.programs?.data || []);
 }
+
 async function apiDeleteProgram(id) {
   await api.delete(`/managements/remove_program/${id}`);
 }
@@ -445,14 +416,6 @@ async function apiCloneProgram(id, academicYear = null) {
   return normalizePrograms([data?.program || {}])[0];
 }
 
-const programMap = computed(() => {
-  const map = new Map();
-  programs.value.forEach((p) => {
-    map.set(p.id, p);
-  });
-  return map;
-});
-
 async function apiListAllProgramsRaw() {
   const { data } = await api.get("/managements/get_all_program");
   return data?.programs || [];
@@ -461,12 +424,8 @@ async function apiListAllProgramsRaw() {
 async function fetchCatalog() {
   searching.value = true;
   try {
-    const raw = (await apiListAllProgramsRaw()) || []; // handle 204 / empty
-
-    // build program map
+    const raw = (await apiListAllProgramsRaw()) || [];
     const map = new Map(raw.map((p) => [p.id, p]));
-
-    // normalize
     const normalized = normalizePrograms(raw, map);
 
     programs.value = normalized;
@@ -474,9 +433,9 @@ async function fetchCatalog() {
     page.value = 1;
   } catch (err) {
     console.error("fetchCatalog failed:", err);
-    programs.value = []; // ensure empty state
+    programs.value = [];
   } finally {
-    searching.value = false; // spinner always stops
+    searching.value = false;
   }
 }
 
@@ -485,82 +444,73 @@ function getDepartmentName(id) {
   return deptIndex.value.get(String(id))?.department_name || "—";
 }
 
-
-// async function openCloneFor(row) {
-//   cloningProgram.value = { ...row }; // Keep a copy
-//   openClone.value = true;
-// }
-
-async function confirmClone() {
-  if (!cloningProgram.value?.id) return;
-
-  openClone.value = false;
-
+/* Clone functions */
+async function handleCloneSuccess(payload) {
   try {
-    const cloned = await apiCloneProgram(
-      cloningProgram.value.id,
-      cloneAcademicYear.value.trim() || null
+    const clonedProgram = await apiCloneProgram(
+      payload.program_id,
+      payload.academic_year,
     );
 
     await applyFiltersToList();
 
+    // Show success notification (you'll need to implement this)
     showNotification(
-      `Program "${cloned.program_name}" cloned successfully.`,
-      "success"
+      `Program "${clonedProgram.program_name}" cloned successfully.`,
+      "success",
     );
   } catch (err) {
-    console.error(err);
+    console.error("Clone failed:", err);
     showNotification(
       err?.response?.data?.message || err?.message || "Clone failed",
-      "error"
+      "error",
     );
-  } finally {
-    cloningProgram.value = null;
-    cloneAcademicYear.value = "";
   }
 }
 
+function handleCloneCancel() {
+  cloningProgram.value = null;
+  openClone.value = false;
+}
 
-async function openCloneFor(row) {
+function openCloneFor(row) {
   cloningProgram.value = { ...row };
-  cloneAcademicYear.value = ""; // reset
   openClone.value = true;
 }
 
-/* Fetch + filters */
-// async function fetchCatalog() {
-//   searching.value = true;
-//   try {
-//     const list = await apiListAllPrograms();
-//     programs.value = list;
-//     buildDeptIndexFromPrograms(list);
-//     page.value = 1;
-//   } finally {
-//     searching.value = false;
-//   }
-// }
-function deptLabelToId(label) {
+/* Filter functions */
+function labelToValue(label, key) {
   if (!label || label === "All") return "";
-  const found = departmentOptions.value.find(
-    (d) => (d.department_name || d.name) === label
-  );
-  return found ? S(found.id) : "";
+  if (key === "department") {
+    const found = departmentOptions.value.find(
+      (d) => (d.department_name || d.name) === label,
+    );
+    return found ? S(found.id) : "";
+  }
+  return label;
 }
+
 async function applyFiltersToList() {
-  const q = searchTerm.value.trim().toLowerCase(); // program name search
+  const q = searchTerm.value.trim().toLowerCase();
   const deptId = labelToValue(selectedDeptLabel.value, "department");
-  const academicYear = labelToValue(selectedAcademicYear.value, "academic_year");
+  const academicYear = labelToValue(
+    selectedAcademicYear.value,
+    "academic_year",
+  );
   const degreeLevel = labelToValue(selectedDegreeLevel.value, "degree_level");
 
   searching.value = true;
   try {
-    let list = await apiListAllPrograms(); // fetch all programs
+    let list = await apiListAllPrograms();
 
-    // Apply search + filters
-    list = list.filter(p => {
-      const matchesName = q ? (p.program_name || "").toLowerCase().includes(q) : true;
+    list = list.filter((p) => {
+      const matchesName = q
+        ? (p.program_name || "").toLowerCase().includes(q)
+        : true;
       const matchesDept = deptId ? S(p.department_id) === deptId : true;
-      const matchesYear = academicYear ? p.academic_year === academicYear : true;
+      const matchesYear = academicYear
+        ? p.academic_year === academicYear
+        : true;
       const matchesDegree = degreeLevel ? p.degree_level === degreeLevel : true;
 
       return matchesName && matchesDept && matchesYear && matchesDegree;
@@ -600,6 +550,7 @@ function onSort({ field, direction }) {
   applySort();
   page.value = 1;
 }
+
 function applySort() {
   const f = sortField.value;
   const dir = sortDirection.value;
@@ -619,10 +570,12 @@ function applySort() {
 
 /* delete */
 const programToDelete = ref(null);
+
 function askDelete(row) {
   programToDelete.value = row?.id;
   confirmDeleteProgram();
 }
+
 async function confirmDeleteProgram() {
   const id = programToDelete.value;
   if (!id) return;
@@ -641,26 +594,30 @@ function onCreated() {
   openCreate.value = false;
   applyFiltersToList();
 }
+
 function openEditFor(p) {
   editingProgram.value = { ...p };
   openEdit.value = true;
 }
+
 async function onUpdated() {
   openEdit.value = false;
   await applyFiltersToList();
 }
 
 /* debounce search */
-let t;
+let debounceTimer;
+
 function debouncedFetch() {
-  clearTimeout(t);
-  t = setTimeout(() => applyFiltersToList(), 300);
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => applyFiltersToList(), 300);
 }
 
-/* pagination handlers (events from Pagination.vue) */
+/* pagination handlers */
 function handlePageChange() {
-  /* no-op, slicing done in computed */
+  // No-op, slicing done in computed
 }
+
 function handlePageSizeChange() {
   page.value = 1;
 }
@@ -671,8 +628,9 @@ watch(
   () => {
     if ((page.value - 1) * pageSize.value >= programs.value.length)
       page.value = 1;
-  }
+  },
 );
+
 watch(pageSize, () => {
   page.value = 1;
 });
@@ -689,30 +647,23 @@ function attachMQ() {
     mqPhone.removeEventListener?.("change", update) ||
     mqPhone.removeListener?.(update);
 }
+
 let detachMQ = null;
+
 onMounted(async () => {
   await fetchCatalog();
   detachMQ = attachMQ();
 });
+
 onUnmounted(() => {
   if (detachMQ) detachMQ();
 });
 
-const selectedAcademicYear = ref("All");
-const selectedDegreeLevel = ref("All");
-
-
-function labelToValue(label, key) {
-  if (!label || label === "All") return "";
-  if (key === "department") {
-    const found = departmentOptions.value.find(d => (d.department_name || d.name) === label);
-    return found ? S(found.id) : "";
-  }
-  return label;
+// Notification function (you need to implement this based on your app)
+function showNotification(message, type) {
+  // Implement your notification system here
+  alert(`${type}: ${message}`);
 }
-
-
-
 </script>
 
 <style scoped>

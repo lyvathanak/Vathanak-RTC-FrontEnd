@@ -89,7 +89,7 @@
                     <div
                       class="flex flex-col items-center justify-center lg:items-center">
                       <div
-                        class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
+                        class="w-30 h-38 mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center">
                         <img
                           v-if="currentImageSrc"
                           :src="currentImageSrc"
@@ -373,19 +373,12 @@
 
           <!-- Footer -->
           <div
-            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-gray-50 flex items-center justify-between shrink-0">
-            <button
-              class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg border bg-red-500 text-white hover:bg-red-600 transition-colors"
-              @click="closeModal">
-              Cancel
-            </button>
-
+            class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t bg-gray-50 flex items-center justify-end shrink-0">
             <div class="flex gap-2">
               <button
-                class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg bg-[#FF7700] text-white hover:bg-[#e66a00] transition-colors"
-                @click="promoteTeacher">
-                <span class="hidden sm:inline">Promote Teacher</span>
-                <span class="sm:hidden">Promote</span>
+                class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg border bg-red-500 text-white hover:bg-red-600 transition-colors"
+                @click="closeModal">
+                Cancel
               </button>
               <button
                 class="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a94] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -517,7 +510,7 @@ const blank = () => ({
 
 const form = ref(blank());
 
-const STORAGE_BASE = "https://api.rtc-bb.camai.kh/storage/";
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
 
 const fileEl = ref(null); // <input type="file"> reference
 const fileInputKey = ref(0); // to clear file input between opens
@@ -527,15 +520,21 @@ const previewUrl = ref(null); // blob URL for new selection
 const currentImageSrc = computed(() => {
   if (previewUrl.value) return previewUrl.value;
 
-  const v =
+  const imageFile =
     form.value.photo_url ||
     form.value.profile_picture ||
     form.value.user_detail?.profile_picture ||
     "";
 
-  if (!v) return "";
-  if (v.startsWith("http") || v.startsWith("data:")) return v; // absolute or data URL
-  return STORAGE_BASE + v; // backend returns just a path
+  if (!imageFile) return "";
+  
+  // If it's already a full URL or data URI, return as is
+  if (imageFile.startsWith("http") || imageFile.startsWith("data:")) {
+    return imageFile;
+  }
+  
+  // Otherwise, construct the full URL using FILE_ORIGIN
+  return `${FILE_ORIGIN}/storage/${imageFile}`;
 });
 
 // Watch for prop changes and hydrate form

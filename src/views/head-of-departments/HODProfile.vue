@@ -21,7 +21,7 @@
         <!-- Banner -->
         <div class="relative h-20 sm:h-10">
           <div
-            class="absolute inset-0 bg-gradient-to-r from-[#235AA6] via-indigo-600 to-violet-600" />
+            class="absolute inset-0 bg-linear-to-r from-[#235AA6] via-indigo-600 to-violet-600" />
           <div
             class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_15%_25%,white,transparent_50%),radial-gradient(circle_at_85%_30%,white,transparent_45%)]" />
           <div
@@ -211,11 +211,13 @@ const profile = reactive({
 
 const placeholderImg = "https://via.placeholder.com/150";
 
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
+
 const profileImage = computed(() => {
   if (!profile.photo) return placeholderImg;
   return profile.photo.startsWith("http")
     ? profile.photo
-    : `https://api.rtc-bb.camai.kh/storage/${profile.photo}`;
+    : `${FILE_ORIGIN}/storage/${profile.photo}`;
 });
 
 function onImgError(e) {

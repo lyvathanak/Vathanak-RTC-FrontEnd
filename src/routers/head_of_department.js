@@ -1,62 +1,78 @@
-import HeadOfDepartmentDashboard from '@/views/head-of-departments/Overview.vue';
-import { requireRole } from './guards.js';
+import HeadOfDepartmentDashboard from "@/views/head-of-departments/Overview.vue";
+import { requireRole } from "./guards.js";
 
 export const hodRoutes = [
   {
-    path: '/:lang(en|fr|kh)/hod',
+    path: "/:lang(en|fr|kh)/hod",
     // name: 'HodLayout',
-    meta: { requiresAuth: true, role: 'Head_Department' },
-    beforeEnter: requireRole('Head_Department'),
-    component: () => import('@/views/head-of-departments/Dashboard.vue'),
+    meta: { requiresAuth: true, role: "Head_Department" },
+    beforeEnter: requireRole("Head_Department"),
+    component: () => import("@/views/head-of-departments/Dashboard.vue"),
     children: [
       // Redirect hod root to overview
       {
-        path: '',
-        redirect: to => `${to.path}/overview`
+        path: "",
+        redirect: (to) => `${to.path}/overview`,
       },
       {
-        path: 'overview',
-        name: 'HeadOfDepartmentOverview',
+        path: "overview",
+        name: "HeadOfDepartmentOverview",
         component: HeadOfDepartmentDashboard,
-        meta: { title: 'Department Overview' }
+        meta: { title: "Department Overview" },
       },
       {
-        path: 'student-management',
-        name: 'HODStudentManagement',
-        component: () => import('@/views/head-of-departments/StudentManagement.vue'),
+        path: "student-management",
+        name: "HODStudentManagement",
+        component: () =>
+          import("@/views/head-of-departments/StudentManagement.vue"),
       },
       {
-        path: 'teacher-management',
-        name: 'HODTeacherManagement',
-        component: () => import('@/views/head-of-departments/TeacherManagement.vue'),
+        path: "teacher-management",
+        name: "HODTeacherManagement",
+        component: () =>
+          import("@/views/head-of-departments/TeacherManagement.vue"),
       },
       {
-        path: 'timetable',
-        name: 'HODTimeTable',
-        component: () => import('@/views/head-of-departments/TimeTable.vue'),
+        path: "timetable",
+        name: "HODTimeTable",
+        component: () => import("@/views/head-of-departments/TimeTable.vue"),
       },
       {
-        path: 'leave-requests',
-        name: 'HODLeaveRequest',
-        component: () => import('@/views/head-of-departments/LeaveRequest.vue'),
-      },
-        {
-        path: 'hod-profile',
-        name: 'HODProfile',
-        component: () => import('@/views/head-of-departments/HODProfile.vue'),
-        meta: { title: 'HOD Profile' }
+        path: "leave-requests",
+        name: "HODLeaveRequest",
+        component: () => import("@/views/head-of-departments/LeaveRequest.vue"),
       },
       {
-        path: 'change-password',
-        name: 'HODChangePassword',
-        component: () => import('@/views/Authentication/ChangePassword.vue'),
-        meta: { title: 'Change Password' }
+        path: "approve-teachers",
+        name: "HODApproveTeachers",
+        component: () =>
+          import("@/views/head-of-departments/ApproveTeachers.vue"),
+        meta: { title: "Approve Teachers" },
+      },
+      {
+        path: "approve-students",
+        name: "HODApproveStudents",
+        component: () =>
+          import("@/views/head-of-departments/ApproveStudents.vue"),
+        meta: { title: "Approve Students" },
+      },
+      {
+        path: "hod-profile",
+        name: "HODProfile",
+        component: () => import("@/views/head-of-departments/HODProfile.vue"),
+        meta: { title: "HOD Profile" },
+      },
+      {
+        path: "change-password",
+        name: "HODChangePassword",
+        component: () => import("@/views/Authentication/ChangePassword.vue"),
+        meta: { title: "Change Password" },
       },
       // Catch-all route for invalid HOD paths
       {
-        path: ':pathMatch(.*)*',
-        redirect: to => `/${to.params.lang}/hod/overview`
-      }
-    ]
-  }
+        path: ":pathMatch(.*)*",
+        redirect: (to) => `/${to.params.lang}/hod/overview`,
+      },
+    ],
+  },
 ];

@@ -1,12 +1,16 @@
 <template>
-  <div class="px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen flex flex-col gap-4 sm:gap-5">
+  <div
+    class="px-3 sm:px-6 lg:px-6 py-6 sm:py-8 bg-gray-50 min-h-screen flex flex-col gap-4 sm:gap-5">
+    <!-- Header -->
     <PageHeader
       :title="t('input_exam_score')"
-      subtitle="Track and manage your exam score applications">
+      subtitle=" Track and manage your exam score applications">
     </PageHeader>
 
+    <!-- Filters -->
     <div class="">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Subject -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">
             Choose a Subject
@@ -14,13 +18,14 @@
           <select
             v-model="selectedSubject"
             class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#235AA6] focus:border-[#235AA6]">
-            <option :value="null">Select subject</option>
-            <option v-for="subject in subjects" :key="subject.id" :value="subject">
-              {{ subject.name }}
+            <option disabled :value="null">Select subject</option>
+            <option v-for="subject in subjects" :key="subject" :value="subject">
+              {{ subject }}
             </option>
           </select>
         </div>
 
+        <!-- Group -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">
             Group
@@ -29,23 +34,27 @@
             v-model="selectedGroup"
             class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#235AA6] focus:border-[#235AA6]"
             @change="loadStudents">
-            <option :value="null">Select group</option>
-            <option v-for="group in groups" :key="group.id" :value="group">
-              {{ group.name }}
+            <option disabled :value="null">Select group</option>
+            <option v-for="group in groups" :key="group" :value="group">
+              {{ group }}
             </option>
           </select>
         </div>
       </div>
 
+      <!-- Hint -->
       <div class="mt-3 text-xs text-gray-500 flex items-center gap-2">
         <Info class="w-4 h-4 text-gray-400" />
         <span>
-          Tip: Select a group to load students, then click the edit icon to fill score.
+          Tip: Select a group to load students, then click the edit icon to fill
+          score.
         </span>
       </div>
     </div>
 
+    <!-- Content -->
     <div class="px-5 pb-5">
+      <!-- Empty state (no group) -->
       <div
         v-if="!selectedGroup"
         class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
@@ -59,12 +68,9 @@
       </div>
 
       <div v-else>
-        <div v-if="loading" class="p-8 text-center text-gray-500">
-            Loading students...
-        </div>
-
+        <!-- Empty state (no students) -->
         <div
-          v-else-if="students.length === 0"
+          v-if="students.length === 0"
           class="rounded-2xl border border-gray-200 bg-white p-6 text-center">
           <div class="flex items-center justify-center mb-3">
             <UserX class="w-9 h-9 text-gray-400" />
@@ -75,12 +81,13 @@
           </div>
         </div>
 
+        <!-- Table -->
         <div v-else class="overflow-hidden rounded-2xl border border-gray-200">
           <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50">
               <tr class="text-center text-xs font-semibold text-gray-600">
                 <th class="p-3 border-b">ID</th>
-                <th class="p-3 border-b">Fullname</th>
+                <th class="p-3 border-b">Latin Fullname</th>
                 <th class="p-3 border-b">Gender</th>
                 <th class="p-3 border-b">Score</th>
                 <th class="p-3 border-b">Action</th>
@@ -92,7 +99,7 @@
                 v-for="student in students"
                 :key="student.id"
                 class="text-center text-sm hover:bg-gray-50 transition border-b last:border-b-0">
-                <td class="p-3 font-medium text-gray-800">{{ student.id_card || student.id }}</td>
+                <td class="p-3 font-medium text-gray-800">{{ student.id }}</td>
                 <td class="p-3 text-gray-700">{{ student.name }}</td>
                 <td class="p-3 text-gray-700">{{ student.gender }}</td>
                 <td class="p-3">
@@ -125,10 +132,11 @@
       </div>
     </div>
 
+    <!-- Modal -->
     <FillScore
       v-if="showModal"
       :student="currentStudent"
-      :subject="selectedSubject?.name || 'Subject'"
+      :subject="selectedSubject"
       @close="showModal = false"
       @submit="submitScore" />
   </div>
@@ -138,179 +146,129 @@
 import { ref, watch, onMounted } from "vue";
 import { showNotification } from "@/lib/notifications";
 import { useI18n } from "vue-i18n";
-import { Pencil, Users, UserX, Info } from "lucide-vue-next";
+import { Pencil, Users, UserX, Info, FileText } from "lucide-vue-next";
 
 import FillScore from "@/components/teachers/FillScore.vue";
 import PageHeader from "@/components/features/PageHeader.vue";
-import ScoreAPI from "@/stores/apis/ScoreAPI";
-import TimeTableAPI from "@/stores/apis/TimeTableAPI";
-import { getStudentsByTeacherDepartment } from "@/stores/Teacher/studerntinformation";
 
-const { t } = useI18n();
+// i18n
+const { t, locale } = useI18n();
 
-// State
-const subjects = ref([]);
-const groups = ref([]);
+// data
+const subjects = ["Calculus II", "History", "Math"];
+const groups = ["Group 1", "Group 2", "Group 3"];
+
 const selectedSubject = ref(null);
 const selectedGroup = ref(null);
 const students = ref([]);
-const loading = ref(false);
 
 const showModal = ref(false);
 const currentStudent = ref(null);
 
-onMounted(async () => {
-    await fetchDropdowns();
-});
+// mock data
+const mockData = {
+  "Group 1": [
+    { id: "#101", name: "John Smith", gender: "M", score: null },
+    { id: "#102", name: "Emma Davis", gender: "F", score: null },
+    { id: "#103", name: "Michael Brown", gender: "M", score: null },
+    { id: "#104", name: "Sophia Wilson", gender: "F", score: null },
+    { id: "#105", name: "James Johnson", gender: "M", score: null },
+  ],
+  "Group 2": [
+    { id: "#201", name: "Oliver Taylor", gender: "M", score: null },
+    { id: "#202", name: "Ava Martinez", gender: "F", score: null },
+    { id: "#203", name: "William Lee", gender: "M", score: null },
+    { id: "#204", name: "Isabella Clark", gender: "F", score: null },
+    { id: "#205", name: "Lucas Wright", gender: "M", score: null },
+  ],
+  "Group 3": [
+    { id: "#301", name: "Ethan Anderson", gender: "M", score: null },
+    { id: "#302", name: "Mia Thompson", gender: "F", score: null },
+    { id: "#303", name: "Alexander White", gender: "M", score: null },
+    { id: "#304", name: "Charlotte King", gender: "F", score: null },
+    { id: "#305", name: "Daniel Harris", gender: "M", score: null },
+  ],
+};
 
-// Fetch Teacher's schedule to get Subjects/Groups without needing Admin permissions
-async function fetchDropdowns() {
-    loading.value = true;
-    try {
-        const slots = await TimeTableAPI.fetchTeacherTimeSlots();
-        
-        const subMap = new Map();
-        const grpMap = new Map();
-
-        slots.forEach(slot => {
-            const s = slot.subject || (slot.time_table && slot.time_table.subject);
-            if (s && s.id) {
-                subMap.set(s.id, { id: s.id, name: s.subject_name || s.name });
-            }
-            
-            const g = slot.group || (slot.time_table && slot.time_table.group);
-            if (g && g.id) {
-                grpMap.set(g.id, { 
-                    id: g.id, 
-                    name: g.name,
-                    semester_id: g.semester_id 
-                });
-            }
-        });
-
-        subjects.value = Array.from(subMap.values());
-        groups.value = Array.from(grpMap.values());
-
-        if (subjects.value.length === 0 && groups.value.length === 0) {
-             console.warn("No classes found in schedule.");
-        }
-    } catch (e) {
-        console.error("Failed to load teacher data", e);
-    } finally {
-        loading.value = false;
-    }
-}
-
-// === ROBUST STUDENT LOADER ===
-async function loadStudents() {
-  if (!selectedGroup.value) return;
-  
-  loading.value = true;
+// methods
+function loadStudents() {
   try {
-    // 1. Try to fetch real students
-    const response = await getStudentsByTeacherDepartment({ page: 1, per_page: 500 });
-    
-    // Check if response failed or is empty
-    if (!response.success || !response.data) {
-        throw new Error(response.message || "Failed to load students");
+    students.value = mockData[selectedGroup.value] || [];
+
+    if (students.value.length > 0) {
+      showNotification(
+        `Loaded ${students.value.length} students from ${selectedGroup.value}`,
+        "success"
+      );
+    } else {
+      showNotification("Please select a group", "info");
     }
-
-    // 2. Filter students by the selected Group
-    const targetGroupId = selectedGroup.value.id;
-    const allStudents = response.data || [];
-
-    const groupStudents = allStudents.filter(s => {
-        return s.groups && s.groups.some(g => g.id === targetGroupId);
-    });
-
-    students.value = groupStudents.map(u => ({
-        id: u.id,
-        id_card: u.id_card || `STU-${u.id}`,
-        name: u.latin_name || u.name || "Unknown",
-        gender: u.gender || "-",
-        score: null 
-    }));
-
-    showNotification(`Loaded ${students.value.length} students`, "success");
-
   } catch (error) {
-    console.error("API Error (Falling back to Mock Data):", error);
-    showNotification("Server error. Switching to Demo Mode.", "warning");
-    
-    // 3. FALLBACK MOCK DATA (Enables testing when backend fails)
-    students.value = getMockStudents(selectedGroup.value.name);
-  } finally {
-    loading.value = false;
+    console.error("Error loading students:", error);
+    showNotification("Failed to load students", "error");
+    students.value = [];
   }
-}
-
-function getMockStudents(groupName) {
-    return Array.from({ length: 5 }).map((_, i) => ({
-        id: 100 + i, // Fake ID
-        id_card: `MOCK-${100+i}`,
-        name: `Student ${i + 1} (${groupName})`,
-        gender: i % 2 === 0 ? 'M' : 'F',
-        score: null
-    }));
 }
 
 function showScoreInput(student) {
-  if (!selectedSubject.value) {
-      showNotification("Please select a subject first", "warning");
-      return;
-  }
   currentStudent.value = student;
   showModal.value = true;
 }
 
-// === SUBMIT SCORE ===
-async function submitScore(scores) {
+function submitScore(scores) {
   try {
     if (!currentStudent.value) return;
 
-    const attendance = parseFloat(scores.attendance) || 0;
-    const midterm = parseFloat(scores.midterm) || 0;
-    const final = parseFloat(scores.final) || 0;
+    const attendance = parseInt(scores.attendance);
+    const midterm = parseInt(scores.midterm);
+    const final = parseInt(scores.final);
 
-    const totalScore = (attendance * 0.1) + (midterm * 0.4) + (final * 0.5);
+    if (isNaN(attendance) || isNaN(midterm) || isNaN(final)) {
+      showNotification("Invalid score values", "error");
+      return;
+    }
+
+    const totalScore = attendance * 0.1 + midterm * 0.4 + final * 0.5;
     currentStudent.value.score = totalScore.toFixed(2);
 
     showModal.value = false;
-
-    // Call API
-    await saveScore({
-      studentId: currentStudent.value.id,
-      subjectId: selectedSubject.value.id,
-      semesterId: selectedGroup.value.semester_id || 1, 
-      scores: { attendance, midterm, final }
-    });
-
     showNotification(
-      `Score saved for ${currentStudent.value.name}`,
+      `Score updated successfully for ${currentStudent.value.name}`,
       "success"
     );
+
+    saveScore({
+      studentId: currentStudent.value.id,
+      subject: selectedSubject.value,
+      group: selectedGroup.value,
+      scores: { attendance, midterm, final, total: totalScore },
+    });
   } catch (error) {
     console.error("Error submitting score:", error);
-    showNotification("Score saved (Offline/Demo Mode)", "success"); 
+    showNotification("Failed to submit score", "error");
   }
 }
 
-async function saveScore(data) {
-  const payload = {
-      student_id: data.studentId,
-      subject_id: data.subjectId,
-      semester_id: data.semesterId,
-      attendance_score: data.scores.attendance,
-      exam_score: data.scores.final
-  };
-  
-  await ScoreAPI.scoreStudent(payload);
+async function saveScore(scoreData) {
+  console.log("Saving score:", scoreData);
+  await new Promise((resolve) => setTimeout(resolve, 500));
 }
+
+// watchers
+watch(selectedGroup, (newGroup) => {
+  if (newGroup) loadStudents();
+});
 
 watch(selectedSubject, () => {
   students.value = students.value.map((student) => ({
     ...student,
     score: null,
   }));
+});
+
+// mounted
+onMounted(() => {
+  // optional: don't auto-load until group selected
+  // loadStudents();
 });
 </script>

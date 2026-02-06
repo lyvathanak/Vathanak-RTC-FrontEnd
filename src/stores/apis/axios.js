@@ -1,56 +1,58 @@
-import axios from 'axios';
+import axios from "axios";
 
-// Debug: Print all VITE env variables
-console.log('🔍 DEBUG - All VITE env variables:');
-console.log('  VITE_API_BASE_URL:', import.meta.env?.VITE_API_BASE_URL || '(not set)');
-console.log('  VITE_API_TARGET_URL:', import.meta.env?.VITE_API_TARGET_URL || '(not set)');
-console.log('  VITE_FILE_ORIGIN:', import.meta.env?.VITE_FILE_ORIGIN || '(not set)');
-console.log('  DEV mode:', import.meta.env.DEV);
-console.log('  MODE:', import.meta.env.MODE);
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Prefer explicit env; fall back to dev proxy only in DEV
-const API_BASE_URL =
-  import.meta.env?.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? '/api' : 'https://api.rtc-bb.camai.kh/api');
-
-console.log('🌐 API Base URL:', API_BASE_URL || '(not set)');
-console.log('🌐 Environment:', import.meta.env.DEV ? 'Development (proxy)' : 'Production');
+console.log("🌐 API Base URL:", API_BASE_URL);
+console.log(
+  "🌐 Environment:",
+  import.meta.env.DEV ? "Development (proxy)" : "Production",
+);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
-  headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+  headers: { Accept: "application/json", "Content-Type": "application/json" },
 });
 
 // 🔧 Only skip login (register requires auth on your server)
-const SKIP_AUTH = ['/auth/login'];
+const SKIP_AUTH = ["/auth/login"];
 
 api.interceptors.request.use(
   (config) => {
-    const ls = localStorage.getItem('auth_token');
-    const ss = sessionStorage.getItem('auth_token');
+    const ls = localStorage.getItem("auth_token");
+    const ss = sessionStorage.getItem("auth_token");
     const token = ls || ss;
+    // const token = "28|L7fhj0RIaajweeeq8CE7kw4n6HyMobSjEqOFvcfla96e1f56";
 
-    const url = `${config.baseURL || ''}${config.url || ''}`;
-    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${url}`);
+    // ✅ FIX: Manually construct the full URL including query params for logging
+    let fullUrl = `${config.baseURL || ""}${config.url || ""}`;
 
-    if (token && !SKIP_AUTH.some((p) => (config.url || '').includes(p))) {
+    // Check if params exist and append them to the log URL
+    if (config.params) {
+      const queryString = new URLSearchParams(config.params).toString();
+      fullUrl += `?${queryString}`;
+    }
+
+    console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${fullUrl}`);
+
+    if (token && !SKIP_AUTH.some((p) => (config.url || "").includes(p))) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Added Bearer token to request');
+      console.log("🔑 Added Bearer token to request");
     }
 
     // Let browser set boundary for FormData
     if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+      delete config.headers["Content-Type"];
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
+// Optional: Uncomment to see responses in console
 // api.interceptors.response.use(
 //   (response) => {
-//     console.log(`✅ Response: ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+//     console.log(`✅ Response: ${response.status} ${response.config.url}`);
 //     return response;
 //   },
 //   (error) => {

@@ -99,6 +99,7 @@
 import { ref, computed, onMounted, onUnmounted, defineExpose } from "vue";
 import { useI18n } from "vue-i18n";
 import api from "@/stores/apis/axios.js";
+import { Newspaper } from "lucide-vue-next";
 import Pagination from "@/components/features/Pagination.vue";
 import PageHeader from "@/components/features/PageHeader.vue";
 

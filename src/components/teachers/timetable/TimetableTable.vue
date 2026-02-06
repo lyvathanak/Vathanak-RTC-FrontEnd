@@ -1,6 +1,6 @@
 <template>
   <div class="overflow-x-auto border border-gray-200 rounded-lg bg-white shadow-sm">
-    <table class="min-w-[900px] w-full table-fixed border-collapse">
+    <table class="min-w-225 w-full table-fixed border-collapse">
       <thead>
         <tr class="bg-gray-50 text-gray-700">
           <th class="w-36 py-4 px-4 text-center font-bold text-sm border-b border-r border-gray-200 uppercase tracking-wider">

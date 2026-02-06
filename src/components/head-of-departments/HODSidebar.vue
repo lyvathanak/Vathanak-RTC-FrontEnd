@@ -6,19 +6,14 @@ import NavMain from "@/components/features/NavMain.vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import {
-  Book,
-  CalendarDays,
-  Gauge,
-  HomeIcon,
-  User,
-  FileText,
+  LayoutDashboard,
   GraduationCap,
-  CheckCircle,
-  DollarSign,
-  BarChart3,
-  Users,
+  UsersRound,
+  CalendarClock,
+  CalendarX2,
+  CircleUser,
   UserCheck,
-  Clock,
+  BadgeCheck,
 } from "lucide-vue-next";
 
 const { t, locale } = useI18n();
@@ -32,7 +27,7 @@ const props = withDefaults(
   {
     collapsible: "icon",
     isOpen: false,
-  }
+  },
 );
 
 const handleNavClick = (item: any) => {
@@ -54,7 +49,7 @@ const data = computed(() => {
       {
         title: t("overview"),
         url: `/${currentLang}/hod/overview`,
-        icon: Gauge,
+        icon: LayoutDashboard,
         isActive: currentPath.includes("/hod/overview"),
         class: khmerClass,
         action: handleNavClick,
@@ -62,7 +57,7 @@ const data = computed(() => {
       {
         title: t("students_management"),
         url: `/${currentLang}/hod/student-management`,
-        icon: Users,
+        icon: GraduationCap,
         isActive: currentPath.includes("/hod/student-management"),
         class: khmerClass,
         action: handleNavClick,
@@ -70,7 +65,7 @@ const data = computed(() => {
       {
         title: t("teachers_management"),
         url: `/${currentLang}/hod/teacher-management`,
-        icon: UserCheck,
+        icon: UsersRound,
         isActive: currentPath.includes("/hod/teacher-management"),
         class: khmerClass,
         action: handleNavClick,
@@ -78,23 +73,61 @@ const data = computed(() => {
       {
         title: t("timetable_management"),
         url: `/${currentLang}/hod/timetable`,
-        icon: CalendarDays,
+        icon: CalendarClock,
         isActive: currentPath.includes("/hod/timetable"),
         class: khmerClass,
         action: handleNavClick,
       },
+      // {
+      //   title: t("hod_leave_requests"),
+      //   url: `/${currentLang}/hod/leave-requests`,
+      //   icon: CalendarX2,
+      //   isActive: currentPath.includes("/hod/leave-requests"),
+      //   class: khmerClass,
+      //   action: handleNavClick,
+      // },
+      // {
+      //   title: t("approvals_teacher"),
+      //   url: `/${currentLang}/hod/approve-teachers`,
+      //   icon: UserCheck,
+      //   isActive: currentPath.includes("/hod/approve-teachers"),
+      //   class: khmerClass,
+      //   action: handleNavClick,
+      // },
+      // {
+      //   title: t("approvals_student"),
+      //   url: `/${currentLang}/hod/approve-students`,
+      //   icon: BadgeCheck,
+      //   isActive: currentPath.includes("/hod/approve-students"),
+      //   class: khmerClass,
+      //   action: handleNavClick,
+      // },
       {
         title: t("hod_leave_requests"),
-        url: `/${currentLang}/hod/leave-requests`,
-        icon: Clock,
-        isActive: currentPath.includes("/hod/leave-requests"),
+        url: `/${currentLang}/hod/leave-requests`, // parent route (HOD LR)
+        icon: CalendarX2,
+        isActive:
+          currentPath.includes("/hod/leave-requests") ||
+          currentPath.includes("/hod/approve-teachers") ||
+          currentPath.includes("/hod/approve-students"),
         class: khmerClass,
-        action: handleNavClick,
+        items: [
+          {
+            title: t("approvals_teacher"),
+            url: `/${currentLang}/hod/approve-teachers`,
+            isActive: currentPath.includes("/hod/approve-teachers"),
+          },
+          {
+            title: t("approvals_student"),
+            url: `/${currentLang}/hod/approve-students`,
+            isActive: currentPath.includes("/hod/approve-students"),
+          },
+        ],
       },
       {
         title: t("profile_account"),
         url: `/${currentLang}/hod/hod-profile`,
-        icon: User,
+        icon: CircleUser,
         isActive: currentPath.includes("/hod/hod-profile"),
         class: khmerClass,
         action: handleNavClick,
@@ -113,7 +146,7 @@ const data = computed(() => {
     <SidebarContent class="bg-[#235AA6]">
       <!-- Sidebar Header -->
       <div
-        class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">
+        class="flex items-center px-3 py-4.75 border-b border-white/20 gap-2">
         <SidebarTrigger class="text-white hover:bg-white/10" />
         <!-- Show title when sidebar is expanded -->
         <div

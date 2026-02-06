@@ -33,16 +33,21 @@
         <!-- Group Selection -->
         <div class="form-group">
           <label>Select Group <span class="required">*</span></label>
-          <select v-model="formData.group_id" required class="form-input">
+          <select v-model="formData.group_id" required class="form-input" @change="checkGroupTimetable">
             <option :value="null" disabled>Select a group</option>
             <option 
-              v-for="group in groups" 
+              v-for="group in sortedGroups" 
               :key="group.id" 
               :value="group.id"
+              :class="{ 'group-has-timetable': groupsWithTimetable.includes(group.id) }"
             >
               {{ group.name || `Group ${group.id}` }}
+              {{ groupsWithTimetable.includes(group.id) ? ' (Already has timetable)' : '' }}
             </option>
           </select>
+          <p v-if="formData.group_id && groupsWithTimetable.includes(formData.group_id)" class="warning-text">
+            This group already has a timetable. Please select a different group.
+          </p>
         </div>
 
         <!-- Error Message -->
@@ -84,6 +89,26 @@ export default {
     }
   },
   emits: ['close', 'created'],
+  computed: {
+    // Sort groups to show groups without timetables first
+    sortedGroups() {
+      if (!this.groups || this.groups.length === 0) return [];
+      
+      return [...this.groups].sort((a, b) => {
+        const aHasTimetable = this.groupsWithTimetable.includes(a.id);
+        const bHasTimetable = this.groupsWithTimetable.includes(b.id);
+        
+        // Groups without timetables come first
+        if (aHasTimetable && !bHasTimetable) return 1;
+        if (!aHasTimetable && bHasTimetable) return -1;
+        
+        // Then sort by name
+        const aName = a.name || `Group ${a.id}`;
+        const bName = b.name || `Group ${b.id}`;
+        return aName.localeCompare(bName);
+      });
+    }
+  },
   data() {
     return {
       formData: {
@@ -93,19 +118,82 @@ export default {
       },
       isLoading: false,
       errorMessage: '',
-      successMessage: ''
+      successMessage: '',
+      groupsWithTimetable: [], // Track which groups already have timetables
+      checkingGroup: false
     };
   },
   mounted() {
     // Pre-select group if provided
     if (this.preSelectedGroupId) {
       this.formData.group_id = this.preSelectedGroupId;
+      // Check if this group already has a timetable
+      this.checkGroupTimetable();
     }
+    // Check all groups for existing timetables
+    this.checkAllGroupsForTimetables();
   },
   methods: {
     closeModal() {
       this.$emit('close');
     },
+    
+    // Check if a specific group already has a timetable
+    async checkGroupTimetable() {
+      if (!this.formData.group_id) return;
+      
+      this.checkingGroup = true;
+      this.errorMessage = '';
+      
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        const existingTimetable = await TimeTableAPI.getTimeTableByGroupId(this.formData.group_id);
+        
+        if (existingTimetable && existingTimetable.id) {
+          if (!this.groupsWithTimetable.includes(this.formData.group_id)) {
+            this.groupsWithTimetable.push(this.formData.group_id);
+          }
+          
+          // Show warning but don't prevent creation (backend will handle it)
+          const groupName = this.groups.find(g => g.id === this.formData.group_id)?.name || 'this group';
+          console.log(`Group ${groupName} already has timetable:`, existingTimetable);
+        }
+      } catch (error) {
+        // No timetable found - this is okay
+        console.log('No existing timetable for group:', this.formData.group_id);
+      } finally {
+        this.checkingGroup = false;
+      }
+    },
+    
+    // Check all groups for existing timetables
+    async checkAllGroupsForTimetables() {
+      if (!this.groups || this.groups.length === 0) return;
+      
+      try {
+        const TimeTableAPI = (await import('@/stores/apis/TimeTableAPI')).default;
+        
+        // Check each group
+        const checkPromises = this.groups.map(async (group) => {
+          try {
+            const existingTimetable = await TimeTableAPI.getTimeTableByGroupId(group.id);
+            if (existingTimetable && existingTimetable.id) {
+              return group.id;
+            }
+          } catch (error) {
+            // No timetable for this group
+            return null;
+          }
+        });
+        
+        const results = await Promise.all(checkPromises);
+        this.groupsWithTimetable = results.filter(id => id !== null);
+        console.log('Groups with timetables:', this.groupsWithTimetable);
+      } catch (error) {
+        console.error('Error checking groups for timetables:', error);
+      }
+    },
+    
     async handleCreate() {
       this.errorMessage = '';
       this.successMessage = '';
@@ -113,6 +201,13 @@ export default {
       // Validation
       if (!this.formData.name || !this.formData.group_id) {
         this.errorMessage = 'Please fill in all required fields';
+        return;
+      }
+      
+      // Warn if group already has a timetable
+      if (this.groupsWithTimetable.includes(this.formData.group_id)) {
+        const groupName = this.groups.find(g => g.id === this.formData.group_id)?.name || 'This group';
+        this.errorMessage = `${groupName} already has a timetable. Please select a different group or delete the existing timetable first.`;
         return;
       }
 
@@ -136,7 +231,15 @@ export default {
 
       } catch (error) {
         console.error('Create time table error:', error);
-        this.errorMessage = error.message || 'Failed to create time table. Please try again.';
+        
+        // Handle specific error messages
+        if (error.response && error.response.status === 409) {
+          this.errorMessage = 'A timetable already exists for this group. Please select a different group.';
+        } else if (error.message) {
+          this.errorMessage = error.message;
+        } else {
+          this.errorMessage = 'Failed to create time table. Please try again.';
+        }
       } finally {
         this.isLoading = false;
       }
@@ -258,6 +361,16 @@ textarea.form-input {
   margin-bottom: 16px;
 }
 
+.warning-text {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border: 1px solid #ffdf5f;
+  border-radius: 6px;
+  color: #000000;
+  font-size: 13px;
+}
+
 .button-group {
   display: flex;
   gap: 12px;
@@ -299,5 +412,11 @@ textarea.form-input {
 .btn-create:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Style for groups that already have timetables */
+.group-has-timetable {
+  color: #9ca3af;
+  font-style: italic;
 }
 </style>

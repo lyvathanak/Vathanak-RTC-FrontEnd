@@ -1,76 +1,78 @@
 <template>
   <div
-    :class="['flex flex-col gap-4 py-5', locale === 'kh' ? 'khmer-text' : '']">
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
     <!-- Top bar -->
-    <!-- Top bar -->
-    <div class="flex flex-col gap-4 px-3 sm:px-5">
-      <!-- Row: Title + Actions -->
-      <div
-        class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-        <!-- Title -->
-        <PageHeader
-          :title="t('students_management')"
-          subtitle="Track and manage your Student applications" />
+    <PageHeader
+      :title="t('students_management')"
+      subtitle="Track and manage your Student applications">
+      <!-- Actions -->
+      <div class="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+        <!-- Selected indicator -->
+        <div
+          v-if="selectedIds.length > 0"
+          class="text-sm text-gray-600 font-medium">
+          {{ selectedIds.length }} {{ t("student") }}
+          <span v-if="selectedIds.length > 1">s</span> {{ t("selected") }}
+        </div>
 
-        <!-- Actions -->
-        <div class="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
-          <!-- Selected indicator -->
-          <div
-            v-if="selectedIds.length > 0"
-            class="text-sm text-gray-600 font-medium">
-            {{ selectedIds.length }} {{ t("student") }}
-            <span v-if="selectedIds.length > 1">s</span> {{ t("selected") }}
-          </div>
+        <!-- Buttons -->
+        <div
+          class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+          <!-- Group buttons -->
+          <button
+            @click="openAddToNewGroup"
+            :disabled="selectedIds.length === 0"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
+            <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+            <span class="hidden sm:inline">{{ t("add_new_group") }}</span>
+            <span class="sm:hidden">New Group</span>
+          </button>
 
-          <!-- Buttons -->
-          <div
-            class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
-            <!-- Group buttons -->
-            <button
-              @click="openAddToNewGroup"
-              :disabled="selectedIds.length === 0"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{ t("add_new_group") }}</span>
-              <span class="sm:hidden">New Group</span>
-            </button>
+          <button
+            @click="openAddToExistingGroup"
+            :disabled="selectedIds.length === 0"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
+            <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+            <span class="hidden sm:inline">{{ t("add_existing_group") }}</span>
+            <span class="sm:hidden">Add Group</span>
+          </button>
 
-            <button
-              @click="openAddToExistingGroup"
-              :disabled="selectedIds.length === 0"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition disabled:bg-gray-300 disabled:cursor-not-allowed whitespace-nowrap w-full sm:w-auto">
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{
-                t("add_existing_group")
-              }}</span>
-              <span class="sm:hidden">Add Group</span>
-            </button>
+          <!-- Primary actions -->
+          <button
+            @click="openAdd"
+            class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition whitespace-nowrap w-full sm:w-auto">
+            <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
+            <span class="hidden sm:inline">{{ t("add_student") }}</span>
+            <span class="sm:hidden">Add Student</span>
+          </button>
 
-            <!-- Primary actions -->
-            <button
-              @click="openAdd"
-              class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#235AA6] text-white px-3 sm:px-4 py-2.5 text-sm sm:text-base transition whitespace-nowrap w-full sm:w-auto">
-              <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
-              <span class="hidden sm:inline">{{ t("add_student") }}</span>
-              <span class="sm:hidden">Add Student</span>
-            </button>
-
-            <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
-          </div>
+          <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
         </div>
       </div>
+    </PageHeader>
 
-      <!-- Row: Search -->
-      <div class="relative w-full sm:max-w-md">
-        <input
-          v-model="search"
-          type="text"
-          :placeholder="t('search')"
-          class="w-full rounded-xl border border-gray-300 pl-10 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          <Search class="w-4 h-4" />
-        </span>
-      </div>
+    <!-- Row: Search -->
+
+    <div class="relative mb-3 w-full max-w-lg">
+      <Search
+        class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search by name, ID, or email..."
+        :disabled="loading"
+        class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+      <button
+        v-if="search && search.trim().length"
+        type="button"
+        :disabled="loading"
+        @click="search = ''"
+        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+        aria-label="Clear search">
+        ✕
+      </button>
     </div>
 
     <!-- Filters -->
@@ -82,7 +84,7 @@
     </div>
 
     <!-- Student Table -->
-    <div class="overflow-x-auto px-5">
+    <div class="overflow-x-auto">
       <StudentTable
         :students="pagedRows"
         :selected-ids="selectedIds"
@@ -100,7 +102,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <Pagination
         v-model:current-page="page"
         v-model:page-size="pageSize"
@@ -152,6 +154,9 @@
 <script setup>
 import { Download, Plus, Search } from "lucide-vue-next";
 import { ref, computed, watch, onMounted } from "vue";
+import { StudentCRUD } from "@/stores/apis/StudentCRUD.js";
+import { GroupCRUD } from "@/stores/apis/GroupCRUD.js";
+import { showNotification } from "@/lib/notifications.js";
 import { useI18n } from "vue-i18n";
 import AddStudentModal from "@/components/admins/StudentManagement/AddStudentModal.vue";
 import EditStudentModal from "@/components/admins/StudentManagement/EditStudentModal.vue";
@@ -162,9 +167,6 @@ import Pagination from "@/components/features/Pagination.vue";
 import AddToExistGroup from "@/components/admins/GroupManagement/AddToExistGroup.vue";
 import AddToNewGroup from "@/components/admins/GroupManagement/AddToNewGroup.vue";
 import ExcelForm from "@/components/features/ExcelForm.vue";
-import { StudentCRUD } from "@/stores/apis/StudentCRUD.js";
-import { GroupCRUD } from "@/stores/apis/GroupCRUD.js";
-import { showNotification } from "@/lib/notifications.js";
 import PageHeader from "@/components/features/PageHeader.vue";
 
 const { t, locale } = useI18n();
@@ -180,7 +182,7 @@ const filterComponent = ref(null);
 const getDepartmentIdByName = (departmentName) => {
   if (!filterComponent.value?.departments) return null;
   const dept = filterComponent.value.departments.find(
-    (d) => d.department_name === departmentName
+    (d) => d.department_name === departmentName,
   );
   return dept ? dept.id : null;
 };
@@ -188,7 +190,7 @@ const getDepartmentIdByName = (departmentName) => {
 const getSectionIdByName = (sectionName) => {
   if (!filterComponent.value?.sections) return null;
   const section = filterComponent.value.sections.find(
-    (s) => (s.sub_department_name || s.name) === sectionName
+    (s) => (s.sub_department_name || s.name) === sectionName,
   );
   return section ? section.id : null;
 };
@@ -196,7 +198,7 @@ const getSectionIdByName = (sectionName) => {
 const getProgramIdByName = (programName) => {
   if (!filterComponent.value?.programs) return null;
   const program = filterComponent.value.programs.find(
-    (p) => (p.program_name || p.name) === programName
+    (p) => (p.program_name || p.name) === programName,
   );
   return program ? program.id : null;
 };
@@ -297,7 +299,7 @@ const handleEditSave = async (updatedStudent) => {
     // Use user_id for update operations instead of id
     const result = await StudentCRUD.updateStudent(
       updatedStudent.user_id || updatedStudent.id,
-      updatedStudent
+      updatedStudent,
     );
     if (result.success) {
       // Refresh the entire student list to ensure proper data synchronization
@@ -331,7 +333,7 @@ const handlePromoteStudent = async (promotionData) => {
       {
         academic_year: promotionData.academic_year,
         promotion: promotionData.promotion,
-      }
+      },
     );
     if (result.success) {
       // Update local data
@@ -344,7 +346,7 @@ const handlePromoteStudent = async (promotionData) => {
       showNotification(
         "Failed to promote student: " +
           (result.error?.message || "Unknown error"),
-        "error"
+        "error",
       );
       console.error("Failed to promote student:", result.error);
     }
@@ -352,7 +354,7 @@ const handlePromoteStudent = async (promotionData) => {
     showNotification(
       "Error promoting student: " +
         (error.response?.data?.message || "Unknown error"),
-      "error"
+      "error",
     );
     console.error("Error promoting student:", error);
   }
@@ -502,7 +504,7 @@ const filteredRows = computed(() => {
         r.last_name?.toLowerCase().includes(q) ||
         r.latin_name?.toLowerCase().includes(q) ||
         r.department_id?.toString().toLowerCase().includes(q) ||
-        r.email?.toLowerCase().includes(q)
+        r.email?.toLowerCase().includes(q),
     );
   }
 
@@ -539,7 +541,7 @@ const filteredRows = computed(() => {
         (r.current_address &&
           r.current_address.includes(filters.value.origin)) ||
         (r.permanent_address &&
-          r.permanent_address.includes(filters.value.origin))
+          r.permanent_address.includes(filters.value.origin)),
     );
   if (filters.value.gender !== "All")
     list = list.filter((r) => r.gender === filters.value.gender);
@@ -551,7 +553,7 @@ const filteredRows = computed(() => {
 
 /** ------- Pagination ------- */
 const page = ref(1);
-const pageSize = ref(25);
+const pageSize = ref(10);
 
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;
@@ -564,7 +566,8 @@ watch([filteredRows, pageSize], () => {
 
 // Selected students computed property
 const selectedStudents = computed(() => {
-  return rows.value.filter((student) => selectedIds.value.includes(student.id));
+  const set = new Set(selectedIds.value);
+  return rows.value.filter((s) => set.has(s.id ?? s.user_id));
 });
 
 // Pagination event handlers
@@ -626,7 +629,7 @@ const handleAddStudentsToExistingGroup = async (data) => {
       if (data.message && !data.message.includes("already")) {
         showNotification(
           data.message || "Failed to add students to group. Please try again.",
-          "error"
+          "error",
         );
       }
     }
@@ -634,7 +637,7 @@ const handleAddStudentsToExistingGroup = async (data) => {
     console.error("Error handling add students to group event:", error);
     showNotification(
       "An error occurred while processing the group assignment.",
-      "error"
+      "error",
     );
   }
 };
@@ -658,7 +661,7 @@ const handleCreateNewGroupWithStudents = async (groupData) => {
       // Show success message (you can implement a toast notification here)
       showNotification(
         `Group "${groupData.name}" created successfully with ${groupData.students.length} students!`,
-        "success"
+        "success",
       );
     } else {
       console.error("Failed to create group:", result.error);
@@ -668,7 +671,7 @@ const handleCreateNewGroupWithStudents = async (groupData) => {
     console.error("Error creating new group:", error);
     showNotification(
       "An error occurred while creating the group. Please try again.",
-      "error"
+      "error",
     );
   }
 };

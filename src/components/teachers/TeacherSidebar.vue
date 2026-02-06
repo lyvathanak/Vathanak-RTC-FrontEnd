@@ -6,16 +6,12 @@ import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import NavMain from "@/components/features/NavMain.vue";
 import SidebarTrigger from "../ui/sidebar/SidebarTrigger.vue";
 import {
-  Book,
-  CalendarDays,
-  Gauge,
-  HomeIcon,
-  User,
-  FileText,
+  LayoutDashboard,
   GraduationCap,
-  Clock,
-  Users,
-  UserCheck,
+  CalendarClock,
+  ClipboardCheck,
+  CalendarX2,
+  CircleUser,
 } from "lucide-vue-next";
 
 const { t, locale } = useI18n();
@@ -29,7 +25,7 @@ const props = withDefaults(
   {
     collapsible: "icon",
     isOpen: false,
-  }
+  },
 );
 
 const handleNavClick = (item: any) => {
@@ -51,7 +47,7 @@ const data = computed(() => {
       {
         title: t("overview"),
         url: `/${currentLang}/teacher/overview`,
-        icon: Gauge,
+        icon: LayoutDashboard,
         isActive: currentPath.includes("/teacher/overview"),
         class: khmerClass,
         action: handleNavClick,
@@ -59,7 +55,7 @@ const data = computed(() => {
       {
         title: t("students_management"),
         url: `/${currentLang}/teacher/student-info`,
-        icon: Users,
+        icon: GraduationCap,
         isActive: currentPath.includes("/teacher/student-info"),
         class: khmerClass,
         action: handleNavClick,
@@ -75,7 +71,7 @@ const data = computed(() => {
       {
         title: t("timetable_management"),
         url: `/${currentLang}/teacher/timetable`,
-        icon: CalendarDays,
+        icon: CalendarClock,
         isActive: currentPath.includes("/teacher/timetable"),
         class: khmerClass,
         action: handleNavClick,
@@ -83,7 +79,7 @@ const data = computed(() => {
       {
         title: t("exam_scoring"),
         url: `/${currentLang}/teacher/exam-scoring`,
-        icon: FileText,
+        icon: ClipboardCheck,
         isActive: currentPath.includes("/teacher/exam-scoring"),
         class: khmerClass,
         action: handleNavClick,
@@ -91,7 +87,7 @@ const data = computed(() => {
       {
         title: t("teacher_leave_requests"),
         url: `/${currentLang}/teacher/leave-request`,
-        icon: Clock,
+        icon: CalendarX2,
         isActive: currentPath.includes("/teacher/leave-request"),
         class: khmerClass,
         action: handleNavClick,
@@ -99,7 +95,7 @@ const data = computed(() => {
       {
         title: t("profile_account"),
         url: `/${currentLang}/teacher/teacher-profile`,
-        icon: User,
+        icon: CircleUser,
         isActive: currentPath.includes("/teacher/teacher-profile"),
         class: khmerClass,
         action: handleNavClick,
@@ -118,7 +114,7 @@ const data = computed(() => {
     <SidebarContent class="bg-[#235AA6]">
       <!-- Sidebar Header -->
       <div
-        class="flex items-center px-3 py-[19px] border-b border-white/20 gap-2">
+        class="flex items-center px-3 py-4.75 border-b border-white/20 gap-2">
         <SidebarTrigger class="text-white hover:bg-white/10" />
         <!-- Show title when sidebar is expanded -->
         <div

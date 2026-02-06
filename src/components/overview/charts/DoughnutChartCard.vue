@@ -1,10 +1,16 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-6">
+  <div class="bg-white rounded-lg shadow-md p-6 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 mb-4">
       {{ title }}
     </h3>
 
-    <Doughnut :data="donutData" :options="optionsComputed" :height="height" />
+    <!-- chart area fills remaining height -->
+    <div class="flex-1 min-h-0">
+      <Doughnut
+        :data="donutData"
+        :options="optionsComputed"
+        class="h-full w-full" />
+    </div>
   </div>
 </template>
 
@@ -20,14 +26,11 @@ const props = defineProps({
   },
   values: { type: Array, default: () => [10, 20, 30, 15, 25] },
   options: { type: Object, default: () => ({}) },
-  height: { type: Number, default: 300 },
 });
 
 const donutData = computed(() => {
   const labels = props.labels || [];
   const values = props.values || [];
-
-  // ✅ generate as many colors as needed
   const colors = labels.map((_, i) => `hsl(${(i * 47) % 360}, 70%, 55%)`);
 
   return {
@@ -46,9 +49,8 @@ const donutData = computed(() => {
 
 const optionsComputed = computed(() => ({
   responsive: true,
-  maintainAspectRatio: true,
+  maintainAspectRatio: false, // ✅ IMPORTANT
   plugins: { legend: { position: "bottom" } },
   ...props.options,
 }));
-
 </script>

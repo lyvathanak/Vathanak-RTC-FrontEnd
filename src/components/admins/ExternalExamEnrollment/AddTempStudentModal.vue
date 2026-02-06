@@ -112,13 +112,13 @@
                         {{$t('name_khmer')}} <span class="text-red-500">*</span>
                       </label>
                       <input
-                        v-model="newTempStudent.name_khmer"
+                        v-model="newTempStudent.khmer_name"
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.name_khmer }"
+                        :class="{ 'border-red-500 focus:ring-red-500': errors.khmer_name }"
                         :placeholder="$t('enter_name_khmer')"
                       />
-                      <p v-if="errors.name_khmer" class="text-red-500 text-xs mt-1">{{ errors.name_khmer }}</p>
+                      <p v-if="errors.khmer_name" class="text-red-500 text-xs mt-1">{{ errors.khmer_name }}</p>
                     </div>
 
                     <div>
@@ -126,13 +126,13 @@
                         {{$t('name_latin')}} <span class="text-red-500">*</span>
                       </label>
                       <input
-                        v-model="newTempStudent.name_latin"
+                        v-model="newTempStudent.latin_name"
                         type="text"
                         class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.name_latin }"
+                        :class="{ 'border-red-500 focus:ring-red-500': errors.latin_name }"
                         :placeholder="$t('enter_name_latin')"
                       />
-                      <p v-if="errors.name_latin" class="text-red-500 text-xs mt-1">{{ errors.name_latin }}</p>
+                      <p v-if="errors.latin_name" class="text-red-500 text-xs mt-1">{{ errors.latin_name }}</p>
                     </div>
 
                     <div>
@@ -194,13 +194,25 @@
                       <label class="block text-sm text-gray-600 mb-1">
                         {{$t('origin')}} <span class="text-red-500">*</span>
                       </label>
-                      <input
-                        v-model="newTempStudent.origin"
-                        type="text"
-                        class="w-full rounded-lg border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        :class="{ 'border-red-500 focus:ring-red-500': errors.origin }"
-                        :placeholder="$t('enter_origin')"
-                      />
+                      <div class="relative">
+                        <select
+                          v-model="newTempStudent.origin"
+                          class="w-full rounded-lg border px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                          :class="{ 'border-red-500 focus:ring-red-500': errors.origin }"
+                        >
+                          <option value="" disabled>{{$t('select_origin')}}</option>
+                          <option
+                            v-for="province in provinceOptions"
+                            :key="province.id"
+                            :value="province.name"
+                          >
+                            {{ province.name }}
+                          </option>
+                        </select>
+                        <ChevronDown
+                          class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+                        />
+                      </div>
                       <p v-if="errors.origin" class="text-red-500 text-xs mt-1">{{ errors.origin }}</p>
                     </div>
                   </div>
@@ -283,19 +295,30 @@
           </div>
 
           <!-- footer - fixed -->
-          <div class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex justify-end gap-3 shrink-0 rounded-b-2xl bg-white">
-            <button
-              class="px-4 py-2 text-sm rounded-lg bg-[#FF4040] text-white border hover:bg-[#ff3030] transition-colors"
-              @click="closeAdd"
-            >
-              {{$t('cancel')}}
-            </button>
-            <button
-              class="px-4 py-2 text-sm rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a91] transition-colors"
-              @click="saveTempStudent"
-            >
-              {{$t('save')}}
-            </button>
+          <div class="px-4 sm:px-5 md:px-6 py-3 sm:py-4 border-t flex flex-col gap-2 shrink-0 rounded-b-2xl bg-white">
+            <!-- Error message -->
+            <div v-if="errors.global" class="text-red-500 text-sm text-center">
+              {{ errors.global }}
+            </div>
+            
+            <!-- Action buttons -->
+            <div class="flex justify-end gap-3">
+              <button
+                class="px-4 py-2 text-sm rounded-lg bg-[#FF4040] text-white border hover:bg-[#ff3030] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                @click="closeAdd"
+                :disabled="tempStudentStore.loading"
+              >
+                {{$t('cancel')}}
+              </button>
+              <button
+                class="px-4 py-2 text-sm rounded-lg bg-[#235AA6] text-white hover:bg-[#1e4a91] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                @click="saveTempStudent"
+                :disabled="tempStudentStore.loading"
+              >
+                <span v-if="tempStudentStore.loading" class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>{{ tempStudentStore.loading ? 'Saving...' : $t('save') }}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -307,6 +330,9 @@
 import { ChevronDown, Info, Plus, X } from "lucide-vue-next";
 import { onMounted, onBeforeUnmount, computed, ref, reactive, watch } from "vue";
 import { useFilteredByDepartment, useProgramsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import { useTempStudentStore } from "@/stores/Admin/external_exam/CRUD_temp_student.js";
+import provincesData from "@/db/CambodiaAdministrationArea/provinces.json";
+import { showNotification } from "@/lib/notifications.js";
 
 // Props
 const props = defineProps({
@@ -317,13 +343,16 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(["close", "save"]);
 
+// Store
+const tempStudentStore = useTempStudentStore();
+
 // Temp student state
 const newTempStudent = reactive({
   academic_year: "",
   temp_user_id: null,
   profile_picture: null,
-  name_khmer: "",
-  name_latin: "",
+  khmer_name: "",
+  latin_name: "",
   gender: "",
   date_of_birth: "",
   phone_number: "",
@@ -335,8 +364,8 @@ const newTempStudent = reactive({
 
 // Errors state
 const errors = reactive({
-  name_khmer: "",
-  name_latin: "",
+  khmer_name: "",
+  latin_name: "",
   gender: "",
   date_of_birth: "",
   phone_number: "",
@@ -354,6 +383,11 @@ function getCurrentAcademicYear() {
 
 // Gender options
 const genderOptions = ["Male", "Female"];
+
+// Province options from JSON
+const provinceOptions = computed(() => {
+  return provincesData.sort((a, b) => a.name.localeCompare(b.name));
+});
 
 // 🎯 Use FilterByDepartment composables
 const { 
@@ -409,13 +443,13 @@ const validateForm = () => {
   clearErrors();
   let isValid = true;
 
-  if (!newTempStudent.name_khmer || newTempStudent.name_khmer.trim() === "") {
-    errors.name_khmer = "Khmer name is required";
+  if (!newTempStudent.khmer_name || newTempStudent.khmer_name.trim() === "") {
+    errors.khmer_name = "Khmer name is required";
     isValid = false;
   }
 
-  if (!newTempStudent.name_latin || newTempStudent.name_latin.trim() === "") {
-    errors.name_latin = "Latin name is required";
+  if (!newTempStudent.latin_name || newTempStudent.latin_name.trim() === "") {
+    errors.latin_name = "Latin name is required";
     isValid = false;
   }
 
@@ -460,8 +494,8 @@ const resetForm = () => {
   newTempStudent.academic_year = getCurrentAcademicYear();
   newTempStudent.temp_user_id = null;
   newTempStudent.profile_picture = null;
-  newTempStudent.name_khmer = "";
-  newTempStudent.name_latin = "";
+  newTempStudent.khmer_name = "";
+  newTempStudent.latin_name = "";
   newTempStudent.gender = "";
   newTempStudent.date_of_birth = "";
   newTempStudent.phone_number = "";
@@ -494,7 +528,7 @@ const saveTempStudent = async () => {
     newTempStudent.academic_year = getCurrentAcademicYear();
   }
 
-  // Generate temp_user_id
+  // Generate temp_user_id (for local tracking)
   newTempStudent.temp_user_id = generateTempUserId();
 
   // Create temp student object
@@ -502,21 +536,39 @@ const saveTempStudent = async () => {
     academic_year: newTempStudent.academic_year,
     temp_user_id: newTempStudent.temp_user_id,
     profile_picture: newTempStudent.profile_picture,
-    name_khmer: newTempStudent.name_khmer,
-    name_latin: newTempStudent.name_latin,
+    khmer_name: newTempStudent.khmer_name,
+    latin_name: newTempStudent.latin_name,
     gender: newTempStudent.gender,
     date_of_birth: newTempStudent.date_of_birth,
     phone_number: newTempStudent.phone_number,
     origin: newTempStudent.origin,
     department_id: newTempStudent.department_id,
     program_id: newTempStudent.program_id,
+    file: newTempStudent.file, // Include file for upload
   };
 
   console.log("📤 Saving temp student:", tempStudentData);
 
-  // Emit save event
-  emit("save", tempStudentData);
-  closeAdd();
+  try {
+    // Call API to add temp student
+    const result = await tempStudentStore.addTempStudent(tempStudentData);
+    
+    console.log("✅ Temp student saved successfully:", result);
+    
+    // Show success notification
+    showNotification("Temporary student added successfully!", "success");
+    
+    // Emit save event with the result from API
+    emit("save", result);
+    closeAdd();
+  } catch (error) {
+    // Display API error to user
+    errors.global = tempStudentStore.error || "Failed to save temporary student";
+    console.error("❌ Failed to save temp student:", error);
+    
+    // Show error notification
+    showNotification(errors.global, "error");
+  }
 };
 
 // Photo change handler

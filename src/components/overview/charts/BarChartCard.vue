@@ -1,10 +1,13 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-6">
+  <div class="bg-white rounded-lg shadow-md p-6 h-full flex flex-col">
     <h3 class="text-lg font-semibold text-gray-900 mb-4">
       {{ title }}
     </h3>
 
-    <Bar :data="barData" :options="optionsComputed" :height="height" />
+    <!-- chart area fills remaining height -->
+    <div class="flex-1 min-h-0">
+      <Bar :data="barData" :options="optionsComputed" class="h-full w-full" />
+    </div>
   </div>
 </template>
 
@@ -16,7 +19,6 @@ const props = defineProps({
   title: { type: String, default: "Bar Chart" },
   labels: { type: Array, default: () => ["A", "B", "C"] },
   values: { type: Array, default: () => [10, 20, 30] },
-  height: { type: Number, default: 300 },
   options: { type: Object, default: () => ({}) },
 });
 
@@ -46,12 +48,9 @@ const maxY = computed(() => {
 
 const optionsComputed = computed(() => ({
   responsive: true,
-  maintainAspectRatio: true,
+  maintainAspectRatio: false, // ✅ IMPORTANT (allow height stretch)
   plugins: { legend: { display: false } },
   scales: {
-    /* =======================
-       Y AXIS
-       ======================= */
     y: {
       beginAtZero: true,
       suggestedMax: maxY.value,
@@ -68,22 +67,14 @@ const optionsComputed = computed(() => ({
         color: "#e5e7eb",
       },
     },
-
-    /* =======================
-       X AXIS
-       ======================= */
     x: {
       title: {
         display: true,
         text: "User Roles",
         font: { size: 13, weight: "bold" },
       },
-      ticks: {
-        font: { size: 12 },
-      },
-      grid: {
-        display: false,
-      },
+      ticks: { font: { size: 12 } },
+      grid: { display: false },
     },
   },
   ...props.options,

@@ -43,7 +43,7 @@
                 <div
                   class="flex lg:block items-center justify-center lg:justify-start gap-4">
                   <div
-                    class="w-[120px] h-[152px] mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center"
+                    class="w-30 h-38 mx-auto mb-3 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-50 grid place-items-center"
                     @click="openImagePreview">
                     <img
                       v-if="imageSrc"
@@ -117,7 +117,7 @@
   </transition>
   
   <transition name="fade">
-    <div v-if="showImagePreview" class="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4" @click.self="closeImagePreview">
+    <div v-if="showImagePreview" class="fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4" @click.self="closeImagePreview">
        <div class="relative max-w-[90vw] max-h-[90vh]" @click.stop>
         <button class="absolute -top-10 right-0 text-white" @click="closeImagePreview"><X class="w-6 h-6" /></button>
         <img :src="imageSrc" class="w-full max-h-[85vh] object-contain rounded-xl" />
@@ -154,10 +154,20 @@ const InfoField = defineComponent({
 
 /* Image Logic */
 const showImagePreview = ref(false);
+
+const FILE_ORIGIN = import.meta.env.VITE_FILE_ORIGIN;
+
 const imageSrc = computed(() => {
   const s = props.student;
-  return s.profile_picture ? `https://api.rtc-bb.camai.kh/storage/${s.profile_picture}` 
-       : s.photo_url || s.user_detail?.profile_picture || "";
+  const imageFile = s.profile_picture || s.photo_url || s.user_detail?.profile_picture;
+  
+  if (!imageFile) return "";
+  
+  // If it's already a full URL, return as is
+  if (imageFile.startsWith("http")) return imageFile;
+  
+  // Otherwise, construct the full URL using FILE_ORIGIN
+  return `${FILE_ORIGIN}/storage/${imageFile}`;
 });
 const openImagePreview = () => { if(imageSrc.value) showImagePreview.value = true; };
 const closeImagePreview = () => { showImagePreview.value = false; };

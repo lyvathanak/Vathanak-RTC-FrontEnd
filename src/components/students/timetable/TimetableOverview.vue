@@ -1,84 +1,74 @@
 <template>
-  <div>
-    <!-- Header + Week Selector -->
-    <div
-      class="flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 gap-4 sm:gap-0">
-      <!-- Title -->
-      <div class="flex items-center gap-2">
-        <CalendarDaysIcon class="w-6 h-6 sm:w-7 sm:h-7 text-[#235AA6]" />
-        <h1
-          :class="[
-            'text-lg sm:text-xl md:text-2xl font-bold text-[#235AA6]',
-            locale === 'kh' ? 'khmer-text' : '',
-          ]">
-          {{ t("timetable_management") }}
-        </h1>
-      </div>
+  <div class="w-full">
+    <!-- Morning -->
+    <section class="mt-6">
+      <div
+        class="mb-4 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-50 ring-1 ring-yellow-100">
+            <Sun class="h-5 w-5 text-yellow-600" />
+          </div>
 
-      <!-- Week Selector -->
-      <div class="relative w-full sm:w-auto">
-        <span class="text-sm font-semibold text-gray-600 mr-2.5">Week</span>
-        <select
-          :value="selectedWeek"
-          @change="$emit('update:selectedWeek', $event.target.value)"
-          class="w-full sm:w-auto appearance-none border border-gray-300 rounded-lg px-4 py-2 pr-9 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-          aria-label="Select Week">
-          <option v-for="w in weeks" :key="w" :value="w">{{ w }}</option>
-        </select>
+          <div class="flex flex-col">
+            <h3 class="text-lg font-extrabold text-gray-900">Morning Shift</h3>
+            <p class="text-sm text-gray-500">7:00–11:00</p>
+          </div>
+        </div>
 
         <span
-          class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black">
-          ▾
+          class="hidden sm:inline-flex items-center rounded-full bg-yellow-50 px-3 py-1 text-xs font-semibold text-yellow-700 ring-1 ring-yellow-100">
+          AM
         </span>
       </div>
-    </div>
 
-    <!-- Morning -->
-    <div
-      class="mb-6 flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3">
-      <div
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100">
-        <Sun class="h-4 w-4 text-yellow-500" />
-      </div>
-      <h3 class="text-lg font-extrabold text-gray-900">Morning Shift</h3>
-    </div>
-
-    <TimeTable
-      :days="days"
-      :times="timesMorning"
-      :getSlot="getSlot"
-      class="mb-10" />
+      <TimeTable :days="days" :times="timesMorning" :getSlot="getSlot" />
+    </section>
 
     <!-- Afternoon -->
-    <div
-      class="mb-6 flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+    <section class="mt-8">
       <div
-        class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-        <SunMoon class="h-4 w-4 text-blue-600" />
-      </div>
-      <h3 class="text-lg font-extrabold text-gray-900">Afternoon Shift</h3>
-    </div>
+        class="mb-4 flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 ring-1 ring-blue-100">
+            <SunMoon class="h-5 w-5 text-blue-700" />
+          </div>
 
-    <TimeTable :days="days" :times="timesAfternoon" :getSlot="getSlot" />
+          <div class="flex flex-col">
+            <h3 class="text-lg font-extrabold text-gray-900">
+              Afternoon Shift
+            </h3>
+            <p class="text-sm text-gray-500">13:00–17:00</p>
+          </div>
+        </div>
+
+        <span
+          class="hidden sm:inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+          PM
+        </span>
+      </div>
+
+      <TimeTable :days="days" :times="timesAfternoon" :getSlot="getSlot" />
+    </section>
   </div>
 </template>
 
 <script setup>
 import { useI18n } from "vue-i18n";
-import { CalendarDaysIcon, Sun, SunMoon } from "lucide-vue-next";
+import { Sun, SunMoon } from "lucide-vue-next";
 import TimeTable from "@/components/students/timetable/TimeTable.vue";
 
-const { t, locale } = useI18n();
+
+const { t } = useI18n();
 
 defineProps({
   weeks: { type: Array, default: () => [] },
   selectedWeek: { type: String, default: "" },
-
   days: { type: Array, default: () => [] },
   timesMorning: { type: Array, default: () => [] },
   timesAfternoon: { type: Array, default: () => [] },
-
-  getSlot: { type: Function, required: true }, // slot(day, time)
+  getSlot: { type: Function, required: true },
 });
 
 defineEmits(["update:selectedWeek"]);

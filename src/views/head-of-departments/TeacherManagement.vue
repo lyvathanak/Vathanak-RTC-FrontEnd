@@ -1,134 +1,394 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-9xl mx-auto space-y-6">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 :class="['text-3xl font-bold text-gray-900', isKhmer ? 'khmer-text' : '']">
-            {{ $t('teachers_management') || 'Teacher Management' }}
-          </h1>
-          <p class="text-gray-600 mt-2">
-             Department: <span class="font-semibold text-blue-600">{{ departmentName }}</span>
-          </p>
-        </div>
-        </div>
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
+    <!-- Top bar (Admin-style) -->
+    <div class="flex flex-col gap-4">
+      <div
+        class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <!-- Title -->
+        <PageHeader
+          :title="t('teachers_management') || 'Teacher Management'"
+          :subtitle="`Department: ${departmentName || '-'}`" />
 
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <h2 :class="['text-xl font-semibold text-gray-800', isKhmer ? 'khmer-text' : '']">Faculty List</h2>
-         <div class="w-full sm:w-auto relative">
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            :placeholder="isKhmer ? 'ស្វែងរកគ្រូ...' : 'Search Teacher...'"
-            class="w-full sm:w-80 border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
+        <!-- Actions (HOD version) -->
+        <div class="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+          <!-- Selected indicator (optional) -->
+          <div
+            v-if="showSelection && selectedIds.length > 0"
+            class="text-sm text-gray-600 font-medium">
+            {{ selectedIds.length }} {{ t("teacher") || "teacher" }}
+            <span v-if="selectedIds.length > 1">s</span>
+            {{ t("selected") || "selected" }}
           </div>
+
+          <!-- Buttons -->
+          <div
+            class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+            <!-- Export (optional if you already use ExcelForm) -->
+            <ExcelForm :filtered-rows="filteredRows" class="w-full sm:w-auto" />
+          </div>
+        </div>
       </div>
 
-      <ListTable
-        :data="filteredTeachers"
+      <!-- Row: Search (Admin-style) -->
+
+      <div class="relative mb-3 w-full max-w-lg">
+        <Search
+          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+
+        <input
+          v-model="search"
+          type="text"
+          placeholder="Search by name, ID, or email..."
+          :disabled="loading"
+          class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#235AA6] shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base" />
+
+        <button
+          v-if="search && search.trim().length"
+          type="button"
+          :disabled="loading"
+          @click="search = ''"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          aria-label="Clear search">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Table (Admin-style wrapper) -->
+    <div class="overflow-x-auto">
+      <TeacherTable
+        :teachers="pagedRows"
+        :selected-ids="selectedIds"
+        :sort-field="currentSortField"
+        :sort-direction="currentSortDirection"
+        :columns="tableColumns"
         :loading="loading"
-        :columns="columns"
-        :row-key="'id'"
-        :show-selection="false"
+        :show-selection="showSelection"
         :show-actions="true"
         :show-view-action="true"
         :show-edit-action="false"
         :show-delete-action="false"
-        @view="handleViewTeacher"
-      >
-        </ListTable>
-
-      <ViewTeacherModal
-        v-if="showViewModal"
-        v-model="showViewModal"
-        :teacher="selectedTeacher"
-      />
+        @view="view"
+        @select="handleRowSelect"
+        @selectAll="handleSelectAll"
+        @sort="handleSort" />
     </div>
+
+    <!-- Pagination (Admin-style) -->
+    <div>
+      <Pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total-items="filteredRows.length"
+        :page-size-options="[5, 10, 25, 50, 100]"
+        :item-label="t('teachers') || 'teachers'" />
+    </div>
+
+    <!-- View Teacher Modal (optional - if you have it) -->
+    <ViewTeacherModal v-model="showViewModal" :teacher="viewTeacher" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { Search } from "lucide-vue-next";
+
+import PageHeader from "@/components/features/PageHeader.vue";
+import Pagination from "@/components/features/Pagination.vue";
+import ExcelForm from "@/components/features/ExcelForm.vue";
+
+import TeacherTable from "@/components/admins/TeacherManagement/TeacherTable.vue";
+import ViewTeacherModal from "@/components/admins/TeacherManagement/ViewTeacherModal.vue";
+
 import { getHODProfile } from "@/stores/HeadOfDepartment/HODProfile";
 import api from "@/stores/apis/axios";
-import ListTable from "@/components/features/ListTable.vue";
 
-// IMPORT HOD SPECIFIC MODAL
-import ViewTeacherModal from "@/components/head-of-departments/viewTeacherModal.vue";
+const { t } = useI18n();
 
-const router = useRouter();
-const { t, locale } = useI18n();
-const isKhmer = computed(() => locale.value === "kh");
+/** UI toggles */
+const showSelection = ref(true);
 
+/** State */
 const loading = ref(false);
-const teachers = ref([]);
-const searchQuery = ref("");
-const departmentName = ref("");
+const rows = ref([]);
 const departmentId = ref(null);
+const departmentName = ref("");
 
-const showViewModal = ref(false);
-const selectedTeacher = ref(null);
+/** Search */
+const search = ref("");
 
-const columns = ref([
-  { key: 'id_card', label: 'ID', sortable: true },
-  { key: 'khmer_name', label: 'Khmer Fullname', sortable: true },
-  { key: 'latin_name', label: 'Latin Fullname', sortable: true },
-  { key: 'position', label: 'Position', sortable: true },
-  { key: 'status', label: 'Status', sortable: true },
+/** Selection */
+const selectedIds = ref([]);
+
+function getRowId(payload) {
+  if (!payload) return null;
+  return typeof payload === "object"
+    ? (payload.id ?? payload.user_id ?? null)
+    : payload;
+}
+
+function handleRowSelect(payload) {
+  const id = getRowId(payload);
+  if (!id) return;
+
+  const set = new Set(selectedIds.value);
+  set.has(id) ? set.delete(id) : set.add(id);
+  selectedIds.value = [...set];
+}
+
+function handleSelectAll(idsOrRows) {
+  if (!Array.isArray(idsOrRows)) {
+    selectedIds.value = [];
+    return;
+  }
+  selectedIds.value = idsOrRows.map(getRowId).filter(Boolean);
+}
+
+const tableColumns = ref([
+  {
+    key: "id_card",
+    label: "ID",
+    visible: true,
+    sortable: true,
+    width: "w-20 sm:w-24",
+  },
+  {
+    key: "khmer_name",
+    label: "Khmer Name",
+    visible: true,
+    sortable: true,
+    width: "min-w-32 sm:min-w-40",
+  },
+  {
+    key: "latin_name",
+    label: "Latin Name",
+    visible: true,
+    sortable: true,
+    width: "min-w-32 sm:min-w-40",
+  },
+  {
+    key: "gender",
+    label: "Gender",
+    visible: true,
+    sortable: false,
+    width: "min-w-24 sm:min-w-28",
+  },
+  {
+    key: "email",
+    label: "Email",
+    visible: true,
+    sortable: true,
+    width: "min-w-40 sm:min-w-48",
+    hideOnMobile: true,
+  },
+  {
+    key: "phone_number",
+    label: "Phone",
+    visible: true,
+    sortable: false,
+    width: "min-w-28 sm:min-w-32",
+    hideOnMobile: true,
+  },
+
+  {
+    key: "department",
+    label: "Department",
+    visible: true,
+    sortable: true,
+    width: "min-w-40 sm:min-w-56",
+  },
+
+  // {
+  //   key: "program",
+  //   label: "Program",
+  //   visible: true,
+  //   sortable: true,
+  //   width: "min-w-40 sm:min-w-56",
+  //   hideOnMobile: true, // optional
+  // },
+
+  // {
+  //   key: "section",
+  //   label: "Section",
+  //   visible: true,
+  //   sortable: true,
+  //   width: "min-w-32 sm:min-w-40",
+  //   hideOnMobile: true, // optional
+  // },
 ]);
 
-const filteredTeachers = computed(() => {
-  if (!searchQuery.value) return teachers.value;
-  const q = searchQuery.value.toLowerCase();
-  return teachers.value.filter(t => 
-    (t.latin_name || '').toLowerCase().includes(q) ||
-    (t.khmer_name || '').toLowerCase().includes(q)
-  );
+/** Sorting */
+const currentSortField = ref("latin_name");
+const currentSortDirection = ref("asc");
+
+function normSortVal(v) {
+  if (v == null) return "";
+  if (typeof v === "number") return v;
+  return String(v).toLowerCase();
+}
+
+function handleSort({ field, direction }) {
+  currentSortField.value = field;
+  currentSortDirection.value = direction;
+
+  if (!field || !direction) return;
+
+  const dir = direction === "asc" ? 1 : -1;
+  rows.value = [...rows.value].sort((a, b) => {
+    const av = normSortVal(a?.[field]);
+    const bv = normSortVal(b?.[field]);
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+}
+
+/** Filter */
+const filteredRows = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  if (!q) return rows.value;
+
+  return rows.value.filter((r) => {
+    return (
+      String(r.id_card ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(r.khmer_name ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(r.latin_name ?? "")
+        .toLowerCase()
+        .includes(q) ||
+      String(r.position ?? "")
+        .toLowerCase()
+        .includes(q)
+    );
+  });
 });
 
-const handleViewTeacher = (teacher) => {
-  selectedTeacher.value = teacher;
+/** Pagination */
+const page = ref(1);
+const pageSize = ref(25);
+
+const pagedRows = computed(() => {
+  const start = (page.value - 1) * pageSize.value;
+  return filteredRows.value.slice(start, start + pageSize.value);
+});
+
+watch([filteredRows, pageSize], () => {
+  page.value = 1;
+});
+
+/** View modal */
+const showViewModal = ref(false);
+const viewTeacher = ref(null);
+
+function view(row) {
+  viewTeacher.value = row;
   showViewModal.value = true;
-};
+}
 
-onMounted(async () => {
+/** Data normalization */
+function normalizeTeacher(u, deptLabel) {
+  const detail = u?.user_detail || {};
+  const active = u?.is_active ?? detail?.is_active ?? true;
+
+  // ✅ Try common shapes (edit to match your backend)
+  const programName =
+    detail?.program?.program_name ||
+    detail?.program?.name ||
+    u?.program?.program_name ||
+    u?.program?.name ||
+    "-";
+
+  const sectionName =
+    detail?.section?.section_name ||
+    detail?.section?.name ||
+    u?.section?.section_name ||
+    u?.section?.name ||
+    "-";
+
+  return {
+    ...u,
+    id: u?.id,
+    user_id: u?.user_id ?? u?.id,
+
+    id_card: u?.id_card || detail?.id_card || "N/A",
+    khmer_name: u?.khmer_name || detail?.khmer_name || "-",
+    latin_name: u?.latin_name || u?.name || detail?.latin_name || "-",
+    position: u?.position || detail?.position || "Lecturer",
+
+    profile_picture: u?.profile_picture || detail?.profile_picture,
+    is_active: !!active,
+    status: active ? "Active" : "Inactive",
+
+    gender: u?.gender || detail?.gender || "N/A",
+
+    phone_number:
+      u?.phone_number ||
+      detail?.phone_number ||
+      detail?.phone ||
+      u?.phone ||
+      "N/A",
+
+    email: u?.email || detail?.email || "N/A",
+
+    department: detail?.department?.department_name || deptLabel || "N/A",
+
+    // ✅ NEW
+    program: programName,
+    section: sectionName,
+  };
+}
+
+/** Fetch */
+onMounted(loadHodTeachers);
+
+async function loadHodTeachers() {
+  loading.value = true;
+  selectedIds.value = []; // keep selection clean when reloading
   try {
-    loading.value = true;
     const profileData = await getHODProfile();
-    const userDetail = profileData.user?.user_detail || {};
-    const headDept = userDetail.head_department || profileData.user?.head_department;
-    
-    departmentId.value = headDept?.id || userDetail.department_id;
-    departmentName.value = headDept?.department_name || "";
+    const userDetail = profileData?.user?.user_detail || {};
 
-    if (departmentId.value) {
-      const res = await api.get(`/users_by_hod_department/${departmentId.value}`, { 
-        params: { role: 'staff' } 
-      });
-      const data = res.data.users || res.data.data || [];
-      if (Array.isArray(data)) {
-        teachers.value = data.map(t => {
-          const detail = t.user_detail || {};
-          return {
-            ...t,
-            id_card: t.id_card || detail.id_card,
-            khmer_name: t.khmer_name || detail.khmer_name,
-            latin_name: t.latin_name || t.name || detail.latin_name,
-            position: t.position || detail.position || 'Lecturer',
-            profile_picture: t.profile_picture || detail.profile_picture,
-            is_active: t.is_active ?? detail.is_active ?? true,
-            department_name: detail.department?.department_name || departmentName.value,
-            user_detail: detail
-          };
-        });
-      }
+    const headDept =
+      userDetail?.head_department || profileData?.user?.head_department;
+    const directDept = userDetail?.department || profileData?.user?.department;
+
+    departmentId.value =
+      headDept?.id || directDept?.id || userDetail?.department_id || null;
+    departmentName.value =
+      headDept?.department_name || directDept?.department_name || "";
+
+    if (!departmentId.value) {
+      rows.value = [];
+      return;
     }
+
+    const res = await api.get(
+      `/users_by_hod_department/${departmentId.value}`,
+      {
+        params: { role: "staff" },
+      },
+    );
+
+    const raw = res?.data?.users || res?.data?.data || [];
+    rows.value = Array.isArray(raw)
+      ? raw.map((u) => normalizeTeacher(u, departmentName.value))
+      : [];
   } catch (err) {
-    console.error("Error fetching teachers:", err);
+    console.error("Error fetching HOD teachers:", err);
+    rows.value = [];
   } finally {
     loading.value = false;
   }
-});
+}
 </script>
+
+<style scoped>
+.font-khmer {
+  font-family: "Battambang", "Noto Sans Khmer", sans-serif;
+}
+</style>

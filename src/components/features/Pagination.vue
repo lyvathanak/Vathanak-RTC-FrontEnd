@@ -182,13 +182,7 @@ const visiblePages = computed(() => {
   const pages = [];
   const total = totalPages.value;
   const current = props.currentPage;
-
-  // Responsive max visible pages based on screen size
-  // Use fewer pages on mobile for better UX
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-  const maxVisible = isMobile
-    ? Math.min(3, props.maxVisiblePages)
-    : props.maxVisiblePages;
+  const maxVisible = props.maxVisiblePages;
 
   if (total <= maxVisible) {
     // Show all pages if total is less than max visible
@@ -315,86 +309,7 @@ button.bg-blue-600:hover {
   background-color: #2563eb;
 }
 
-/* Mobile-first responsive design */
-@media (max-width: 640px) {
-  /* Compact spacing and sizing for mobile */
-  .min-w-8 {
-    min-width: 2rem;
-  }
 
-  /* Stack layout on very small screens */
-  .pagination-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-  }
-
-  /* Ensure text is centered on mobile */
-  .text-xs {
-    text-align: center;
-  }
-
-  /* Reduce padding for mobile controls */
-  .pagination-controls {
-    padding: 0 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  /* Hide first/last page buttons on very small screens */
-  button:first-child,
-  button:last-child {
-    display: none;
-  }
-
-  /* Show fewer page numbers */
-  .visible-pages {
-    max-width: 120px;
-    overflow: hidden;
-  }
-
-  /* Compact select dropdown */
-  select {
-    font-size: 12px;
-    padding: 4px 8px;
-    min-width: 60px;
-  }
-}
-
-@media (max-width: 360px) {
-  /* Ultra-compact for very small devices */
-  button {
-    min-width: 28px;
-    height: 28px;
-    padding: 0 6px;
-    font-size: 12px;
-  }
-
-  /* Stack everything vertically */
-  .flex {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Full width controls */
-  .pagination-controls {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* Improved touch targets for mobile */
-@media (max-width: 640px) {
-  button {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  select {
-    min-height: 44px;
-    padding: 8px 12px;
-  }
-}
 
 /* Enhanced visual feedback */
 button:active {
@@ -405,21 +320,10 @@ select:active {
   transform: scale(0.98);
 }
 
-/* Loading state support */
-.pagination-loading {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   button {
     border-width: 2px;
-  }
-
-  button.bg-blue-600 {
-    background-color: #1e40af;
-    border-color: #1e40af;
   }
 }
 

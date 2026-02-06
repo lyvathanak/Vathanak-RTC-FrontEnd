@@ -11,7 +11,7 @@
           class="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-[#235AA6] text-white rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap">
           <Plus class="w-4 h-4 sm:w-5 sm:h-5" />
           <span class="hidden xs:inline">Create Group</span>
-          <span class="xs:hidden">Create</span>
+          <span class="xs:hidden">Create Group</span>
         </button>
       </div>
     </PageHeader>

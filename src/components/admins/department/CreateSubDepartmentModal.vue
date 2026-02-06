@@ -1,110 +1,190 @@
 <template>
-  <transition name="fade">
-    <div
-      v-if="modelValue"
-      class="fixed inset-0 z-[10001] flex items-center justify-center"
-      @keydown.esc.stop.prevent="onClose">
-      <div class="absolute inset-0 bg-black/50" @click.stop="onClose" />
+  <Teleport to="body">
+    <transition name="fade">
       <div
-        class="relative bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-        @click.stop>
-        <!-- Header -->
-        <div class="px-6 py-4 border-b flex items-center justify-between">
-          <h3 class="text-xl font-semibold">{{ modeTitle }}</h3>
-          <span v-if="saving" class="text-sm text-gray-500">Saving…</span>
-        </div>
+        v-if="modelValue"
+        class="fixed inset-0 z-9999 flex items-center justify-center px-3 sm:px-6"
+        @keydown.esc.stop.prevent="onClose"
+        tabindex="-1">
+        <!-- Backdrop -->
+        <div
+          class="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
+          @click="onClose" />
 
-        <!-- Body -->
-        <div class="px-6 py-5 space-y-6 max-h-[70vh] overflow-y-auto">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div class="text-xs text-gray-500">Department</div>
-              <div class="h-11 flex items-center text-sm font-medium">
-                #{{ department?.id }} —
-                {{ department?.name || department?.department_name }}
-              </div>
+        <!-- Dialog -->
+        <div
+          class="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5"
+          role="dialog"
+          aria-modal="true"
+          @click.stop>
+          <!-- Loading overlay -->
+          <div
+            v-if="saving"
+            class="absolute inset-0 z-20 grid place-items-center bg-white/70 backdrop-blur-sm">
+            <div
+              class="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow known">
+              <span
+                class="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-[#235AA6]" />
+              <span class="text-sm font-semibold text-gray-700">Saving…</span>
             </div>
+          </div>
 
-            <div>
-              <label class="text-xs text-gray-500"
-                >Name
-                <span v-if="isEditing" class="text-red-500">*</span></label
-              >
-              <input
-                v-if="isEditing"
-                v-model.trim="form.name"
-                :class="[
-                  'h-11 w-full rounded-lg border px-3 outline-none focus:ring-2 focus:ring-blue-500',
-                  errors.name && 'border-red-400',
-                ]"
-                placeholder="e.g., Web Development" />
-              <div v-else class="h-11 flex items-center text-sm font-medium">
-                {{ form.name || "—" }}
+          <!-- Header (sticky) -->
+          <div class="sticky top-0 z-10 border-b bg-white/90 backdrop-blur">
+            <div class="flex items-start justify-between gap-4 px-6 py-4">
+              <div class="min-w-0">
+                <h3 class="text-lg sm:text-xl font-bold text-gray-900">
+                  {{ modeTitle }}
+                </h3>
+
+                <p class="mt-1 text-sm text-gray-500">
+                  {{ modeSubtitle }}
+                </p>
               </div>
-              <p
-                v-if="isEditing"
-                class="text-xs mt-1 h-4"
-                :class="errors.name ? 'text-red-600' : 'opacity-0'">
-                {{ errors.name || "placeholder" }}
-              </p>
-            </div>
 
-            <div class="md:col-span-2">
-              <label class="text-xs text-gray-500">Description</label>
-              <textarea
-                v-if="isEditing"
-                v-model="form.description"
-                rows="4"
-                class="w-full rounded-lg border px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Short description" />
-              <div
-                v-else
-                class="text-sm text-gray-800 min-h-[44px] flex items-center">
-                {{ form.description || "—" }}
+              <button
+                type="button"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 active:scale-[0.98] transition"
+                @click="onClose"
+                aria-label="Close">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="max-h-[70vh] overflow-y-auto px-6 py-5">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <!-- Department (read-only) -->
+              <div class="md:col-span-2">
+                <div class="text-xs font-medium text-gray-500">Department</div>
+                <div
+                  class="mt-1 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-gray-800 truncate">
+                      {{ departmentLabel }}
+                    </div>
+                    <div class="text-xs text-gray-500 truncate">
+                      Linked parent department
+                    </div>
+                  </div>
+
+                  <span
+                    class="shrink-0 inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+                    #{{ department?.id ?? "—" }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Name -->
+              <div class="md:col-span-2">
+                <label class="text-xs font-medium text-gray-600">
+                  Name <span v-if="isEditing" class="text-red-500">*</span>
+                </label>
+
+                <template v-if="isEditing">
+                  <input
+                    ref="nameEl"
+                    v-model.trim="form.name"
+                    type="text"
+                    :disabled="saving"
+                    :class="[
+                      'mt-1 h-11 w-full rounded-xl border bg-white px-4 text-sm text-gray-900 outline-none transition',
+                      'focus:ring-2 focus:ring-[#235AA6]/30 focus:border-[#235AA6]',
+                      errors.name
+                        ? 'border-red-400 ring-1 ring-red-100'
+                        : 'border-gray-200',
+                      saving && 'opacity-60 cursor-not-allowed',
+                    ]"
+                    placeholder="e.g., Web Development" />
+
+                  <p
+                    class="mt-1 text-xs h-4"
+                    :class="errors.name ? 'text-red-600' : 'opacity-0'">
+                    {{ errors.name || "placeholder" }}
+                  </p>
+                </template>
+
+                <template v-else>
+                  <div
+                    class="mt-1 rounded-xl border border-gray-200 bg-white px-4 py-3">
+                    <div class="text-sm font-semibold text-gray-900">
+                      {{ form.name || "—" }}
+                    </div>
+                    <div class="text-xs text-gray-500">Sub-department name</div>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Description -->
+              <div class="md:col-span-2">
+                <label class="text-xs font-medium text-gray-600">
+                  Description
+                </label>
+
+                <template v-if="isEditing">
+                  <textarea
+                    v-model.trim="form.description"
+                    rows="4"
+                    :disabled="saving"
+                    class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-[#235AA6] focus:ring-2 focus:ring-[#235AA6]/30 disabled:opacity-60"
+                    placeholder="Short description (optional)" />
+                  <p class="mt-2 text-xs text-gray-500">
+                    Keep it short—this helps users understand the scope.
+                  </p>
+                </template>
+
+                <template v-else>
+                  <div
+                    class="mt-1 min-h-24 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800">
+                    {{ form.description || "—" }}
+                  </div>
+                </template>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Footer -->
-        <div
-          class="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-2">
-          <button
-            v-if="!isEditing"
-            class="px-4 py-2.5 rounded-lg border text-gray-700 hover:bg-gray-100"
-            @click="onClose">
-            Close
-          </button>
-          <template v-else>
-            <button
-              class="px-4 py-2.5 rounded-lg border text-gray-700 hover:bg-gray-100"
-              :disabled="saving"
-              @click="onClose">
-              Cancel
-            </button>
-            <button
-              class="px-4 py-2.5 rounded-lg bg-[#235AA6] text-white hover:bg-[#1f4c93] disabled:opacity-60"
-              :disabled="saving"
-              @click="onSave">
-              {{
-                saving
-                  ? "Saving…"
-                  : mode === "create"
-                  ? "Create"
-                  : "Save changes"
-              }}
-            </button>
-          </template>
+          <!-- Footer (sticky) -->
+          <div class="sticky bottom-0 border-t bg-gray-50">
+            <div
+              class="flex flex-col-reverse gap-2 px-6 py-4 sm:flex-row sm:items-center sm:justify-end">
+              <!-- View mode -->
+              <button
+                v-if="!isEditing"
+                type="button"
+                class="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-[0.99] transition"
+                @click="onClose">
+                Close
+              </button>
+
+              <!-- Edit/Create mode -->
+              <template v-else>
+                <button
+                  type="button"
+                  class="h-11 w-full sm:w-auto rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-700 hover:bg-gray-50 active:scale-[0.99] transition disabled:opacity-60"
+                  :disabled="saving"
+                  @click="onClose">
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  class="h-11 w-full sm:w-auto rounded-xl bg-[#235AA6] px-5 text-sm font-semibold text-white hover:bg-[#1f4c93] active:scale-[0.99] transition disabled:opacity-60"
+                  :disabled="saving || !canSubmit"
+                  @click="onSave">
+                  {{ saving ? "Saving…" : submitLabel }}
+                </button>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from "vue";
+import { ref, reactive, computed, watch, nextTick } from "vue";
 import api from "@/stores/apis/axios";
 
 const props = defineProps({
@@ -113,25 +193,58 @@ const props = defineProps({
   department: { type: Object, default: null },
   subDepartment: { type: Object, default: null },
 });
+
 const emit = defineEmits(["update:modelValue", "saved"]);
 
 const saving = ref(false);
+const nameEl = ref(null);
+
 const errors = reactive({ name: "" });
 const form = reactive({ id: null, name: "", description: "" });
 
 const isEditing = computed(
   () => props.mode === "create" || props.mode === "edit"
 );
+
+const submitLabel = computed(() =>
+  props.mode === "create" ? "Create" : "Save changes"
+);
+
 const modeTitle = computed(() =>
   props.mode === "create"
-    ? "Create Sub-Department"
+    ? "CREAER SUB-DEPARTMENT"
     : props.mode === "edit"
-    ? "Edit Sub-Department"
-    : "Sub-Department Details"
+    ? "EDIT SUB-DEPARTMENT"
+    : "SUB-DEPARTMENT DETAIL"
 );
+
+const modeSubtitle = computed(() =>
+  props.mode === "create"
+    ? "Add a new sub-department under this department."
+    : props.mode === "edit"
+    ? "Update the sub-department information."
+    : "Review the sub-department information."
+);
+
 const departmentId = computed(() => props.department?.id ?? null);
 
+const departmentLabel = computed(() => {
+  const name =
+    props.department?.name || props.department?.department_name || "—";
+  return `${name}`;
+});
+
+const canSubmit = computed(() => {
+  if (!isEditing.value) return false;
+  return !!form.name?.trim() && !!departmentId.value && !saving.value;
+});
+
+function resetErrors() {
+  errors.name = "";
+}
+
 function hydrate() {
+  resetErrors();
   const d = props.subDepartment || {};
   form.id = d.id ?? null;
   form.name = d.name ?? "";
@@ -143,8 +256,15 @@ function onClose() {
 }
 
 async function onSave() {
-  errors.name = form.name ? "" : "Name is required";
-  if (errors.name) return;
+  resetErrors();
+
+  if (!form.name?.trim()) {
+    errors.name = "Name is required";
+    await nextTick();
+    nameEl.value?.focus?.();
+    return;
+  }
+
   if (!departmentId.value) {
     alert("Missing department_id");
     return;
@@ -154,11 +274,13 @@ async function onSave() {
   try {
     if (props.mode === "create") {
       const { data } = await api.post("/managements/create_sub_department", {
-        name: form.name,
+        name: form.name.trim(),
         department_id: departmentId.value,
-        description: form.description || "",
+        description: form.description?.trim() || "",
       });
+
       const created = (data?.sub_department || data?.data || data) ?? null;
+
       emit("saved", {
         __op: "create",
         id: created?.id ?? null,
@@ -168,10 +290,11 @@ async function onSave() {
       });
     } else {
       await api.put(`/managements/update_sub_department/${form.id}`, {
-        name: form.name,
+        name: form.name.trim(),
         department_id: departmentId.value,
-        description: form.description || "",
+        description: form.description?.trim() || "",
       });
+
       emit("saved", {
         __op: "update",
         id: form.id,
@@ -180,6 +303,7 @@ async function onSave() {
         active: true,
       });
     }
+
     onClose();
   } catch (e) {
     alert(e?.response?.data?.message || e?.message || "Operation failed");
@@ -190,10 +314,16 @@ async function onSave() {
 
 watch(
   () => props.modelValue,
-  (open) => {
-    if (open) hydrate();
+  async (open) => {
+    if (!open) return;
+    hydrate();
+    if (isEditing.value) {
+      await nextTick();
+      nameEl.value?.focus?.();
+    }
   }
 );
+
 watch(
   () => props.subDepartment?.id,
   () => {
@@ -205,7 +335,7 @@ watch(
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s;
+  transition: opacity 0.18s ease;
 }
 .fade-enter-from,
 .fade-leave-to {

@@ -1,19 +1,11 @@
 <template>
-  <div class="flex flex-col gap-4 py-5">
+  <div
+    class="min-h-screen bg-gray-50 px-3 py-6 sm:px-6 lg:px-6 sm:py-8 space-y-4">
     <!-- Top bar -->
-    <div
-      class="px-3 sm:px-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <!-- Search -->
-      <div class="relative w-full md:w-[28rem]">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search departments…"
-          class="w-full h-10 rounded-xl border px-10 pr-3 outline-none focus:ring-2 focus:ring-[#235AA6]" />
-        <Search
-          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-      </div>
 
+    <PageHeader
+      :title="t('department_management')"
+      subtitle="Track and manage your department applications">
       <!-- Actions -->
       <div class="flex items-center gap-2">
         <button
@@ -25,95 +17,30 @@
         <button
           :disabled="exporting || loading"
           @click="onExport"
-          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 border bg-[#FF7700] text-white border-gray-300 rounded-lg hover:bg-[#e66600] transition-colors text-sm font-medium">
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 border bg-[#235AA6] text-white border-gray-300 rounded-lg hover:bg-[#1f4f93] transition-colors text-sm font-medium focus:ring-[#235AA6]">
           <Download class="w-4 h-4" /><span class="text-sm">{{
             exporting ? "Exporting…" : "Export"
           }}</span>
         </button>
       </div>
-    </div>
+    </PageHeader>
 
-    <!-- Error banner -->
-    <div v-if="error" class="px-3 sm:px-5">
-      <div
-        class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        {{ error }}
-      </div>
-    </div>
+    <DepartmentFilter v-model="filters" @clear="loadAll" />
 
     <!-- Listing -->
-    <div class="px-3 sm:px-5">
-      <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table class="w-full dept-table">
-          <thead class="bg-gray-50 border-b">
-            <tr class="text-xs font-medium text-gray-500 uppercase">
-              <th class="px-4 py-3 sticky-left text-left w-[70px]">ID</th>
-              <th class="px-6 py-3 text-left col-name">Department</th>
-              <th class="px-4 py-3 text-left sticky-right w-[88px]">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody v-if="!loading && pagedRows.length" class="divide-y">
-            <tr v-for="d in pagedRows" :key="d.id" class="hover:bg-gray-50">
-              <!-- ID -->
-              <td
-                class="px-4 py-4 sticky-left bg-white text-sm whitespace-nowrap">
-                {{ d.id }}
-              </td>
-
-              <!-- Department -->
-              <td class="px-6 py-4 text-sm col-name">
-                <div class="name-3lines font-semibold text-gray-900">
-                  {{ d.name }}
-                </div>
-                <div
-                  class="desc-ellipsis text-gray-500 text-xs md:text-sm"
-                  :title="d.description">
-                  {{ d.description }}
-                </div>
-              </td>
-
-              <!-- Actions -->
-              <td class="px-4 py-4 sticky-right bg-white">
-                <div class="flex items-center gap-2">
-                  <button
-                    class="inline-flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 px-2.5 py-1.5 transition-colors"
-                    title="View"
-                    @click="onView(d)">
-                    <Eye class="w-4 h-4" />
-                  </button>
-                  <button
-                    class="inline-flex items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 px-2.5 py-1.5 transition-colors"
-                    title="Delete"
-                    @click="requestDelete(d)"
-                    :disabled="deletingId === d.id">
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-
-          <tbody v-else-if="loading">
-            <tr>
-              <td colspan="3" class="px-6 py-10 text-center text-gray-500">
-                Loading…
-              </td>
-            </tr>
-          </tbody>
-          <tbody v-else>
-            <tr>
-              <td colspan="3" class="px-6 py-10 text-center text-gray-500">
-                No departments found.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div>
+      <DepartmentTable
+        :rows="pagedRows"
+        :loading="loading"
+        :deleting-id="deletingId"
+        :empty-text="emptyText"
+        @view="onView"
+        @edit="onEdit"
+        @delete="requestDelete" />
     </div>
 
     <!-- Pagination -->
-    <div class="px-3 sm:px-5">
+    <div class="">
       <Pagination
         class="mx-auto"
         v-model:current-page="page"
@@ -139,7 +66,7 @@
         </div>
         <p class="text-sm text-gray-600 mb-6">
           Are you sure you want to delete
-          <span class="font-medium">{{ deletingItem?.name }}</span
+          <span class="font-medium">{{ deletingItem?.department_name }}</span
           >? This action cannot be undone.
         </p>
         <div class="flex justify-end gap-2">
@@ -165,6 +92,7 @@
       v-model="showEdit"
       :department="editRow"
       @saved="loadAll" />
+
     <ViewDepartmentModal
       :model-value="isViewOpen"
       :department="viewRow"
@@ -190,10 +118,16 @@ import { useRoute, useRouter } from "vue-router";
 import api from "@/stores/apis/axios";
 import { showNotification } from "@/lib/notifications.js";
 import { Plus, Download, Search, Eye, Trash2 } from "lucide-vue-next";
+import { useI18n } from "vue-i18n";
+import PageHeader from "@/components/features/PageHeader.vue";
 import Pagination from "@/components/features/Pagination.vue";
 import AddDepartmentModal from "@/components/admins/department/AddDepartmentModal.vue";
 import ViewDepartmentModal from "@/components/admins/department/ViewDepartmentModal.vue";
 import EditDepartmentModal from "@/components/admins/department/EditDepartmentModal.vue";
+import DepartmentTable from "@/components/admins/department/DepartmentTable.vue";
+import DepartmentFilter from "@/components/admins/department/DepartmentFilter.vue";
+
+const { t } = useI18n();
 
 /* Router */
 const route = useRoute();
@@ -206,7 +140,7 @@ const raw = ref([]);
 
 const search = ref("");
 const page = ref(1);
-const pageSize = ref(25);
+const pageSize = ref(10);
 const deletingId = ref(null);
 const exporting = ref(false);
 
@@ -232,26 +166,49 @@ function closeView() {
     params: { lang: route.params.lang },
   });
 }
+
+function onEdit(d) {
+  editRow.value = d?._raw ?? d; // prefer raw backend object if you stored it
+  showEdit.value = true;
+}
+
+const filters = ref({
+  search: "",
+  head: "",
+  createdSort: "",
+  status: "",
+});
+
 watchEffect(() => {
   const id = route.params.deptId;
   if (!id) {
     viewRow.value = null;
     return;
   }
-  viewRow.value = raw.value.find((r) => String(r.id) === String(id)) || null;
+  const found = raw.value.find((r) => String(r.id) === String(id));
+  viewRow.value = found?._raw ?? found ?? null;
 });
 
 /* Normalizer */
 function toRow(it) {
   return {
     id: it.id,
-    code: it.code ?? "",
-    name: it.department_name ?? it.name ?? "",
+
+    // ✅ match table field
+    department_name: it.department_name ?? it.name ?? "",
+
     description: it.description ?? "",
-    __program: "—",
-    __hod: it.head_of_department ?? "Not Assigned",
-    __status: "Active",
-    active: true,
+
+    // ✅ match table field (object {name,email} or null)
+    head_of_department: it.head_of_department ?? null,
+
+    // ✅ match table field (string in DD-MM-YYYY HH:mm:ss)
+    created_at: it.created_at ?? "",
+
+    // optional if you want later
+    updated_at: it.updated_at ?? "",
+
+    // keep raw backend object
     _raw: it,
   };
 }
@@ -264,6 +221,7 @@ async function loadAll() {
     const { data } = await api.get("/managements/get_all_department");
     const arr = Array.isArray(data?.all_department) ? data.all_department : [];
     raw.value = arr.map(toRow);
+
     if (!raw.value.length) {
       error.value = "No departments found.";
     }
@@ -301,25 +259,76 @@ async function loadSearch(q) {
 
 /* Choose endpoint */
 async function load() {
-  const q = search.value.trim();
+  const q = (filters.value.search || "").trim();
   page.value = 1;
   if (q) return loadSearch(q);
   return loadAll();
 }
+
 onMounted(load);
 
 /* Debounce search */
 let searchTimer;
-watch(search, () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(load, 300);
+watch(
+  () => filters.value.search,
+  () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(load, 300);
+  },
+);
+function parseDMYDateTime(value) {
+  if (!value || typeof value !== "string") return null;
+  const [datePart, timePart] = value.split(" ");
+  const [dd, mm, yyyy] = (datePart || "").split("-").map(Number);
+  if (!dd || !mm || !yyyy) return null;
+
+  const [hh = 0, mi = 0, ss = 0] = (timePart || "").split(":").map(Number);
+  const d = new Date(yyyy, mm - 1, dd, hh, mi, ss);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function isAssignedHead(head) {
+  if (!head) return false; // null/undefined
+  // treat empty object as NOT assigned
+  if (typeof head === "object") {
+    return !!(head.id || head.name || head.email);
+  }
+  // if API returns string name/id
+  return String(head).trim().length > 0;
+}
+
+const filteredRows = computed(() => {
+  let rows = raw.value.slice();
+
+  // Head filter
+  if (filters.value.head === "assigned") {
+    rows = rows.filter((r) => isAssignedHead(r.head_of_department));
+  } else if (filters.value.head === "unassigned") {
+    rows = rows.filter((r) => !isAssignedHead(r.head_of_department));
+  }
+
+  // Optional: Created sort (you already have parseDMYDateTime)
+  if (filters.value.createdSort === "new") {
+    rows.sort(
+      (a, b) =>
+        (parseDMYDateTime(b.created_at)?.getTime() || 0) -
+        (parseDMYDateTime(a.created_at)?.getTime() || 0),
+    );
+  } else if (filters.value.createdSort === "old") {
+    rows.sort(
+      (a, b) =>
+        (parseDMYDateTime(a.created_at)?.getTime() || 0) -
+        (parseDMYDateTime(b.created_at)?.getTime() || 0),
+    );
+  }
+
+  return rows;
 });
 
 /* Pagination */
-const pagedTotal = computed(() => raw.value.length);
+const pagedTotal = computed(() => filteredRows.value.length);
 const pagedRows = computed(() => {
   const start = (page.value - 1) * pageSize.value;
-  return raw.value.slice(start, start + pageSize.value);
+  return filteredRows.value.slice(start, start + pageSize.value);
 });
 function handlePageChange() {
   /* slicing handled by computed */
@@ -330,10 +339,10 @@ function handlePageSizeChange() {
 
 /* keep page valid if data shrinks or size changes */
 watch(
-  () => raw.value.length,
+  () => filteredRows.value.length,
   () => {
     if ((page.value - 1) * pageSize.value >= raw.value.length) page.value = 1;
-  }
+  },
 );
 watch(pageSize, () => {
   page.value = 1;
@@ -415,10 +424,10 @@ function onExport() {
       csvRows.push([
         r.id,
         r.code ?? "",
-        sanitizeCSV(r.name),
+        sanitizeCSV(r.department_name),
         sanitizeCSV(r.description),
         sanitizeCSV(r.__program),
-        sanitizeCSV(r.__hod?.name || r.__hod),
+        sanitizeCSV(r.head_of_department?.name || "Not assigned"),
         r.__status,
       ]);
     }
@@ -431,10 +440,10 @@ function onExport() {
     const dt = new Date();
     const ts = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}${String(dt.getDate()).padStart(2, "0")}_${String(dt.getHours()).padStart(
       2,
-      "0"
+      "0",
     )}${String(dt.getMinutes()).padStart(2, "0")}`;
     a.href = url;
     a.download = `departments_${ts}.csv`;
@@ -444,7 +453,7 @@ function onExport() {
     URL.revokeObjectURL(url);
     showNotification(
       `Exported ${rows.length} department${rows.length > 1 ? "s" : ""}.`,
-      "success"
+      "success",
     );
   } finally {
     exporting.value = false;
@@ -464,10 +473,27 @@ function handleClickOutside(e) {
   const inMenuOrChip = e.target.closest(".rounded-lg.shadow-lg, .rounded-full");
   if (!inMenuOrChip) openChip.value = null;
 }
+
+const emptyText = computed(() =>
+  (filters.value.search || "").trim()
+    ? `No results for "${filters.value.search.trim()}".`
+    : "No departments found.",
+);
+
 onMounted(() => document.addEventListener("click", handleClickOutside, true));
 onBeforeUnmount(() =>
-  document.removeEventListener("click", handleClickOutside, true)
+  document.removeEventListener("click", handleClickOutside, true),
 );
+
+onMounted(() => {
+  filters.value = {
+    search: "",
+    head: "", // ✅ show all
+    createdSort: "",
+    status: "",
+  };
+  loadAll();
+});
 </script>
 
 <style scoped>

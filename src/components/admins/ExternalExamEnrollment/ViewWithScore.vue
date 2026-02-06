@@ -1,20 +1,17 @@
 <template>
   <div class="space-y-4">
     <ListTable
-      :data="props.students"
-      :loading="props.loading"
+      :data="students"
+      :loading="loading"
       :show-selection="props.showSelection"
       :selected-ids="selectedIds"
       :columns="columns"
       :sort-field="sortField"
       :sort-direction="sortDirection"
       :show-actions="showActions"
-      :show-view-action="showViewAction"
-      :show-edit-action="showEditAction"
-      :show-delete-action="showDeleteAction"
-      :view-action-title="viewActionTitle"
-      :edit-action-title="editActionTitle"
-      :delete-action-title="deleteActionTitle"
+      :show-view-action="false"
+      :show-edit-action="false"
+      :show-delete-action="false"
       :empty-state-title="emptyStateTitle"
       :empty-state-message="emptyStateMessage"
       :loading-message="loadingMessage"
@@ -26,28 +23,30 @@
       @selectAll="handleSelectAll"
       @sort="handleSort"
     >
-      <!-- ID Column Slot -->
-      <template #column-temp_user_id="{ value }">
+      <!-- Rank Column Slot -->
+      <template #column-rank="{ value }">
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-800 font-bold text-sm">
+          {{ value || '-' }}
+        </span>
+      </template>
+
+      <!-- Temp ID Column Slot -->
+      <template #column-temp_student.id="{ value }">
         <span class="font-medium text-gray-700">{{ value }}</span>
       </template>
 
-      <!-- Profile Picture Column Slot -->
-      <template #column-profile_picture="{ value }">
-        <img :src="value" alt="Profile Picture" class="w-10 h-10 rounded-full object-cover" />
-      </template>
-
       <!-- Khmer name Column Slot -->
-      <template #column-name_khmer="{ value }">
+      <template #column-temp_student.khmer_name="{ value }">
         <span class="font-medium text-gray-700 khmer-text">{{ value }}</span>
       </template>
 
       <!-- Latin name Column Slot -->
-      <template #column-name_latin="{ value }">
+      <template #column-temp_student.latin_name="{ value }">
         <span class="font-medium text-gray-700">{{ value }}</span>
       </template>
 
       <!-- Gender Column Slot -->
-      <template #column-gender="{ value }">
+      <template #column-temp_student.gender="{ value }">
         <span
           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
           :class="getGenderBadgeClass(value)"
@@ -57,7 +56,7 @@
       </template>
 
       <!-- Department Column Slot -->
-      <template #column-department_id="{ value }">
+      <template #column-temp_student.department_id="{ value }">
         <span
           class="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium"
         >
@@ -66,7 +65,7 @@
       </template>
 
       <!-- Program Column Slot -->
-      <template #column-program_id="{ value }">
+      <template #column-temp_student.program_id="{ value }">
         <span
           class="inline-flex items-center px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 text-xs font-medium"
         >
@@ -75,12 +74,12 @@
       </template>
 
       <!-- Phone Column Slot -->
-      <template #column-phone_number="{ value }">
+      <template #column-temp_student.phone_number="{ value }">
         <span class="font-mono">{{ value || 'N/A' }}</span>
       </template>
 
       <!-- Origin Column Slot -->
-      <template #column-origin="{ value }">
+      <template #column-temp_student.origin="{ value }">
         <span class="font-mono">{{ value || 'N/A' }}</span>
       </template>
 
@@ -94,18 +93,8 @@
         </span>
       </template>
 
-      <!-- Grade Column Slot -->
-      <template #column-grade="{ value }">
-        <span
-          class="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-semibold"
-          :class="getGradeBadgeClass(value)"
-        >
-          {{ value || 'N/A' }}
-        </span>
-      </template>
-
       <!-- Status Column Slot -->
-      <template #column-status="{ value }">
+      <template #column-enrollment_decision="{ value }">
         <span
           class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
           :class="getStatusBadgeClass(value)"
@@ -113,41 +102,46 @@
           {{ value || 'N/A' }}
         </span>
       </template>
+
+      <!-- Actions Column Slot - Custom Enroll Button -->
+      <template #actions="{ row }">
+        <EnrollBtn
+          :student="row"
+          :enrollment-status="row.enrollment_decision"
+          @enrolled="updateStudentStatus"
+        />
+      </template>
     </ListTable>
+
+    <!-- Pagination -->
+    <Pagination
+      v-if="totalItems > 0"
+      :current-page="currentPage"
+      :total-items="totalItems"
+      :page-size="pageSize"
+      :page-size-options="[10, 25, 50, 100]"
+      item-label="students"
+      @page-change="handlePageChange"
+      @page-size-change="handlePageSizeChange"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import ListTable from '@/components/features/ListTable.vue';
+import Pagination from '@/components/features/Pagination.vue';
+import EnrollBtn from '@/components/features/Enroll_btn.vue';
 import { useDepartment } from '@/stores/global/useDepartment';
 import { useSection } from '@/stores/global/useSection';
+import { useTempStudentListStore } from '@/stores/Admin/external_exam/get_temp_student_list';
 import avatar from '@/assets/default-avatar.png';
 
 // Props
 const props = defineProps({
-  students: {
-    type: Array,
-    default: () => [
-      {
-        id: 1,
-        temp_user_id: 'TEMP2024001',
-        profile_picture: avatar,
-        name_khmer: 'សុខ សំណាង',
-        name_latin: 'Sok Somnang',
-        gender: 'Male',
-        phone_number: '012 345 678',
-        department_id: 1,
-        program_id: 1,
-        score: 85,
-        grade: 'A',
-        status: 'Passed'
-      }
-    ]
-  },
-  loading: {
-    type: Boolean,
-    default: false
+  academicYear: {
+    type: Number,
+    required: true
   },
   showSelection: {
     type: Boolean,
@@ -155,20 +149,42 @@ const props = defineProps({
   }
 });
 
+// Store
+const tempStudentListStore = useTempStudentListStore();
+
 const selectedIds = ref([]);
 const sortField = ref('');
 const sortDirection = ref('asc');
 
+// Pagination state
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+// Computed properties from store
+const allStudents = computed(() => tempStudentListStore.studentsByRank);
+const loading = computed(() => tempStudentListStore.loading);
+
+// Pagination computed properties
+const totalItems = computed(() => allStudents.value.length);
+
+const students = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return allStudents.value.slice(start, end);
+});
+
 // Action flags
 const showActions = ref(true);
-const showViewAction = ref(true);
-const showEditAction = ref(true);
+const showViewAction = ref(false);
+const showEditAction = ref(false);
 const showDeleteAction = ref(false);
+const showCustomAction = ref(true);
 
 // Action titles
 const viewActionTitle = ref('View student score details');
 const editActionTitle = ref('Edit student score');
 const deleteActionTitle = ref('Delete student score');
+const customActionTitle = ref('Enroll Student');
 
 // Empty state
 const emptyStateTitle = ref('No students with scores found');
@@ -177,18 +193,17 @@ const loadingMessage = ref('Loading students with scores...');
 
 // Column configuration
 const columns = ref([
-  { key: 'temp_user_id', label: 'Temp ID', visible: true, sortable: true },
-  { key: 'profile_picture', label: 'Photo', visible: true, sortable: false },
-  { key: 'name_khmer', label: 'Khmer Name', visible: true, sortable: true },
-  { key: 'name_latin', label: 'Latin Name', visible: true, sortable: true },
-  { key: 'gender', label: 'Gender', visible: true, sortable: true },
-  { key: 'phone_number', label: 'Phone', visible: true, sortable: false },
-  { key: 'origin', label: 'Origin', visible: true, sortable: false },
-  { key: 'department_id', label: 'Department', visible: true, sortable: true },
-  { key: 'program_id', label: 'Program', visible: true, sortable: true },
+  { key: 'rank', label: 'Rank', visible: true, sortable: true },
+  { key: 'temp_student.id', label: 'Temp ID', visible: true, sortable: true },
+  { key: 'temp_student.khmer_name', label: 'Khmer Name', visible: true, sortable: true },
+  { key: 'temp_student.latin_name', label: 'Latin Name', visible: true, sortable: true },
+  { key: 'temp_student.gender', label: 'Gender', visible: true, sortable: true },
+  { key: 'temp_student.phone_number', label: 'Phone', visible: true, sortable: false },
+  { key: 'temp_student.origin', label: 'Origin', visible: true, sortable: false },
+  { key: 'temp_student.department_id', label: 'Department', visible: true, sortable: true },
+  { key: 'temp_student.program_id', label: 'Program', visible: true, sortable: true },
   { key: 'score', label: 'Score', visible: true, sortable: true },
-  { key: 'grade', label: 'Grade', visible: true, sortable: true },
-  { key: 'status', label: 'Status', visible: true, sortable: true },
+  { key: 'enrollment_decision', label: 'Status', visible: true, sortable: true },
 ]);
 
 // Use composables
@@ -200,12 +215,33 @@ onMounted(async () => {
   try {
     await Promise.all([
       getAllDepartments(),
-      getAllSections()
+      getAllSections(),
+      tempStudentListStore.fetchTempStudentList(props.academicYear)
     ]);
   } catch (error) {
     console.error('Failed to fetch data:', error);
   }
 });
+
+// Update single student status locally without full refresh
+const updateStudentStatus = (student) => {
+  const studentId = student.id;
+  tempStudentListStore.updateStudentInList(studentId, {
+    enrollment_decision: 'enrolled'
+  });
+  console.log(`✅ Updated student ${studentId} status to enrolled locally`);
+};
+
+// Expose refresh method for parent component (full refresh when needed)
+const refresh = async () => {
+  try {
+    await tempStudentListStore.fetchTempStudentList(props.academicYear);
+  } catch (error) {
+    console.error('Failed to refresh temp student list:', error);
+  }
+};
+
+defineExpose({ refresh });
 
 // Helper methods
 const getDepartmentName = (id) => {
@@ -260,7 +296,9 @@ const getGradeBadgeClass = (grade) => {
 
 const getStatusBadgeClass = (status) => {
   const classes = {
-    'Passed': 'bg-green-100 text-green-800',
+    'selected': 'bg-blue-100 text-blue-800',
+    'enrolled': 'bg-green-100 text-green-800',
+    'Enrolled': 'bg-green-100 text-green-800',
     'Failed': 'bg-red-100 text-red-800',
     'Pending': 'bg-yellow-100 text-yellow-800',
   };
@@ -302,5 +340,15 @@ const handleSort = ({ field, direction }) => {
   
   // Note: Sorting should be handled by parent component since students is a prop
   console.log('Sort requested:', { field, direction });
+};
+
+// Pagination handlers
+const handlePageChange = ({ page }) => {
+  currentPage.value = page;
+};
+
+const handlePageSizeChange = ({ pageSize: newSize, currentPage: newPage }) => {
+  pageSize.value = newSize;
+  currentPage.value = newPage;
 };
 </script>

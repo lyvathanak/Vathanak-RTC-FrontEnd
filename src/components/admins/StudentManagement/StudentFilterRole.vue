@@ -1,210 +1,143 @@
 <template>
-  <Filter class="px-3 sm:px-5"
-    :key="filterKey"
-    :filter-definitions="studentFilterDefinitions"
-    :initial-filters="initialStudentFilters"
-    clear-button-text="Clear"
-    :auto-clear="true"
-    @update:filters="handleFiltersUpdate"
-    @clear-filters="handleClearFilters"
-    @filter-change="handleFilterChange"
-  />
+  <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <!-- Top bar -->
+    <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+      <div class="min-w-0">
+        <h3 class="text-sm sm:text-base font-semibold text-gray-900">
+          {{ "Filters" }}
+        </h3>
+        <p class="text-xs text-gray-500">
+          {{ "Refine results by criteria" }}
+        </p>
+      </div>
+
+      <!-- ✅ Clear (your button) -->
+      <button
+        type="button"
+        @click="clearFiltersOnly"
+        :disabled="disableClear"
+        :class="[
+          'h-10 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold active:scale-[0.99] transition',
+          disableClear
+            ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
+            : 'border-red-200 text-red-600 hover:bg-red-50',
+        ]">
+        {{ resetText }}
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-4 pb-4 sm:px-5 sm:pb-5">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <BaseSelect
+          v-model="academicYearModel"
+          :label="t('academic_year')"
+          :options="academicYearOptionItems"
+          :all-label="'All Academic Years'"
+          :disabled="loadingData"
+          :placeholder="t('select') || 'Select...'" />
+
+        <BaseSelect
+          v-model="departmentModel"
+          :label="t('department')"
+          :options="departmentOptionItems"
+          :all-label="'All Departments'"
+          :disabled="loadingData"
+          :placeholder="
+            loadingData
+              ? t('loading') || 'Loading...'
+              : t('select') || 'Select...'
+          "
+          @change="onDepartmentChange" />
+
+        <BaseSelect
+          v-model="programModel"
+          :label="t('program')"
+          :options="programOptionItems"
+          :all-label="'All Programs'"
+          :disabled="loadingData"
+          :placeholder="
+            loadingData
+              ? t('loading') || 'Loading...'
+              : t('select') || 'Select...'
+          " />
+
+        <BaseSelect
+          v-model="sectionModel"
+          :label="t('section')"
+          :options="sectionOptionItems"
+          :all-label="'All Sections'"
+          :disabled="loadingData"
+          :placeholder="
+            loadingData
+              ? t('loading') || 'Loading...'
+              : t('select') || 'Select...'
+          " />
+
+        <BaseSelect
+          v-model="originModel"
+          :label="t('origin')"
+          :options="originOptionItems"
+          :all-label="'All Origins'"
+          :disabled="loadingData"
+          :placeholder="t('select') || 'Select...'" />
+
+        <BaseSelect
+          v-model="genderModel"
+          :label="t('gender')"
+          :options="genderOptionItems"
+          :all-label="'All Genders'"
+          :disabled="loadingData"
+          :placeholder="t('select') || 'Select...'" />
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-const { t, locale } = useI18n();
-import Filter from "@/components/features/Filter.vue";
+import BaseSelect from "@/components/features/BaseSelect.vue";
 import provincesData from "@/db/CambodiaAdministrationArea/provinces.json";
-import { useFilteredByDepartment, useProgramsFilteredByDepartment, useSectionsFilteredByDepartment } from "@/stores/global/FilterByDepartment.js";
+import {
+  useFilteredByDepartment,
+  useProgramsFilteredByDepartment,
+  useSectionsFilteredByDepartment,
+} from "@/stores/global/FilterByDepartment.js";
 
-/** Props */
-const props = defineProps({
-  filterDefs: {
-    type: Array,
-    default: () => []
-  }
-});
+const { t } = useI18n();
 
-/** Emits */
 const emit = defineEmits(["update:filters", "clear-filters", "filter-change"]);
 
-/** 🎯 USE THE NEW FilterByDepartment COMPOSABLES */
-// Get departments for the dropdown
-const { 
-  departments, 
+/** ✅ Same composables you already use */
+const {
+  departments,
   departmentOptions,
-  loading: departmentsLoading 
+  loading: departmentsLoading,
 } = useFilteredByDepartment({ immediate: true });
 
-// Get programs filtered by department
-const { 
-  selectedDepartmentId: selectedDepartmentIdForPrograms,
+const {
   filtered: programsFiltered,
   rawList: allPrograms,
   loading: programsLoading,
-  setDepartment: setProgramsDepartment
+  setDepartment: setProgramsDepartment,
 } = useProgramsFilteredByDepartment({ immediate: true });
 
-// Get sections filtered by department   
-const { 
-  selectedDepartmentId: selectedDepartmentIdForSections,
+const {
   filtered: sectionsFiltered,
   rawList: allSections,
   loading: sectionsLoading,
-  setDepartment: setSectionsDepartment
+  setDepartment: setSectionsDepartment,
 } = useSectionsFilteredByDepartment({ immediate: true });
 
-/** Reactive Data */
-// Current filter values to track department changes
-const currentFilters = ref({
-  department: "All",
-  program: "All", 
-  section: "All"
-});
-
-// Loading state for all API data
-const loadingData = computed(() => 
-  departmentsLoading.value || programsLoading.value || sectionsLoading.value
+const loadingData = computed(
+  () =>
+    departmentsLoading.value || programsLoading.value || sectionsLoading.value,
 );
 
-// Filter key to force re-render when data loads
-const filterKey = computed(() => {
-  return `filter-${loadingData.value ? 'loading' : 'loaded'}-${departments.value.length}-${allPrograms.value.length}-${allSections.value.length}-${departmentFilterOptions.value.length}`;
-});
-
-// Fetch data from APIs using composables - FilterByDepartment handles this automatically
-// onMounted(async () => {
-//   await Promise.all([
-//     getAllDepartments(),
-//     getAllPrograms(),
-//     getAllSections()
-//   ]);
-// });
-
-/** Computed Properties */
-
-// Generate origin options from provinces data
-const originOptions = computed(() => [
-  "All",
-  ...provincesData.map((province) => province.name).sort(),
-]);
-
-// Generate dynamic options from API data using composables
-const departmentFilterOptions = computed(() => {
-  if (loadingData.value) return ["All", "Loading..."];
-  // Ensure stable array reference by using a consistent mapping
-  const deptNames = departmentOptions.value.map(d => d.department_name || d.name);
-  return ["All", ...deptNames];
-});
-
-const sectionOptions = computed(() => {
-  if (loadingData.value) return ["All", "Loading..."];
-  const sectionsToShow = currentFilters.value.department !== "All" ? sectionsFiltered.value : allSections.value;
-  return ["All", ...sectionsToShow.map(s => s.name)];
-});
-
-const programOptions = computed(() => {
-  if (loadingData.value) return ["All", "Loading..."];
-  const programsToShow = currentFilters.value.department !== "All" ? programsFiltered.value : allPrograms.value;
-  return ["All", ...programsToShow.map(p => p.program_name)];
-});
-
-// Get current academic year as default
-const getCurrentAcademicYear = () => {
-  const currentYear = new Date().getFullYear();
-  return `${currentYear}-${currentYear + 1}`;
-};
-
-// Generate academic year options dynamically (current year + 5 previous years)
-const academicYearOptions = computed(() => {
-  const currentYear = new Date().getFullYear();
-  const years = ["All"];
-  
-  for (let i = 0; i <= 5; i++) {
-    const startYear = currentYear - i;
-    const endYear = startYear + 1;
-    years.push(`${startYear}-${endYear}`);
-  }
-  
-  return years;
-});
-
-// Student-specific filter definitions
-const studentFilterDefinitions = computed(() => {
-  // Make this computed property reactive to locale changes
-  const currentLocale = locale.value;
-  if (props.filterDefs.length > 0) {
-    return props.filterDefs;
-  }
-  const khmerClass = currentLocale === 'kh' ? 'khmer-text' : '';
-  return [
-    {
-      key: "academic_year",
-      label: t("academic_year"),
-      options: academicYearOptions.value,
-      className: khmerClass,
-    },
-    {
-      key: "department",
-      label: t("department"),
-      options: departmentFilterOptions.value,
-      className: khmerClass,
-    },
-    {
-      key: "program",
-      label: t("program"),
-      options: programOptions.value,
-      className: khmerClass,
-    },
-    {
-      key: "section",
-      label: t("section"),
-      options: sectionOptions.value,
-      className: khmerClass,
-    },
-    { 
-      key: "origin", 
-      label: t("origin"), 
-      options: originOptions.value,
-      className: khmerClass,
-    },
-    { 
-      key: "gender", 
-      label: t("gender"), 
-      options: ["All", "Male", "Female"],
-      className: khmerClass,
-    },
-    // {
-    //   key: "promotion",
-    //   label: t("promotion"),
-    //   options: ["All", "Promoted", "Repeat"],
-    //   className: khmerClass,
-    // },
-    // {
-    //   key: "shift",
-    //   label: t("shift"),
-    //   options: ["All", "Morning", "Afternoon", "Evening"],
-    //   className: khmerClass,
-    // },
-    // {
-    //   key: "score_range",
-    //   label: t("score_range"),
-    //   options: ["All", "90-100", "80-89", "70-79", "<70"],
-    //   className: khmerClass,
-    // },
-    // {
-    //   key: "pass_fail",
-    //   label: t("pass_fail"),
-    //   options: ["All", "Pass", "Fail"],
-    //   className: khmerClass,
-    // },
-  ];
-});
-
-// Initial filter values for students
-const initialStudentFilters = computed(() => ({
+/** ✅ Keep your app filter values as "All" */
+const filters = ref({
   academic_year: "All",
   department: "All",
   program: "All",
@@ -215,27 +148,141 @@ const initialStudentFilters = computed(() => ({
   shift: "All",
   score_range: "All",
   pass_fail: "All",
-}));
+});
 
-/** Event Handlers */
-const handleFiltersUpdate = (filters) => {
-  // Update current filters to trigger reactive updates
-  currentFilters.value = { ...filters };
-  emit("update:filters", filters);
-};
+/**
+ * 🔥 Proxy helper:
+ * BaseSelect wants "" for All, but we keep "All" internally.
+ */
+function makeAllProxy(key) {
+  return computed({
+    get() {
+      return filters.value[key] === "All" ? "" : filters.value[key];
+    },
+    set(v) {
+      filters.value[key] = v === "" ? "All" : v;
+      emit("update:filters", { ...filters.value });
+      emit("filter-change", { key, value: filters.value[key] });
+    },
+  });
+}
 
-// Force a re-render when department options change
-watch(departmentFilterOptions, () => {
-  // Trigger a re-computation by updating the filter key
-  console.log('Department options changed, forcing re-render');
-}, { deep: true });
+const academicYearModel = makeAllProxy("academic_year");
+const departmentModel = makeAllProxy("department");
+const programModel = makeAllProxy("program");
+const sectionModel = makeAllProxy("section");
+const originModel = makeAllProxy("origin");
+const genderModel = makeAllProxy("gender");
 
-const handleClearFilters = () => {
-  // Reset current filters to match initial filters
-  currentFilters.value = {
+/** ✅ Options => [{label, value}] for BaseSelect */
+const academicYearOptionItems = computed(() => {
+  const currentYear = new Date().getFullYear();
+  const arr = [];
+  for (let i = 0; i <= 5; i++) {
+    const start = currentYear - i;
+    arr.push({
+      label: `${start}-${start + 1}`,
+      value: `${start}-${start + 1}`,
+    });
+  }
+  return arr;
+});
+
+const departmentOptionItems = computed(() => {
+  const list = departmentOptions.value.map((d) => ({
+    label: d.department_name || d.name || "-",
+    value: d.department_name || d.name || "",
+  }));
+  return list;
+});
+
+const programOptionItems = computed(() => {
+  const deptSelected = filters.value.department !== "All";
+  const list = (deptSelected ? programsFiltered.value : allPrograms.value).map(
+    (p) => ({
+      label: p.program_name || p.name || "-",
+      value: p.program_name || p.name || "",
+    }),
+  );
+  return list;
+});
+
+const sectionOptionItems = computed(() => {
+  const deptSelected = filters.value.department !== "All";
+  const list = (deptSelected ? sectionsFiltered.value : allSections.value).map(
+    (s) => ({
+      label: s.sub_department_name || s.name || "-",
+      value: s.sub_department_name || s.name || "",
+    }),
+  );
+  return list;
+});
+
+const originOptionItems = computed(() =>
+  provincesData
+    .map((p) => p.name)
+    .sort()
+    .map((name) => ({ label: name, value: name })),
+);
+
+const genderOptionItems = computed(() => [
+  { label: "Male", value: "Male" },
+  { label: "Female", value: "Female" },
+]);
+
+function onDepartmentChange() {
+  const deptName = filters.value.department;
+  const deptObj = departments.value.find(
+    (d) => (d.department_name || d.name) === deptName,
+  );
+
+  if (deptObj && deptName !== "All") {
+    setProgramsDepartment(deptObj.id);
+    setSectionsDepartment(deptObj.id);
+  } else {
+    setProgramsDepartment("");
+    setSectionsDepartment("");
+  }
+
+  filters.value.program = "All";
+  filters.value.section = "All";
+  emit("update:filters", { ...filters.value });
+  emit("filter-change", { key: "department", value: deptName });
+}
+
+watch(
+  () => filters.value.department,
+  (newVal, oldVal) => {
+    if (newVal !== oldVal) onDepartmentChange();
+  },
+);
+
+const resetText = computed(() => "Clear Filters");
+
+const disableClear = computed(() => {
+  const f = filters.value;
+  const allAll =
+    f.academic_year === "All" &&
+    f.department === "All" &&
+    f.program === "All" &&
+    f.section === "All" &&
+    f.origin === "All" &&
+    f.gender === "All" &&
+    f.promotion === "All" &&
+    f.shift === "All" &&
+    f.score_range === "All" &&
+    f.pass_fail === "All";
+
+  return loadingData.value || allAll;
+});
+
+function clearFiltersOnly() {
+  if (disableClear.value) return;
+
+  filters.value = {
     academic_year: "All",
     department: "All",
-    program: "All", 
+    program: "All",
     section: "All",
     origin: "All",
     gender: "All",
@@ -244,38 +291,17 @@ const handleClearFilters = () => {
     score_range: "All",
     pass_fail: "All",
   };
+
+  setProgramsDepartment("");
+  setSectionsDepartment("");
+
+  emit("update:filters", { ...filters.value });
   emit("clear-filters");
-};
-
-const handleFilterChange = (changeInfo) => {
-  emit("filter-change", changeInfo);
-};
-
-// Watch for department changes to update the filtered lists
-watch(() => currentFilters.value.department, (newDept, oldDept) => {
-  if (newDept !== oldDept) {
-    // Update the filters based on selected department
-    // Use the same field mapping as in departmentFilterOptions
-    const selectedDept = departments.value.find(d => 
-      (d.department_name || d.name) === newDept
-    );
-    if (selectedDept && newDept !== "All") {
-      setProgramsDepartment(selectedDept.id);
-      setSectionsDepartment(selectedDept.id);
-    } else {
-      setProgramsDepartment(''); // Reset to show all
-      setSectionsDepartment(''); // Reset to show all
-    }
-  }
-});
-
-// Expose computed properties for parent component access if needed
+}
 defineExpose({
-  studentFilterDefinitions,
-  initialStudentFilters,
   departments,
-  sections: allSections,
   programs: allPrograms,
+  sections: allSections,
   loadingData,
 });
 </script>
